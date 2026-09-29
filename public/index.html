@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ЗАВОД</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    color: #fff;
+    padding: 20px;
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 48px;
+    padding: 32px 40px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    min-width: 320px;
+    max-width: 440px;
+    width: 100%;
+  }
+  h1 {
+    margin-bottom: 24px;
+    font-size: 38px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, #ff6b35);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #ff6b35, #e91e63);
+    border: none;
+    border-radius: 48px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btn.secondary {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .btn.success {
+    background: rgba(78, 205, 196, 0.25);
+    border: 1px solid #4ecdc4;
+  }
+  .btn.danger {
+    background: rgba(233, 30, 99, 0.25);
+    border: 1px solid #e91e63;
+  }
+  .input {
+    width: 100%;
+    margin-top: 12px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 48px;
+    color: #fff;
+    font-size: 17px;
+    font-family: inherit;
+    outline: none;
+    text-align: center;
+  }
+  .input::placeholder { color: rgba(255, 255, 255, 0.4); }
+  .code {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, #fff, #ff6b35);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 16px 0;
+  }
+  .players { margin-top: 20px; text-align: left; }
+  .player {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 16px;
+    margin-top: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    font-size: 14px;
+  }
+  .player .role { color: #ff6b35; font-weight: 600; }
+  .player.done { opacity: 0.5; }
+  .hidden { display: none; }
+  .subtitle { font-size: 14px; opacity: 0.7; margin-bottom: 8px; }
+  .round-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 24px;
+    background: rgba(255, 107, 53, 0.2);
+    border: 1px solid rgba(255, 107, 53, 0.4);
+    color: #ff6b35;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .stats {
+    text-align: left;
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    padding: 16px 20px;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: rgba(255, 255, 255, 0.6); }
+  .stat-value { font-weight: 700; color: #ff6b35; }
+  .pocket {
+    margin-top: 10px;
+    padding: 10px 16px;
+    background: rgba(78, 205, 196, 0.15);
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    border-radius: 24px;
+    font-size: 14px;
+    color: #4ecdc4;
+  }
+  .end-box {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(233, 30, 99, 0.15);
+    border: 1px solid rgba(233, 30, 99, 0.4);
+    border-radius: 24px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="glass">
+    <h1>ЗАВОД</h1>
+
+    <div id="menu">
+      <button class="btn" id="btn-create">Создать комнату</button>
+      <button class="btn secondary" id="btn-join">Войти по коду</button>
+    </div>
+
+    <div id="create" class="hidden">
+      <div class="subtitle">Ваше имя</div>
+      <input class="input" id="create-name" placeholder="Например, Аня">
+      <div class="subtitle" style="margin-top:16px;">Ваша роль</div>
+      <input class="input" id="create-role" placeholder="director, accountant, ...">
+      <button class="btn" id="btn-create-go">Создать</button>
+      <button class="btn secondary" id="btn-create-back">Назад</button>
+    </div>
+
+    <div id="join" class="hidden">
+      <div class="subtitle">Код комнаты</div>
+      <input class="input" id="join-code" placeholder="472" maxlength="3" inputmode="numeric">
+      <div class="subtitle" style="margin-top:16px;">Ваше имя</div>
+      <input class="input" id="join-name" placeholder="Например, Петя">
+      <div class="subtitle" style="margin-top:16px;">Ваша роль</div>
+      <input class="input" id="join-role" placeholder="director, accountant, ...">
+      <button class="btn" id="btn-join-go">Войти</button>
+      <button class="btn secondary" id="btn-join-back">Назад</button>
+    </div>
+
+    <div id="lobby" class="hidden">
+      <div class="subtitle">Код комнаты</div>
+      <div class="code" id="code">000</div>
+      <div class="subtitle">Игроки в комнате</div>
+      <div class="players" id="players"></div>
+      <button class="btn" id="btn-start">Начать игру</button>
+      <div id="wait-msg" class="subtitle hidden" style="margin-top:12px;">Ожидание создателя…</div>
+    </div>
+
+    <div id="game" class="hidden">
+      <div class="round-badge" id="round-badge">Раунд 1</div>
+
+      <div id="phase-factory" class="hidden">
+        <div class="subtitle">Вы — Директор. Выберите завод:</div>
+        <button class="btn success" id="btn-good">Хороший завод<br><small style="font-size:12px;opacity:0.7;">высокие показатели, мало денег</small></button>
+        <button class="btn danger" id="btn-bad">Плохой завод<br><small style="font-size:12px;opacity:0.7;">низкие показатели, много денег</small></button>
+      </div>
+
+      <div id="phase-wait" class="hidden">
+        <div class="subtitle">Директор выбирает завод…</div>
+      </div>
+
+      <div id="phase-factory-info" class="hidden">
+        <div class="subtitle">Показатели завода</div>
+        <div class="stats" id="factory-stats"></div>
+        <div id="my-pocket" class="pocket hidden"></div>
+      </div>
+
+      <div id="phase-actions" class="hidden">
+        <div id="actions-title" class="subtitle">Ваш ход:</div>
+        <button class="btn success" id="btn-a1"></button>
+        <button class="btn danger" id="btn-a2"></button>
+        <div id="acted-msg" class="subtitle hidden" style="margin-top:12px;">Вы сделали ход, ожидайте других…</div>
+      </div>
+
+      <div class="players" id="game-players"></div>
+
+      <div id="end-box" class="end-box hidden"></div>
+    </div>
+  </div>
+
+<script>
+  const socket = io();
+  let myId = null;
+  let myRole = null;
+  let hostId = null;
+
+  const ACTIONS = {
+    director:   [{ t: 'develop', l: 'Развивать' }, { t: 'steal', l: 'Красть' }],
+    accountant: [{ t: 'honest', l: 'Честно' }, { t: 'commission', l: 'Комиссия' }],
+    security:   [{ t: 'check', l: 'Проверка' }, { t: 'collude', l: 'Сговор' }],
+    engineer:   [{ t: 'work', l: 'Работать' }, { t: 'drink', l: 'Спиться' }],
+    hr:         [{ t: 'hire', l: 'Нанимать' }, { t: 'idle', l: 'Безразличие' }],
+    marketer:   [{ t: 'work', l: 'Работать' }, { t: 'blog', l: 'В блог' }]
+  };
+
+  const screens = {
+    menu: document.getElementById('menu'),
+    create: document.getElementById('create'),
+    join: document.getElementById('join'),
+    lobby: document.getElementById('lobby'),
+    game: document.getElementById('game')
+  };
+
+  function show(name) {
+    Object.values(screens).forEach(s => s.classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+  }
+
+  function renderPlayers(targetId, players) {
+    const box = document.getElementById(targetId);
+    box.innerHTML = '';
+    players.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'player' + (p.acted ? ' done' : '');
+      row.innerHTML = '<span>' + p.name + (p.id === myId ? ' (вы)' : '') + (p.acted ? ' ✓' : '') + '</span><span class="role">' + p.role + '</span>';
+      box.appendChild(row);
+    });
+  }
+
+  function renderFactoryStats(f) {
+    const box = document.getElementById('factory-stats');
+    box.innerHTML = '';
+    const rows = [
+      ['Прибыль', f.profit],
+      ['Качество', f.quality],
+      ['Клиенты', f.clients],
+      ['Бюджет', f.budget],
+      ['Неучтёнка', f.unaccounted],
+      ['Сотрудники', f.employees],
+      ['Оборудование', f.equipment]
+    ];
+    rows.forEach(([label, val]) => {
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+      row.innerHTML = '<span class="stat-label">' + label + '</span><span class="stat-value">' + val + '</span>';
+      box.appendChild(row);
+    });
+  }
+
+  document.getElementById('btn-create').onclick = () => show('create');
+  document.getElementById('btn-join').onclick = () => show('join');
+
+  document.getElementById('btn-create-back').onclick = () => show('menu');
+  document.getElementById('btn-create-go').onclick = () => {
+    const name = document.getElementById('create-name').value.trim();
+    const role = document.getElementById('create-role').value.trim();
+    if (!name || !role) return alert('Заполните имя и роль');
+    myRole = role;
+    socket.emit('create_room', { name, role });
+  };
+
+  document.getElementById('btn-join-back').onclick = () => show('menu');
+  document.getElementById('btn-join-go').onclick = () => {
+    const code = document.getElementById('join-code').value.trim();
+    const name = document.getElementById('join-name').value.trim();
+    const role = document.getElementById('join-role').value.trim();
+    if (!code || !name || !role) return alert('Заполните всё');
+    myRole = role;
+    socket.emit('join_room', { code, name, role });
+  };
+
+  document.getElementById('btn-start').onclick = () => {
+    socket.emit('start_game', { code: document.getElementById('code').textContent });
+  };
+
+  document.getElementById('btn-good').onclick = () => {
+    socket.emit('choose_factory', { code: document.getElementById('code').textContent, choice: 'good' });
+  };
+  document.getElementById('btn-bad').onclick = () => {
+    socket.emit('choose_factory', { code: document.getElementById('code').textContent, choice: 'bad' });
+  };
+
+  document.getElementById('btn-a1').onclick = () => {
+    const a = ACTIONS[myRole] && ACTIONS[myRole][0];
+    if (!a) return;
+    socket.emit('do_action', { code: document.getElementById('code').textContent, actionType: a.t });
+  };
+  document.getElementById('btn-a2').onclick = () => {
+    const a = ACTIONS[myRole] && ACTIONS[myRole][1];
+    if (!a) return;
+    socket.emit('do_action', { code: document.getElementById('code').textContent, actionType: a.t });
+  };
+
+  socket.on('connect', () => { myId = socket.id; });
+
+  socket.on('room_joined', ({ code, players, hostId: h }) => {
+    hostId = h;
+    document.getElementById('code').textContent = code;
+    renderPlayers('players', players);
+    updateLobbyControls(players.length);
+    show('lobby');
+  });
+
+  socket.on('room_updated', ({ players, hostId: h }) => {
+    hostId = h;
+    renderPlayers('players', players);
+    updateLobbyControls(players.length);
+  });
+
+  function updateLobbyControls(count) {
+    const btn = document.getElementById('btn-start');
+    const wait = document.getElementById('wait-msg');
+    if (myId === hostId && count >= 2) {
+      btn.classList.remove('hidden');
+      wait.classList.add('hidden');
+    } else if (myId === hostId) {
+      btn.classList.add('hidden');
+      wait.textContent = 'Нужно минимум 2 игрока';
+      wait.classList.remove('hidden');
+    } else {
+      btn.classList.add('hidden');
+      wait.textContent = 'Ожидание создателя…';
+      wait.classList.remove('hidden');
+    }
+  }
+
+  socket.on('game_started', ({ players, round }) => {
+    document.getElementById('round-badge').textContent = 'Раунд ' + round;
+    renderPlayers('game-players', players);
+    show('game');
+    document.getElementById('phase-factory-info').classList.add('hidden');
+    document.getElementById('phase-actions').classList.add('hidden');
+    document.getElementById('end-box').classList.add('hidden');
+    document.getElementById('check-box')?.classList.add('hidden');
+
+    if (myRole === 'director') {
+      document.getElementById('phase-factory').classList.remove('hidden');
+      document.getElementById('phase-wait').classList.add('hidden');
+    } else {
+      document.getElementById('phase-factory').classList.add('hidden');
+      document.getElementById('phase-wait').classList.remove('hidden');
+    }
+  });
+
+  socket.on('factory_ready', ({ factory, round, players }) => {
+    document.getElementById('round-badge').textContent = 'Раунд ' + round;
+    document.getElementById('phase-factory').classList.add('hidden');
+    document.getElementById('phase-wait').classList.add('hidden');
+    document.getElementById('phase-factory-info').classList.remove('hidden');
+    renderFactoryStats(factory);
+    renderPlayers('game-players', players);
+    showActions();
+  });
+
+  function showActions() {
+    const box = document.getElementById('phase-actions');
+    const a = ACTIONS[myRole];
+    if (!a) return;
+    document.getElementById('btn-a1').textContent = a[0].l;
+    document.getElementById('btn-a2').textContent = a[1].l;
+    document.getElementById('btn-a1').classList.remove('hidden');
+    document.getElementById('btn-a2').classList.remove('hidden');
+    document.getElementById('acted-msg').classList.add('hidden');
+    box.classList.remove('hidden');
+  }
+
+  socket.on('action_done', ({ factory, players }) => {
+    renderFactoryStats(factory);
+    renderPlayers('game-players', players);
+    const me = players.find(p => p.id === myId);
+    if (me && me.acted) {
+      document.getElementById('btn-a1').classList.add('hidden');
+      document.getElementById('btn-a2').classList.add('hidden');
+      document.getElementById('acted-msg').classList.remove('hidden');
+    }
+  });
+
+  socket.on('new_round', ({ round, factory, players }) => {
+    document.getElementById('round-badge').textContent = 'Раунд ' + round;
+    renderFactoryStats(factory);
+    renderPlayers('game-players', players);
+    showActions();
+    document.getElementById('check-box')?.classList.add('hidden');
+  });
+
+  socket.on('check_result', ({ suspects }) => {
+    let box = document.getElementById('check-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'check-box';
+      box.className = 'end-box';
+      box.style.background = 'rgba(78, 205, 196, 0.15)';
+      box.style.borderColor = 'rgba(78, 205, 196, 0.4)';
+      document.getElementById('game').appendChild(box);
+    }
+    if (suspects.length === 0) {
+      box.innerHTML = '<strong>Проверка</strong><br>Все чисты. Никто не воровал.';
+    } else {
+      box.innerHTML = '<strong>Проверка</strong><br>Подозрительные:<br>' +
+        suspects.map(s => '• ' + s.name + ' (' + s.role + ')').join('<br>');
+    }
+    box.classList.remove('hidden');
+  });
+
+  socket.on('game_over', ({ reason, type, factory, threshold, players }) => {
+    renderFactoryStats(factory);
+    renderPlayers('game-players', players);
+    document.getElementById('phase-actions').classList.add('hidden');
+    document.getElementById('phase-factory').classList.add('hidden');
+    document.getElementById('phase-wait').classList.add('hidden');
+
+    const box = document.getElementById('end-box');
+    box.style.background = type === 'win' ? 'rgba(78, 205, 196, 0.15)' : 'rgba(233, 30, 99, 0.15)';
+    box.style.borderColor = type === 'win' ? 'rgba(78, 205, 196, 0.4)' : 'rgba(233, 30, 99, 0.4)';
+    box.innerHTML = '<strong>' + (type === 'win' ? '🎉 Победа' : '💥 Игра окончена') + '</strong><br>' + reason;
+    box.classList.remove('hidden');
+  });
+
+  // Личный итог — приходит только тебе
+  socket.on('personal_result', ({ text, pocket, stole }) => {
+    const box = document.getElementById('end-box');
+    box.innerHTML += '<hr style="margin:16px 0;border:none;border-top:1px solid rgba(255,255,255,0.2);">' +
+      '<strong>Ваш итог:</strong><br>' + text +
+      '<br><br>В кармане: <b>' + pocket + '</b>' +
+      (stole ? ' (воровали)' : ' (честно)');
+  });
+
+  socket.on('error_msg', (msg) => alert(msg));
+</script>
+</body>
+</html>
