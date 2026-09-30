@@ -15,10 +15,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ОДИН ОБЩИЙ ЗАЛ
 // ─────────────────────────────────────────────
 const hall = {
-  players: [],          // { id, name, status, role }
-  phase: 'lobby',       // lobby → smoking → roles → game → paused
+  players: [],
+  phase: 'lobby',
   paused: false,
-  disconnected: []      // { id, name }
+  disconnected: [],
+  smokeLevel: 0   // <── накопительный счётчик дымности
 };
 
 const ALL_ROLES = ['director', 'security', 'accountant', 'engineer', 'hr', 'marketer'];
@@ -61,7 +62,8 @@ function emitSmokingUpdate() {
       id: x.id,
       name: x.name,
       status: x.status
-    }))
+    })),
+    smokeLevel: hall.smokeLevel
   });
 }
 
@@ -81,13 +83,25 @@ io.on('connection', (socket) => {
     emitSmokingUpdate();
   });
 
-  socket.on('set_status', ({ status }) => {
+  // Накопительное действие: каждая затяжка +1, каждая отмашка −1
+  socket.on('smoke_action', ({ type }) => {
     const p = hall.players.find(x => x.id === socket.id);
     if (!p) return;
-    if (status !== 'smoke' && status !== 'wave') return;
-    p.status = status;
+
+    if (type === 'smoke') {
+      hall.smokeLevel = Math.min(12, hall.smokeLevel + 1);
+      p.status = 'smoke';
+    } else if (type === 'wave') {
+      if (hall.smokeLevel <= 0) return; // нельзя уйти в минус
+      hall.smokeLevel = Math.max(0, hall.smokeLevel - 1);
+      p.status = 'wave';
+    } else {
+      return;
+    }
+
     emitSmokingUpdate();
 
+    // Если все определились (у каждого статус не thinking) — старт
     const allDecided = hall.players.length >= 2 &&
                        hall.players.every(x => x.status !== 'thinking');
     if (allDecided && hall.phase === 'smoking') {

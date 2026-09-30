@@ -14,142 +14,446 @@
     outline: none;
   }
   html, body {
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
   }
   body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     color: #fff;
     padding: 20px;
-    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-top: calc(30px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    position: relative;
+    transition: background 1.2s ease;
+    font-size: 20px;
+    line-height: 1.5;
+    min-height: 100vh;
   }
-  .glass {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 48px;
-    padding: 32px 40px;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    min-width: 320px;
-    max-width: 440px;
-    width: 100%;
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 140vw;
+    height: 140vh;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+    transition: background 1.2s ease;
   }
-  h1 {
-    margin-bottom: 24px;
-    font-size: 38px;
-    font-weight: 700;
-    background: linear-gradient(135deg, #fff, #ff6b35);
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 1.2s ease, background 1.2s ease;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at 50% 120%, rgba(60, 45, 50, 0.4) 0%, transparent 60%),
+      linear-gradient(180deg, #0a0a14 0%, #151020 50%, #100a14 100%);
+  }
+  body::before {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 55%, rgba(200, 180, 180, 0.05) 0%, transparent 70%);
+  }
+  body::after {
+    opacity: 0.5;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.012) 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.012) 1px, transparent 1px),
+      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.012) 1px, transparent 1px);
+    background-size: 80px 80px, 120px 120px, 100px 100px;
+  }
+
+  body.rich {
+    background:
+      radial-gradient(ellipse at 50% 120%, rgba(120, 60, 40, 0.6) 0%, transparent 60%),
+      linear-gradient(180deg, #0a0a18 0%, #1a1428 40%, #2a1a2a 70%, #1a0f14 100%);
+  }
+  body.rich::before {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 55%, rgba(255, 180, 100, 0.15) 0%, transparent 70%);
+  }
+
+  body.poor {
+    background:
+      radial-gradient(ellipse at 50% 120%, rgba(30, 40, 55, 0.6) 0%, transparent 60%),
+      linear-gradient(180deg, #08090c 0%, #101318 40%, #1a1e26 70%, #0e1014 100%);
+  }
+  body.poor::before {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 55%, rgba(120, 140, 170, 0.08) 0%, transparent 70%);
+  }
+
+  body.in-smoking {
+    background:
+      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(80, 50, 25, 0.35) 0%, transparent 60%),
+      linear-gradient(180deg, #100c08 0%, #16110a 50%, #100c08 100%);
+  }
+  body.in-smoking::before {
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255, 170, 70, 0.05) 0%, transparent 70%);
+    transition: background 1.2s ease;
+  }
+
+  body.in-smoking.density-off {
+    background:
+      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.05) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(60, 45, 25, 0.3) 0%, transparent 60%),
+      linear-gradient(180deg, #0e0c0a 0%, #14110c 50%, #0e0c0a 100%);
+  }
+  body.in-smoking.density-off::before {
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255, 170, 70, 0.03) 0%, transparent 70%);
+  }
+  body.in-smoking.density-off::after {
+    opacity: 0.5;
+    animation: none;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.012) 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.012) 1px, transparent 1px);
+    background-size: 80px 80px, 120px 120px;
+  }
+
+  body.in-smoking.density-light {
+    background:
+      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.15) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(100, 55, 25, 0.4) 0%, transparent 60%),
+      linear-gradient(180deg, #150f08 0%, #1a140a 50%, #150f08 100%);
+  }
+  body.in-smoking.density-light::before {
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255, 170, 70, 0.1) 0%, transparent 70%);
+  }
+  body.in-smoking.density-light::after {
+    opacity: 0.85;
+    animation: smoke-drift 20s infinite ease-in-out;
+    background:
+      radial-gradient(ellipse 45% 35% at 30% 60%, rgba(255, 200, 150, 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 55% 45% at 70% 40%, rgba(255, 180, 120, 0.05) 0%, transparent 70%);
+  }
+
+  body.in-smoking.density-medium {
+    background:
+      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.25) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(120, 65, 30, 0.55) 0%, transparent 60%),
+      linear-gradient(180deg, #1a1208 0%, #221a0c 50%, #1a1208 100%);
+  }
+  body.in-smoking.density-medium::before {
+    background:
+      radial-gradient(ellipse 75% 65% at 50% 30%, rgba(255, 170, 70, 0.18) 0%, transparent 70%);
+  }
+  body.in-smoking.density-medium::after {
+    opacity: 1;
+    animation: smoke-drift 18s infinite ease-in-out;
+    background:
+      radial-gradient(ellipse 50% 40% at 25% 55%, rgba(255, 200, 150, 0.1) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 75% 40%, rgba(255, 180, 120, 0.09) 0%, transparent 70%),
+      radial-gradient(ellipse 45% 35% at 50% 80%, rgba(255, 210, 160, 0.07) 0%, transparent 70%);
+  }
+
+  body.in-smoking.density-heavy {
+    background:
+      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.35) 0%, transparent 65%),
+      radial-gradient(ellipse at 50% 100%, rgba(140, 75, 35, 0.7) 0%, transparent 65%),
+      linear-gradient(180deg, #201508 0%, #2a1e0c 50%, #201508 100%);
+  }
+  body.in-smoking.density-heavy::before {
+    background:
+      radial-gradient(ellipse 85% 75% at 50% 30%, rgba(255, 170, 70, 0.28) 0%, transparent 70%);
+  }
+  body.in-smoking.density-heavy::after {
+    opacity: 1;
+    animation: smoke-drift 14s infinite ease-in-out;
+    background:
+      radial-gradient(ellipse 55% 45% at 20% 50%, rgba(255, 200, 150, 0.15) 0%, transparent 70%),
+      radial-gradient(ellipse 65% 55% at 80% 40%, rgba(255, 180, 120, 0.14) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 50% 85%, rgba(255, 210, 160, 0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 35% 20%, rgba(255, 220, 170, 0.1) 0%, transparent 70%);
+  }
+
+  @keyframes smoke-drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-2%, -3%) scale(1.05); }
+  }
+
+  body.in-smoking .glass {
+    background: rgba(45, 28, 12, 0.35);
+    border-color: rgba(255, 170, 90, 0.18);
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.6),
+      0 0 90px rgba(255, 150, 60, 0.14),
+      inset 0 1px 0 rgba(255, 200, 150, 0.12);
+    transition: all 1.2s ease;
+  }
+  body.in-smoking.density-off .glass {
+    background: rgba(30, 22, 14, 0.35);
+    border-color: rgba(255, 170, 90, 0.08);
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 200, 150, 0.08);
+  }
+  body.in-smoking.density-heavy .glass {
+    background: rgba(55, 35, 15, 0.45);
+    border-color: rgba(255, 180, 100, 0.28);
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.7),
+      0 0 120px rgba(255, 150, 60, 0.22),
+      inset 0 1px 0 rgba(255, 200, 150, 0.18);
+  }
+  body.in-smoking h1 {
+    background: linear-gradient(180deg, #fff 0%, #ffb060 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  .icon {
-    font-size: 56px;
-    margin-bottom: 16px;
-    display: block;
+  body.in-smoking .player {
+    padding: 22px 28px;
+    font-size: 22px;
+    background: rgba(255, 170, 90, 0.05);
+    border-color: rgba(255, 170, 90, 0.12);
   }
+  body.in-smoking .player.smoke {
+    background: rgba(255, 140, 60, 0.18);
+    border-color: rgba(255, 140, 60, 0.35);
+  }
+  body.in-smoking .player.wave {
+    background: rgba(78, 205, 196, 0.1);
+    border-color: rgba(78, 205, 196, 0.28);
+  }
+  body.in-smoking .player .status { font-size: 32px; }
+  body.in-smoking .btn { font-size: 20px; padding: 24px 28px; }
+  body.in-smoking .btn.secondary {
+    background: rgba(78, 205, 196, 0.12);
+    border-color: rgba(78, 205, 196, 0.3);
+  }
+  body.in-smoking .btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .glass {
+    position: relative;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(30px) saturate(140%);
+    -webkit-backdrop-filter: blur(30px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 40px;
+    padding: 52px 40px;
+    text-align: center;
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    min-width: 320px;
+    max-width: 480px;
+    width: 100%;
+    transition: box-shadow 0.8s ease, border-color 0.8s ease, background 0.8s ease;
+  }
+  body.rich .glass {
+    box-shadow:
+      0 30px 80px rgba(80, 40, 20, 0.5),
+      0 0 60px rgba(255, 150, 80, 0.08),
+      inset 0 1px 0 rgba(255, 200, 150, 0.15);
+    border-color: rgba(255, 180, 120, 0.15);
+  }
+  body.poor .glass {
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  h1 {
+    margin-bottom: 28px;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: 8px;
+    color: #fff;
+    opacity: 0.95;
+  }
+  body.rich h1 {
+    background: linear-gradient(180deg, #fff 0%, #ffb073 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  body.poor h1 {
+    background: linear-gradient(180deg, #fff 0%, #a0b0c0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
   .subtitle {
-    font-size: 15px;
-    opacity: 0.75;
-    margin-bottom: 20px;
-    line-height: 1.5;
+    font-size: 20px;
+    opacity: 0.8;
+    margin-bottom: 32px;
+    line-height: 1.55;
+    letter-spacing: 0.3px;
   }
+
   .btn {
     display: block;
     width: 100%;
-    margin-top: 12px;
-    padding: 18px 24px;
-    background: linear-gradient(135deg, #ff6b35, #e91e63);
+    margin-top: 16px;
+    padding: 22px 28px;
     border: none;
-    border-radius: 48px;
+    border-radius: 100px;
     color: #fff;
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 500;
     cursor: pointer;
     font-family: inherit;
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    letter-spacing: 0.5px;
+    transition: all 0.25s ease;
   }
-  .btn:active { transform: scale(0.97); opacity: 0.85; }
+  body.rich .btn {
+    background: linear-gradient(135deg, rgba(255, 140, 60, 0.9), rgba(220, 80, 100, 0.9));
+    box-shadow: 0 8px 24px rgba(255, 120, 60, 0.25);
+  }
+  body.poor .btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.9; }
   .btn.secondary {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
   .btn.success {
-    background: rgba(78, 205, 196, 0.3);
-    border: 1px solid #4ecdc4;
+    background: rgba(78, 205, 196, 0.2);
+    border: 1px solid rgba(78, 205, 196, 0.4);
   }
   .btn.warn {
-    background: rgba(255, 200, 50, 0.2);
-    border: 1px solid rgba(255, 200, 50, 0.5);
+    background: rgba(255, 200, 50, 0.15);
+    border: 1px solid rgba(255, 200, 50, 0.35);
   }
+
   .input {
     width: 100%;
-    margin-top: 12px;
-    padding: 18px 20px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 48px;
+    margin-top: 16px;
+    padding: 22px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
     color: #fff;
-    font-size: 17px;
+    font-size: 20px;
     font-family: inherit;
     outline: none;
     text-align: center;
+    letter-spacing: 0.5px;
+    transition: all 0.25s ease;
   }
-  .input::placeholder { color: rgba(255, 255, 255, 0.4); }
+  .input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .input::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+  /* ─── Список игроков: без скролла, карточка растёт ─── */
   .players {
-    margin-top: 16px;
+    margin-top: 20px;
     text-align: left;
-    max-height: 220px;
-    overflow-y: auto;
   }
   .player {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 18px;
-    margin-top: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 24px;
-    font-size: 15px;
+    padding: 18px 24px;
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 100px;
+    font-size: 20px;
+    transition: all 0.3s ease;
   }
-  .player.smoke { background: rgba(255, 107, 53, 0.18); }
-  .player.wave  { background: rgba(78, 205, 196, 0.15); }
-  .player .status { font-size: 18px; opacity: 0.9; }
+  .player.smoke {
+    background: rgba(255, 140, 60, 0.1);
+    border-color: rgba(255, 140, 60, 0.2);
+  }
+  .player.wave {
+    background: rgba(78, 205, 196, 0.08);
+    border-color: rgba(78, 205, 196, 0.18);
+  }
+  .player .status { font-size: 26px; opacity: 0.9; }
   .player.hurried { animation: pulse 0.5s ease 3; }
   @keyframes pulse {
-    0%, 100% { background: rgba(255, 200, 50, 0.2); }
-    50%      { background: rgba(255, 200, 50, 0.5); }
+    0%, 100% { background: rgba(255, 200, 50, 0.08); }
+    50%      { background: rgba(255, 200, 50, 0.3); }
   }
+
   .hidden { display: none !important; }
+
   .pass {
     display: inline-block;
-    padding: 20px 40px;
-    margin: 20px 0;
-    background: rgba(255, 107, 53, 0.15);
-    border: 2px solid rgba(255, 107, 53, 0.5);
-    border-radius: 32px;
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: #ff6b35;
+    padding: 32px 52px;
+    margin: 32px 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: 6px;
+    color: #fff;
+    text-transform: uppercase;
   }
+  body.rich .pass {
+    background: rgba(255, 160, 90, 0.08);
+    border-color: rgba(255, 180, 120, 0.25);
+    color: #ffb073;
+  }
+  body.poor .pass {
+    background: rgba(160, 180, 200, 0.05);
+    border-color: rgba(160, 180, 200, 0.18);
+    color: #a0b4c8;
+  }
+
   .row {
+    display: flex;
+    gap: 12px;
+  }
+  .row .btn { margin-top: 0; }
+
+  .theme-toggle {
+    position: fixed;
+    top: calc(20px + env(safe-area-inset-top, 0px));
+    right: 20px;
+    z-index: 100;
     display: flex;
     gap: 10px;
   }
-  .row .btn { margin-top: 0; }
+  .theme-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+  }
+  .theme-dot.rich { background: radial-gradient(circle at 30% 30%, #ffb073, #b04530); }
+  .theme-dot.poor { background: radial-gradient(circle at 30% 30%, #8a98a8, #2a3038); }
+  .theme-dot.active {
+    border-color: rgba(255, 255, 255, 0.7);
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+  }
 </style>
 </head>
 <body>
+
+  <div class="theme-toggle">
+    <div class="theme-dot rich active" data-theme="rich"></div>
+    <div class="theme-dot poor" data-theme="poor"></div>
+  </div>
+
   <div class="glass">
 
     <div id="screen-enter">
-      <span class="icon">🏭</span>
       <h1>ЗАВОД</h1>
       <div class="subtitle">
         Вы перед входом на завод.<br>
@@ -161,12 +465,11 @@
     </div>
 
     <div id="screen-smoking" class="hidden">
-      <span class="icon">🚬</span>
       <h1>КУРИЛКА</h1>
       <div class="subtitle">Здесь ждут остальные.</div>
       <div class="players" id="smoking-players"></div>
 
-      <div class="row" style="margin-top:16px;">
+      <div class="row" style="margin-top:20px;">
         <button class="btn" id="btn-smoke">Сделать затяжку</button>
         <button class="btn secondary" id="btn-wave">Отмахнуть дым</button>
       </div>
@@ -176,7 +479,6 @@
     </div>
 
     <div id="screen-role" class="hidden">
-      <span class="icon">🎫</span>
       <h1>ВАШ ПРОПУСК</h1>
       <div class="pass" id="role-label">—</div>
       <div class="subtitle">
@@ -187,16 +489,14 @@
     </div>
 
     <div id="screen-game" class="hidden">
-      <span class="icon">⚙️</span>
       <h1>СМЕНА</h1>
       <div class="subtitle">Первая смена началась.</div>
-      <div class="subtitle" style="font-size:13px;opacity:0.5;">
+      <div class="subtitle" style="font-size:18px;opacity:0.5;">
         (здесь появятся кнопки в Шаге B)
       </div>
     </div>
 
     <div id="screen-pause" class="hidden">
-      <span class="icon">⏸</span>
       <h1>ПАУЗА</h1>
       <div class="subtitle">
         Смена приостановлена.<br>
@@ -213,12 +513,33 @@
   let myName = '';
   let myRole = null;
   let myStatus = 'thinking';
+  let currentLevel = 0;
 
   const screens = ['screen-enter','screen-smoking','screen-role','screen-game','screen-pause'];
 
   function show(id) {
     screens.forEach(x => document.getElementById(x).classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
+
+    if (id === 'screen-smoking') {
+      document.body.classList.add('in-smoking');
+      applyDensity(currentLevel);
+    } else {
+      document.body.classList.remove('in-smoking', 'density-off', 'density-light', 'density-medium', 'density-heavy');
+    }
+  }
+
+  function applyDensity(level) {
+    document.body.classList.remove('density-off', 'density-light', 'density-medium', 'density-heavy');
+
+    let cls;
+    if (level <= 0) cls = 'density-off';
+    else if (level <= 3) cls = 'density-light';
+    else if (level <= 7) cls = 'density-medium';
+    else cls = 'density-heavy';
+
+    document.body.classList.add(cls);
+    document.getElementById('btn-wave').disabled = level <= 0;
   }
 
   document.getElementById('btn-to-smoking').onclick = () => {
@@ -230,21 +551,15 @@
   };
 
   document.getElementById('btn-smoke').onclick = () => {
-    myStatus = 'smoke';
-    socket.emit('set_status', { status: 'smoke' });
-    updateStatusButtons();
+    socket.emit('smoke_action', { type: 'smoke' });
   };
   document.getElementById('btn-wave').onclick = () => {
-    myStatus = 'wave';
-    socket.emit('set_status', { status: 'wave' });
-    updateStatusButtons();
+    socket.emit('smoke_action', { type: 'wave' });
   };
 
   function updateStatusButtons() {
-    const smoke = document.getElementById('btn-smoke');
-    const wave = document.getElementById('btn-wave');
-    smoke.classList.toggle('success', myStatus === 'smoke');
-    wave.classList.toggle('success', myStatus === 'wave');
+    document.getElementById('btn-smoke').classList.toggle('success', myStatus === 'smoke');
+    document.getElementById('btn-wave').classList.toggle('success', myStatus === 'wave');
   }
 
   document.getElementById('btn-hurry').onclick = () => {
@@ -264,7 +579,12 @@
   document.getElementById('btn-invite').onclick = invite;
   document.getElementById('btn-invite-2').onclick = invite;
 
-  socket.on('smoking_update', ({ players }) => {
+  socket.on('smoking_update', ({ players, smokeLevel }) => {
+    currentLevel = smokeLevel;
+    if (document.body.classList.contains('in-smoking')) {
+      applyDensity(smokeLevel);
+    }
+
     const box = document.getElementById('smoking-players');
     box.innerHTML = '';
 
@@ -327,6 +647,18 @@
   socket.on('resumed', () => {
     show('screen-game');
   });
+
+  document.querySelectorAll('.theme-dot').forEach(dot => {
+    dot.onclick = () => {
+      const theme = dot.dataset.theme;
+      document.body.classList.remove('rich', 'poor');
+      document.body.classList.add(theme);
+      document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+    };
+  });
+
+  document.body.classList.add('rich');
 </script>
 </body>
 </html>
