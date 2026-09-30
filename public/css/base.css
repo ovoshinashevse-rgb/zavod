@@ -1,0 +1,206 @@
+/* ═══════════════════════════════════════════
+   БАЗА — общие стили для всего приложения
+   ═══════════════════════════════════════════ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+html, body {
+  min-height: 100%;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  color: #fff;
+  padding: 20px;
+  padding-top: calc(30px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  position: relative;
+  transition: background 1.2s ease;
+  font-size: 20px;
+  line-height: 1.5;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+button, .btn, .player, input {
+  touch-action: manipulation;
+}
+
+/* ─── Общие псевдо-слои фона ─── */
+body::before {
+  content: '';
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 140vw;
+  height: 140vh;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  transition: background 1.2s ease;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 1.2s ease, background 1.2s ease;
+}
+
+/* ─── Стеклянная карточка ─── */
+.glass {
+  position: relative;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px) saturate(140%);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 40px;
+  padding: 52px 40px;
+  text-align: center;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  min-width: 320px;
+  max-width: 480px;
+  width: 100%;
+  transition: box-shadow 0.8s ease, border-color 0.8s ease, background 0.8s ease;
+}
+
+/* ─── Заголовки ─── */
+h1 {
+  margin-bottom: 28px;
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: 8px;
+  color: #fff;
+  opacity: 0.95;
+  background: linear-gradient(180deg, #fff 0%, #ffb073 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 20px;
+  opacity: 0.8;
+  margin-bottom: 32px;
+  line-height: 1.55;
+  letter-spacing: 0.3px;
+}
+
+/* ─── Кнопки ─── */
+.btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 22px 28px;
+  border: none;
+  border-radius: 100px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.5px;
+  transition: all 0.25s ease;
+  background: linear-gradient(135deg, rgba(255, 140, 60, 0.9), rgba(220, 80, 100, 0.9));
+  box-shadow: 0 8px 24px rgba(255, 120, 60, 0.25);
+}
+.btn:active { transform: scale(0.97); opacity: 0.9; }
+.btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+.btn.success {
+  background: rgba(78, 205, 196, 0.2);
+  border: 1px solid rgba(78, 205, 196, 0.4);
+  box-shadow: none;
+}
+.btn.warn {
+  background: rgba(255, 200, 50, 0.15);
+  border: 1px solid rgba(255, 200, 50, 0.35);
+  box-shadow: none;
+}
+
+/* ─── Поле ввода ─── */
+.input {
+  width: 100%;
+  margin-top: 16px;
+  padding: 22px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
+  color: #fff;
+  font-size: 20px;
+  font-family: inherit;
+  outline: none;
+  text-align: center;
+  letter-spacing: 0.5px;
+  transition: all 0.25s ease;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.input::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+/* ─── Список игроков ─── */
+.players {
+  margin-top: 20px;
+  text-align: left;
+}
+.player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 100px;
+  font-size: 20px;
+  transition: all 0.3s ease;
+}
+.player.smoke {
+  background: rgba(255, 140, 60, 0.1);
+  border-color: rgba(255, 140, 60, 0.2);
+}
+.player.wave {
+  background: rgba(78, 205, 196, 0.08);
+  border-color: rgba(78, 205, 196, 0.18);
+}
+.player .status { font-size: 26px; opacity: 0.9; }
+.player.hurried { animation: pulse 0.5s ease 3; }
+@keyframes pulse {
+  0%, 100% { background: rgba(255, 200, 50, 0.08); }
+  50%      { background: rgba(255, 200, 50, 0.3); }
+}
+
+/* ─── Утилиты ─── */
+.hidden { display: none !important; }
+
+.row {
+  display: flex;
+  gap: 12px;
+}
+.row .btn { margin-top: 0; }

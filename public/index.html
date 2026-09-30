@@ -7,386 +7,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ЗАВОД</title>
 <script src="/socket.io/socket.io.js"></script>
-<style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-    outline: none;
-  }
-  html, body {
-    min-height: 100%;
-    /* ─── Запрет зума и жестов ─── */
-    touch-action: manipulation;
-    -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-    color: #fff;
-    padding: 20px;
-    padding-top: calc(30px + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    position: relative;
-    transition: background 1.2s ease;
-    font-size: 20px;
-    line-height: 1.5;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow-x: hidden;
-  }
-
-  /* ─── Запрет двойного тапа ─── */
-  button, .btn, .player, input {
-    touch-action: manipulation;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    width: 140vw;
-    height: 140vh;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 0;
-    transition: background 1.2s ease;
-  }
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 1;
-    transition: opacity 1.2s ease, background 1.2s ease;
-  }
-
-  body {
-    background:
-      radial-gradient(ellipse at 50% 120%, rgba(120, 60, 40, 0.6) 0%, transparent 60%),
-      linear-gradient(180deg, #0a0a18 0%, #1a1428 40%, #2a1a2a 70%, #1a0f14 100%);
-  }
-  body::before {
-    background:
-      radial-gradient(ellipse 60% 50% at 50% 55%, rgba(255, 180, 100, 0.15) 0%, transparent 70%);
-  }
-  body::after {
-    opacity: 0.5;
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.012) 1px, transparent 1px),
-      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.012) 1px, transparent 1px),
-      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.012) 1px, transparent 1px);
-    background-size: 80px 80px, 120px 120px, 100px 100px;
-  }
-
-  body.in-smoking {
-    background:
-      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.08) 0%, transparent 55%),
-      radial-gradient(ellipse at 50% 100%, rgba(80, 50, 25, 0.35) 0%, transparent 60%),
-      linear-gradient(180deg, #100c08 0%, #16110a 50%, #100c08 100%);
-  }
-  body.in-smoking::before {
-    background:
-      radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255, 170, 70, 0.05) 0%, transparent 70%);
-    transition: background 1.2s ease;
-  }
-
-  body.in-smoking.density-off {
-    background:
-      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.05) 0%, transparent 55%),
-      radial-gradient(ellipse at 50% 100%, rgba(60, 45, 25, 0.3) 0%, transparent 60%),
-      linear-gradient(180deg, #0e0c0a 0%, #14110c 50%, #0e0c0a 100%);
-  }
-  body.in-smoking.density-off::before {
-    background:
-      radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255, 170, 70, 0.03) 0%, transparent 70%);
-  }
-  body.in-smoking.density-off::after {
-    opacity: 0.5;
-    animation: none;
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.012) 1px, transparent 1px),
-      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.012) 1px, transparent 1px);
-    background-size: 80px 80px, 120px 120px;
-  }
-
-  body.in-smoking.density-light {
-    background:
-      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.15) 0%, transparent 55%),
-      radial-gradient(ellipse at 50% 100%, rgba(100, 55, 25, 0.4) 0%, transparent 60%),
-      linear-gradient(180deg, #150f08 0%, #1a140a 50%, #150f08 100%);
-  }
-  body.in-smoking.density-light::before {
-    background:
-      radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255, 170, 70, 0.1) 0%, transparent 70%);
-  }
-  body.in-smoking.density-light::after {
-    opacity: 0.85;
-    animation: smoke-drift 20s infinite ease-in-out;
-    background:
-      radial-gradient(ellipse 45% 35% at 30% 60%, rgba(255, 200, 150, 0.06) 0%, transparent 70%),
-      radial-gradient(ellipse 55% 45% at 70% 40%, rgba(255, 180, 120, 0.05) 0%, transparent 70%);
-  }
-
-  body.in-smoking.density-medium {
-    background:
-      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.25) 0%, transparent 60%),
-      radial-gradient(ellipse at 50% 100%, rgba(120, 65, 30, 0.55) 0%, transparent 60%),
-      linear-gradient(180deg, #1a1208 0%, #221a0c 50%, #1a1208 100%);
-  }
-  body.in-smoking.density-medium::before {
-    background:
-      radial-gradient(ellipse 75% 65% at 50% 30%, rgba(255, 170, 70, 0.18) 0%, transparent 70%);
-  }
-  body.in-smoking.density-medium::after {
-    opacity: 1;
-    animation: smoke-drift 18s infinite ease-in-out;
-    background:
-      radial-gradient(ellipse 50% 40% at 25% 55%, rgba(255, 200, 150, 0.1) 0%, transparent 70%),
-      radial-gradient(ellipse 60% 50% at 75% 40%, rgba(255, 180, 120, 0.09) 0%, transparent 70%),
-      radial-gradient(ellipse 45% 35% at 50% 80%, rgba(255, 210, 160, 0.07) 0%, transparent 70%);
-  }
-
-  body.in-smoking.density-heavy {
-    background:
-      radial-gradient(ellipse at 50% 15%, rgba(255, 180, 80, 0.35) 0%, transparent 65%),
-      radial-gradient(ellipse at 50% 100%, rgba(140, 75, 35, 0.7) 0%, transparent 65%),
-      linear-gradient(180deg, #201508 0%, #2a1e0c 50%, #201508 100%);
-  }
-  body.in-smoking.density-heavy::before {
-    background:
-      radial-gradient(ellipse 85% 75% at 50% 30%, rgba(255, 170, 70, 0.28) 0%, transparent 70%);
-  }
-  body.in-smoking.density-heavy::after {
-    opacity: 1;
-    animation: smoke-drift 14s infinite ease-in-out;
-    background:
-      radial-gradient(ellipse 55% 45% at 20% 50%, rgba(255, 200, 150, 0.15) 0%, transparent 70%),
-      radial-gradient(ellipse 65% 55% at 80% 40%, rgba(255, 180, 120, 0.14) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 40% at 50% 85%, rgba(255, 210, 160, 0.12) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 30% at 35% 20%, rgba(255, 220, 170, 0.1) 0%, transparent 70%);
-  }
-
-  @keyframes smoke-drift {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50%      { transform: translate(-2%, -3%) scale(1.05); }
-  }
-
-  body.in-smoking .glass {
-    background: rgba(45, 28, 12, 0.35);
-    border-color: rgba(255, 170, 90, 0.18);
-    box-shadow:
-      0 30px 80px rgba(0, 0, 0, 0.6),
-      0 0 90px rgba(255, 150, 60, 0.14),
-      inset 0 1px 0 rgba(255, 200, 150, 0.12);
-    transition: all 1.2s ease;
-  }
-  body.in-smoking.density-off .glass {
-    background: rgba(30, 22, 14, 0.35);
-    border-color: rgba(255, 170, 90, 0.08);
-    box-shadow:
-      0 30px 80px rgba(0, 0, 0, 0.6),
-      inset 0 1px 0 rgba(255, 200, 150, 0.08);
-  }
-  body.in-smoking.density-heavy .glass {
-    background: rgba(55, 35, 15, 0.45);
-    border-color: rgba(255, 180, 100, 0.28);
-    box-shadow:
-      0 30px 80px rgba(0, 0, 0, 0.7),
-      0 0 120px rgba(255, 150, 60, 0.22),
-      inset 0 1px 0 rgba(255, 200, 150, 0.18);
-  }
-  body.in-smoking h1 {
-    background: linear-gradient(180deg, #fff 0%, #ffb060 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  body.in-smoking .player {
-    padding: 22px 28px;
-    font-size: 22px;
-    background: rgba(255, 170, 90, 0.05);
-    border-color: rgba(255, 170, 90, 0.12);
-  }
-  body.in-smoking .player.smoke {
-    background: rgba(255, 140, 60, 0.18);
-    border-color: rgba(255, 140, 60, 0.35);
-  }
-  body.in-smoking .player.wave {
-    background: rgba(78, 205, 196, 0.1);
-    border-color: rgba(78, 205, 196, 0.28);
-  }
-  body.in-smoking .player .status { font-size: 32px; }
-  body.in-smoking .btn { font-size: 20px; padding: 24px 28px; }
-  body.in-smoking .btn.secondary {
-    background: rgba(78, 205, 196, 0.12);
-    border-color: rgba(78, 205, 196, 0.3);
-  }
-  body.in-smoking .btn:disabled {
-    opacity: 0.3;
-    cursor: default;
-  }
-
-  .glass {
-    position: relative;
-    z-index: 10;
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(30px) saturate(140%);
-    -webkit-backdrop-filter: blur(30px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 40px;
-    padding: 52px 40px;
-    text-align: center;
-    box-shadow:
-      0 30px 80px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    min-width: 320px;
-    max-width: 480px;
-    width: 100%;
-    transition: box-shadow 0.8s ease, border-color 0.8s ease, background 0.8s ease;
-  }
-
-  h1 {
-    margin-bottom: 28px;
-    font-size: 40px;
-    font-weight: 600;
-    letter-spacing: 8px;
-    color: #fff;
-    opacity: 0.95;
-    background: linear-gradient(180deg, #fff 0%, #ffb073 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .subtitle {
-    font-size: 20px;
-    opacity: 0.8;
-    margin-bottom: 32px;
-    line-height: 1.55;
-    letter-spacing: 0.3px;
-  }
-
-  .btn {
-    display: block;
-    width: 100%;
-    margin-top: 16px;
-    padding: 22px 28px;
-    border: none;
-    border-radius: 100px;
-    color: #fff;
-    font-size: 20px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    letter-spacing: 0.5px;
-    transition: all 0.25s ease;
-    background: linear-gradient(135deg, rgba(255, 140, 60, 0.9), rgba(220, 80, 100, 0.9));
-    box-shadow: 0 8px 24px rgba(255, 120, 60, 0.25);
-  }
-  .btn:active { transform: scale(0.97); opacity: 0.9; }
-  .btn.secondary {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: none;
-  }
-  .btn.success {
-    background: rgba(78, 205, 196, 0.2);
-    border: 1px solid rgba(78, 205, 196, 0.4);
-    box-shadow: none;
-  }
-  .btn.warn {
-    background: rgba(255, 200, 50, 0.15);
-    border: 1px solid rgba(255, 200, 50, 0.35);
-    box-shadow: none;
-  }
-
-  .input {
-    width: 100%;
-    margin-top: 16px;
-    padding: 22px 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 100px;
-    color: #fff;
-    font-size: 20px;
-    font-family: inherit;
-    outline: none;
-    text-align: center;
-    letter-spacing: 0.5px;
-    transition: all 0.25s ease;
-    -webkit-user-select: text;
-    user-select: text;
-  }
-  .input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-  .input::placeholder { color: rgba(255, 255, 255, 0.35); }
-
-  .players {
-    margin-top: 20px;
-    text-align: left;
-  }
-  .player {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 18px 24px;
-    margin-top: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 100px;
-    font-size: 20px;
-    transition: all 0.3s ease;
-  }
-  .player.smoke {
-    background: rgba(255, 140, 60, 0.1);
-    border-color: rgba(255, 140, 60, 0.2);
-  }
-  .player.wave {
-    background: rgba(78, 205, 196, 0.08);
-    border-color: rgba(78, 205, 196, 0.18);
-  }
-  .player .status { font-size: 26px; opacity: 0.9; }
-  .player.hurried { animation: pulse 0.5s ease 3; }
-  @keyframes pulse {
-    0%, 100% { background: rgba(255, 200, 50, 0.08); }
-    50%      { background: rgba(255, 200, 50, 0.3); }
-  }
-
-  .hidden { display: none !important; }
-
-  .pass {
-    display: inline-block;
-    padding: 32px 52px;
-    margin: 32px 0;
-    background: rgba(255, 160, 90, 0.08);
-    border: 1px solid rgba(255, 180, 120, 0.25);
-    border-radius: 24px;
-    font-size: 32px;
-    font-weight: 600;
-    letter-spacing: 6px;
-    color: #ffb073;
-    text-transform: uppercase;
-  }
-
-  .row {
-    display: flex;
-    gap: 12px;
-  }
-  .row .btn { margin-top: 0; }
-</style>
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/themes.css">
+<link rel="stylesheet" href="/css/badge.css">
 </head>
 <body>
 
-  <div class="glass">
-
+  <!-- ЭКРАН 1: ВХОД -->
+  <div class="glass" id="wrap-enter">
     <div id="screen-enter">
       <h1>ЗАВОД</h1>
       <div class="subtitle">
@@ -397,8 +25,11 @@
       <input class="input" id="input-name" placeholder="Как вас зовут?" maxlength="20">
       <button class="btn" id="btn-to-smoking">Пройти в курилку</button>
     </div>
+  </div>
 
-    <div id="screen-smoking" class="hidden">
+  <!-- ЭКРАН 2: КУРИЛКА -->
+  <div class="glass hidden" id="wrap-smoking">
+    <div id="screen-smoking">
       <h1>КУРИЛКА</h1>
       <div class="subtitle">Здесь ждут остальные.</div>
       <div class="players" id="smoking-players"></div>
@@ -411,26 +42,42 @@
       <button class="btn warn hidden" id="btn-hurry">Поторопить</button>
       <button class="btn secondary" id="btn-invite">Позвать коллегу</button>
     </div>
+  </div>
 
-    <div id="screen-role" class="hidden">
-      <h1>ВАШ ПРОПУСК</h1>
-      <div class="pass" id="role-label">—</div>
-      <div class="subtitle">
-        Добро пожаловать на завод.<br>
-        Приступайте к первой смене.
+  <!-- ЭКРАН 3: ПРОПУСК (без .glass — бейдж сам по себе) -->
+  <div class="hidden" id="screen-role">
+    <div class="badge">
+      <div class="badge-card">
+        <div class="badge-name" id="badge-name">—</div>
+        <div class="badge-role" id="badge-role">—</div>
+        <div class="badge-role-label">должность</div>
+        <div class="badge-footer">
+          <div class="col">
+            Отдел<br><strong id="badge-dept">—</strong>
+          </div>
+          <div class="col right">
+            Пропуск №<br><strong id="badge-id">—</strong>
+          </div>
+        </div>
       </div>
-      <button class="btn" id="btn-start-shift">Приступить</button>
     </div>
+    <button class="btn" id="btn-start-shift" style="max-width:340px;margin:28px auto 0;">Приступить</button>
+  </div>
 
-    <div id="screen-game" class="hidden">
+  <!-- ЭКРАН 4: СМЕНА -->
+  <div class="glass hidden" id="wrap-game">
+    <div id="screen-game">
       <h1>СМЕНА</h1>
       <div class="subtitle">Первая смена началась.</div>
       <div class="subtitle" style="font-size:18px;opacity:0.5;">
         (здесь появятся кнопки в Шаге B)
       </div>
     </div>
+  </div>
 
-    <div id="screen-pause" class="hidden">
+  <!-- ЭКРАН 5: ПАУЗА -->
+  <div class="glass hidden" id="wrap-pause">
+    <div id="screen-pause">
       <h1>ПАУЗА</h1>
       <div class="subtitle">
         Смена приостановлена.<br>
@@ -439,7 +86,6 @@
       <div class="players" id="pause-players"></div>
       <button class="btn secondary" id="btn-invite-2">Позвать</button>
     </div>
-
   </div>
 
 <script>
@@ -449,11 +95,30 @@
   let myStatus = 'thinking';
   let currentLevel = 0;
 
-  const screens = ['screen-enter','screen-smoking','screen-role','screen-game','screen-pause'];
+  const DEPARTMENTS = {
+    director:   'Дирекция',
+    security:   'Служба безопасности',
+    accountant: 'Бухгалтерия',
+    engineer:   'Производство',
+    hr:         'Отдел кадров',
+    marketer:   'Маркетинг'
+  };
+
+  const screens = {
+    'screen-enter': 'wrap-enter',
+    'screen-smoking': 'wrap-smoking',
+    'screen-role': 'screen-role',
+    'screen-game': 'wrap-game',
+    'screen-pause': 'wrap-pause'
+  };
 
   function show(id) {
-    screens.forEach(x => document.getElementById(x).classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
+    Object.values(screens).forEach(x => {
+      const el = document.getElementById(x);
+      if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(screens[id]);
+    if (target) target.classList.remove('hidden');
 
     if (id === 'screen-smoking') {
       document.body.classList.add('in-smoking');
@@ -558,7 +223,13 @@
 
   socket.on('your_role', ({ role, label }) => {
     myRole = role;
-    document.getElementById('role-label').textContent = label;
+
+    document.getElementById('badge-name').textContent = myName;
+    document.getElementById('badge-role').textContent = label;
+    document.getElementById('badge-dept').textContent = DEPARTMENTS[role] || '—';
+    document.getElementById('badge-id').textContent =
+      String(Math.floor(1000 + Math.random() * 9000)) + '-' + String(Math.floor(10 + Math.random() * 90));
+
     show('screen-role');
   });
 
@@ -582,7 +253,7 @@
     show('screen-game');
   });
 
-  // ── Запрет зума жестами (iOS Safari + Android) ──
+  // ── Запрет зума жестами ──
   document.addEventListener('gesturestart', e => e.preventDefault());
   document.addEventListener('gesturechange', e => e.preventDefault());
   document.addEventListener('gestureend', e => e.preventDefault());
@@ -591,7 +262,6 @@
     if (e.touches.length > 1) e.preventDefault();
   }, { passive: false });
 
-  // Запрет двойного тапа (он тоже зумит)
   let lastTouch = 0;
   document.addEventListener('touchend', e => {
     const now = Date.now();
