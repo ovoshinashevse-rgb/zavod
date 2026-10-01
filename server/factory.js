@@ -86,12 +86,14 @@ function createFactory(type) {
   const invested = totalInvested(directions);
   const money = isGood ? 165 : 330;
 
-  // Пять показателей
   const indicators = createIndicators(isGood ? 70 : 30);
 
-  // Отчёты (сдал ли Директор)
   const reportsSubmitted = {};
   INDICATORS.forEach(k => reportsSubmitted[k] = false);
+
+  // Порог продажи — для каждого показателя от 70 до 100
+  const saleThreshold = {};
+  INDICATORS.forEach(k => saleThreshold[k] = 70 + Math.floor(Math.random() * 31));
 
   return {
     type: type,
@@ -102,6 +104,7 @@ function createFactory(type) {
     budgetPercent: calcBudgetPercent(money),
     indicators: indicators,
     reportsSubmitted: reportsSubmitted,
+    saleThreshold: saleThreshold,
     pocket: 0,
     bankrupt: false
   };
@@ -284,7 +287,13 @@ function factorySnapshot(factory, opts = {}) {
 
   return snapshot;
 }
-
+// Проверить: готов ли завод к продаже
+function isFactoryReadyForSale(factory) {
+  if (!factory || factory.bankrupt) return false;
+  return INDICATORS.every(k =>
+    factory.indicators[k] >= factory.saleThreshold[k]
+  );
+}
 module.exports = {
   createFactory,
   setLevel,
@@ -295,6 +304,7 @@ module.exports = {
   submitReport,
   resetReports,
   autoFillReports,
+  isFactoryReadyForSale,
   factorySnapshot,
   calcInvestments,
   calcBudgetPercent,

@@ -9,7 +9,13 @@ const smoking = require('./server/smoking');
 const { assignRoles } = require('./server/roles');
 const director = require('./server/cabinets/director');
 const security = require('./server/cabinets/security');
-const { applyIndicatorChanges, resetReports, autoFillReports, factorySnapshot } = require('./server/factory');
+const {
+  applyIndicatorChanges,
+  resetReports,
+  autoFillReports,
+  isFactoryReadyForSale,
+  factorySnapshot
+} = require('./server/factory');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,7 +38,6 @@ io.on('connection', (socket) => {
     io.emit('smoking_update', smoking.getSmokingState());
   });
 
-  // ─── Действие в курилке ───
   socket.on('smoke_action', ({ type }) => {
     const state = smoking.smokeAction(socket.id, type);
     if (!state) return;
@@ -60,7 +65,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Каждому игроку — свой снимок
     hall.players.forEach(p => {
       const payload = {
         type: result.type,
@@ -70,7 +74,6 @@ io.on('connection', (socket) => {
       io.to(p.id).emit('factory_chosen', payload);
     });
 
-    // Безопаснику — дополнительно его данные
     const sec = hall.players.find(x => x.role === 'security');
     if (sec) {
       io.to(sec.id).emit('security_update', security.securitySnapshot(sec));
@@ -121,17 +124,26 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
-// ─── Директор сдаёт отчёт ───
+
   socket.on('director_submit_report', ({ indicator }) => {
     const result = director.submitReportAction(socket.id, indicator);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
     }
-
-    // Только Директору — обновлённые отчёты
     socket.emit('factory_update', result.factory);
   });
+
+  socket.on('director_request_check', ({ indicator }) => {
+    const result = director.requestReportCheck(socket.id, indicator);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+  });
+
   // ═══════════════════════════════════════════
   // БЕЗОПАСНИК
   // ═══════════════════════════════════════════
@@ -143,15 +155,13 @@ io.on('connection', (socket) => {
     }
 
     const sec = getPlayer(socket.id);
-    socket.emit('security_update', {
-      decisionsLeft: sec.decisionsLeft,
-      dossier: sec.dossier,
-      suspicions: sec.suspicions,
-      returns: sec.returns,
-      kickbacks: sec.kickbacks
-    });
+    socket.emit('security_update', security.securitySnapshot(sec));
 
-      // ─── Безопасник прикрывает отдел ───
+    socket.emit('security_check_pending', {
+      targetTitle: result.targetTitle
+    });
+  });
+
   socket.on('security_cover_department', ({ indicator }) => {
     const result = security.coverDepartment(socket.id, indicator);
     if (result.error) {
@@ -164,7 +174,6 @@ io.on('connection', (socket) => {
     socket.emit('security_update', security.securitySnapshot(sec));
   });
 
-  // ─── Безопасник отвечает «подделан» ───
   socket.on('security_answer_forged', ({ indicator }) => {
     const result = security.answerForged(socket.id, indicator);
     if (result.error) {
@@ -176,11 +185,6 @@ io.on('connection', (socket) => {
     socket.emit('security_update', security.securitySnapshot(sec));
   });
 
-    socket.emit('security_check_pending', {
-      targetTitle: result.targetTitle
-    });
-  });
-
   socket.on('security_offer_deal', () => {
     const result = security.offerDeal(socket.id);
     if (result.error) {
@@ -189,18 +193,10 @@ io.on('connection', (socket) => {
     }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
-
     io.to(result.directorId).emit('deal_offered');
 
     const sec = getPlayer(socket.id);
-    socket.emit('security_update', {
-      decisionsLeft: sec.decisionsLeft,
-      dossier: sec.dossier,
-      suspicions: sec.suspicions,
-      returns: sec.returns,
-      kickbacks: sec.kickbacks,
-      deal: securitySnapshotDeal(sec)
-    });
+    socket.emit('security_update', security.securitySnapshot(sec));
   });
 
   socket.on('director_accept_deal', () => {
@@ -250,18 +246,9 @@ io.on('connection', (socket) => {
     const sec = getPlayer(socket.id);
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
-    socket.emit('security_update', {
-      decisionsLeft: sec.decisionsLeft,
-      dossier: sec.dossier,
-      suspicions: sec.suspicions,
-      returns: sec.returns,
-      kickbacks: sec.kickbacks
-    });
+    socket.emit('security_update', security.securitySnapshot(sec));
 
-    io.emit('report_happened', {
-      targetTitle: result.targetTitle
-    });
-
+    io.emit('report_happened', { targetTitle: result.targetTitle });
     emitFactory(hall.factory);
   });
 
@@ -287,33 +274,41 @@ io.on('connection', (socket) => {
       resetReports(hall.factory);
       autoFillReports(hall.factory);
 
-      // Продвинуть проверки отчётов по этапам
+      // Продвинуть проверки
       security.processChecksOnShiftStart();
 
       const checkResults = security.resolvePendingChecks();
       security.recalcSuspicionsAfterShift();
 
+      // ─── Проверка продажи ───
+      if (isFactoryReadyForSale(hall.factory)) {
+        hall.phase = 'end';
+        io.emit('game_over', {
+          reason: 'Инвесторы купили завод!',
+          type: 'sale',
+          biographies: buildBiographies()
+        });
+        return;
+      }
 
+      // ─── Новая смена ───
       hall.players.forEach(p => {
         io.to(p.id).emit('new_shift', {
           shift: result.shift,
           decisionsLeft: p.decisionsLeft
         });
 
-        // Директору — обновление завода
- if (p.role === 'director' && hall.factory) {
+        if (p.role === 'director' && hall.factory) {
           io.to(p.id).emit('factory_update', factorySnapshot(hall.factory, { forDirector: true }));
 
-          // Проверить: пришёл ли ответ по проверке
           const reply = hall.reportChecks.find(c =>
-            c.directorId === p.id && c.directorNotified
+            c.directorId === p.id && c.directorNotified && !c.notifiedOnce
           );
           if (reply) {
             io.to(p.id).emit('report_check_reply', {
               indicator: reply.indicator,
               answer: reply.answer
             });
-            // Помечаем, что уведомление показано (чтобы не спамить)
             reply.notifiedOnce = true;
           }
         }
@@ -384,14 +379,77 @@ function emitFactory(snapshotWithPocket) {
   });
 }
 
-// ─── Снимок сговора ───
-function securitySnapshotDeal(p) {
-  return {
-    pending: hall.deal.pending,
-    active: hall.deal.active,
-    iAmSecurity: hall.deal.securityId === p.id,
-    iAmDirector: hall.deal.directorId === p.id
-  };
+// ═══════════════════════════════════════════
+// БИОГРАФИИ
+// ═══════════════════════════════════════════
+function buildBiographies() {
+  const bios = {};
+
+  hall.players.forEach(p => {
+    if (p.role === 'director') {
+      bios[p.id] = buildDirectorBio(p);
+    } else if (p.role === 'security') {
+      bios[p.id] = buildSecurityBio(p);
+    } else {
+      bios[p.id] = 'Вы играли свою роль.';
+    }
+  });
+
+  return bios;
+}
+
+function buildDirectorBio(p) {
+  const pocket = hall.factory.pocket || 0;
+
+  let line = 'Вы — Директор. ';
+  if (pocket > 100) {
+    line += 'Вы вкладывали в завод, но и забирали себе немало. ';
+  } else if (pocket > 30) {
+    line += 'Вы вкладывали в завод, иногда брали себе. ';
+  } else {
+    line += 'Вы работали честно, развивали завод. ';
+  }
+
+  if (hall.deal.active) {
+    line += 'Вы были в сговоре с Безопасником. ';
+  } else if (hall.theftsLog.length > 0) {
+    line += 'Безопасник вас не прикрывал. ';
+  }
+
+  line += 'Завод продан инвесторам. ';
+
+  if (pocket > 100) {
+    line += 'Вы ушли богатым — но завод вас не вспомнит добрым словом.';
+  } else if (pocket > 30) {
+    line += 'Вы ушли с прибылью — но с чем вы ушли, как человек?';
+  } else {
+    line += 'Вы ушли с чистой совестью.';
+  }
+
+  return line;
+}
+
+function buildSecurityBio(p) {
+  const returns = p.returns || 0;
+  const kickbacks = p.kickbacks || 0;
+
+  let line = 'Вы — Безопасник. ';
+
+  if (kickbacks > 50) {
+    line += 'Вы много заработали на сговоре. ';
+  } else if (kickbacks > 0) {
+    line += 'Вы иногда закрывали глаза за долю. ';
+  } else if (returns > 50) {
+    line += 'Вы честно ловили воров и возвращали деньги заводу. ';
+  } else if (returns > 0) {
+    line += 'Вы изредка ловили воров. ';
+  } else {
+    line += 'Вы так и не поймали ни одного вора. ';
+  }
+
+  line += 'Завод продан инвесторам.';
+
+  return line;
 }
 
 // ─── Старт игры ───
@@ -399,6 +457,7 @@ function startRoles() {
   const assignments = assignRoles();
 
   hall.theftsLog = [];
+  hall.reportChecks = [];
   hall.deal = { pending: false, active: false, securityId: null, directorId: null };
 
   assignments.forEach(a => {

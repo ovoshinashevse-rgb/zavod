@@ -425,6 +425,18 @@
     renderDeal(secState.deal);
     showActions();
   });
+  socket.on('game_over', ({ reason, type, biographies }) => {
+    if (state.myRole !== 'security') return;
 
+    document.getElementById('end-reason').textContent = reason;
+
+    if (type === 'sale' && biographies && biographies[socket.id]) {
+      const bioBox = document.getElementById('end-biography');
+      bioBox.textContent = biographies[socket.id];
+      bioBox.classList.remove('hidden');
+    }
+
+    show('screen-end');
+  });
   console.log('Cabinet Security: модуль готов');
 })();

@@ -528,8 +528,18 @@
     toast('Ответ по отчёту «' + INDICATOR_LABELS[indicator] + '»: ' + label);
   });
 
-  socket.on('game_over', ({ reason }) => {
+  socket.on('game_over', ({ reason, type, biographies }) => {
+    if (state.myRole !== 'director') return;
+
     document.getElementById('end-reason').textContent = reason;
+
+    // Если продажа — показать биографию
+    if (type === 'sale' && biographies && biographies[socket.id]) {
+      const bioBox = document.getElementById('end-biography');
+      bioBox.textContent = biographies[socket.id];
+      bioBox.classList.remove('hidden');
+    }
+
     show('screen-end');
   });
 
