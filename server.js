@@ -2,7 +2,13 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { createFactory, setLevel } = require('./server/game');
+
+// ─── Модули ───
+const { hall, addPlayer, getPlayer, removePlayer, allDecided } = require('./server/hall');
+const smoking = require('./server/smoking');
+const { assignRoles } = require('./server/roles');
+const { factorySnapshot } = require('./server/factory');
+const director = require('./server/cabinets/director');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,140 +19,48 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─────────────────────────────────────────────
-// ОБЩИЙ ЗАЛ
+// Сокет-соединения
 // ─────────────────────────────────────────────
-const hall = {
-  players: [],
-  phase: 'lobby',
-  paused: false,
-  disconnected: [],
-  smokeLevel: 0,
-  factory: null
-};
-
-const ALL_ROLES = ['director', 'security', 'accountant', 'engineer', 'hr', 'marketer'];
-
-const ROLE_LABELS = {
-  director: 'Директор',
-  security: 'Безопасник',
-  accountant: 'Бухгалтер',
-  engineer: 'Инженер',
-  hr: 'HR',
-  marketer: 'Маркетолог'
-};
-
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function pickRolesForCount(count) {
-  if (count <= 2) {
-    const others = shuffle(ALL_ROLES.filter(r => r !== 'director'));
-    return ['director', others[0]];
-  }
-  if (count === 3) {
-    const others = shuffle(ALL_ROLES.filter(r => r !== 'director' && r !== 'security'));
-    return ['director', 'security', others[0]];
-  }
-  if (count === 4) return ['director', 'security', 'accountant', 'engineer'];
-  if (count === 5) return ['director', 'security', 'accountant', 'engineer', 'hr'];
-  return ['director', 'security', 'accountant', 'engineer', 'hr', 'marketer'];
-}
-
-function emitSmokingUpdate() {
-  io.emit('smoking_update', {
-    players: hall.players.map(x => ({
-      id: x.id,
-      name: x.name,
-      status: x.status
-    })),
-    smokeLevel: hall.smokeLevel
-  });
-}
-
-function emitFactory() {
-  if (!hall.factory) return;
-  io.emit('factory_update', {
-    directions: hall.factory.directions,
-    invested: hall.factory.invested,
-    investments: hall.factory.investments,
-    budgetPercent: hall.factory.budgetPercent,
-    reputation: hall.factory.reputation,
-    bankrupt: hall.factory.bankrupt
-  });
-}
-
 io.on('connection', (socket) => {
   console.log('Подключился:', socket.id);
 
+  // ─── Вход в курилку ───
   socket.on('enter_smoking', ({ name }) => {
-    let p = hall.players.find(x => x.id === socket.id);
-    if (!p) {
-      p = { id: socket.id, name: name || 'Сотрудник', status: 'thinking', role: null };
-      hall.players.push(p);
-    } else {
-      p.name = name || p.name;
-      p.status = 'thinking';
-    }
+    addPlayer(socket.id, name);
     hall.phase = 'smoking';
-    emitSmokingUpdate();
+    io.emit('smoking_update', smoking.getSmokingState());
   });
 
+  // ─── Действие в курилке ───
   socket.on('smoke_action', ({ type }) => {
-    const p = hall.players.find(x => x.id === socket.id);
-    if (!p) return;
+    const state = smoking.smokeAction(socket.id, type);
+    if (!state) return;
 
-    if (type === 'smoke') {
-      hall.smokeLevel = Math.min(12, hall.smokeLevel + 1);
-      p.status = 'smoke';
-    } else if (type === 'wave') {
-      if (hall.smokeLevel <= 0) return;
-      hall.smokeLevel = Math.max(0, hall.smokeLevel - 1);
-      p.status = 'wave';
-    } else {
-      return;
-    }
+    io.emit('smoking_update', state);
 
-    emitSmokingUpdate();
-
-    const allDecided = hall.players.length >= 2 &&
-                       hall.players.every(x => x.status !== 'thinking');
-    if (allDecided && hall.phase === 'smoking') {
+    if (allDecided() && hall.phase === 'smoking') {
       startRoles();
     }
   });
 
+  // ─── Поторопить ───
   socket.on('hurry', () => {
     hall.players.filter(x => x.status === 'thinking').forEach(p => {
       io.to(p.id).emit('hurried');
     });
   });
 
-  // ─── Директор выбрал завод ───
+  // ─── Директор выбирает завод ───
   socket.on('director_choose_factory', ({ type }) => {
-    const p = hall.players.find(x => x.id === socket.id);
-    if (!p || p.role !== 'director') return;
-    if (hall.phase !== 'roles') return;
-    if (type !== 'good' && type !== 'bad') return;
-
-    hall.factory = createFactory(type);
-    hall.phase = 'game';
+    const result = director.chooseFactory(socket.id, type);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
 
     io.emit('factory_chosen', {
-      type: type,
-      factory: {
-        directions: hall.factory.directions,
-        invested: hall.factory.invested,
-        investments: hall.factory.investments,
-        budgetPercent: hall.factory.budgetPercent,
-        reputation: hall.factory.reputation,
-        bankrupt: hall.factory.bankrupt
-      }
+      type: result.type,
+      factory: result.factory
     });
 
     console.log('Директор выбрал завод:', type);
@@ -154,19 +68,13 @@ io.on('connection', (socket) => {
 
   // ─── Директор устанавливает уровень отдела ───
   socket.on('director_set_level', ({ direction, level }) => {
-    if (!hall.factory) return;
-    const p = hall.players.find(x => x.id === socket.id);
-    if (!p || p.role !== 'director') return;
-    if (hall.phase !== 'game') return;
-
-    const result = setLevel(hall.factory, direction, level);
-
+    const result = director.setDirectionLevel(socket.id, direction, level);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
     }
 
-    emitFactory();
+    io.emit('factory_update', result.factory);
 
     if (result.bankrupt) {
       hall.phase = 'end';
@@ -174,8 +82,9 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ─── Отключение ───
   socket.on('disconnect', () => {
-    const p = hall.players.find(x => x.id === socket.id);
+    const p = getPlayer(socket.id);
     if (!p) return;
 
     if (hall.phase === 'game') {
@@ -185,11 +94,12 @@ io.on('connection', (socket) => {
         disconnected: hall.disconnected.map(x => x.name)
       });
     } else {
-      hall.players = hall.players.filter(x => x.id !== socket.id);
-      emitSmokingUpdate();
+      removePlayer(socket.id);
+      io.emit('smoking_update', smoking.getSmokingState());
     }
   });
 
+  // ─── Возвращение ───
   socket.on('reconnect_player', ({ name }) => {
     hall.disconnected = hall.disconnected.filter(x => x.name !== name);
     if (hall.disconnected.length === 0) {
@@ -203,24 +113,13 @@ io.on('connection', (socket) => {
   });
 });
 
+// ─── Старт игры: раздать роли ───
 function startRoles() {
-  hall.phase = 'roles';
-
-  const count = hall.players.length;
-  const roles = shuffle(pickRolesForCount(count));
-
-  hall.players.forEach((p, i) => {
-    p.role = roles[i];
+  const assignments = assignRoles();
+  assignments.forEach(a => {
+    io.to(a.id).emit('your_role', { role: a.role, label: a.label });
   });
-
-  hall.players.forEach(p => {
-    io.to(p.id).emit('your_role', {
-      role: p.role,
-      label: ROLE_LABELS[p.role]
-    });
-  });
-
-  console.log('Роли розданы:', hall.players.map(p => p.name + '=' + p.role).join(', '));
+  console.log('Роли розданы:', assignments.map(a => a.role).join(', '));
 }
 
 server.listen(PORT, () => {

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// ИГРОВАЯ ЛОГИКА — уровни отделов и бюджет
+// ЗАВОД — уровни отделов, инвестиции, бюджет
 // ═══════════════════════════════════════════
 
 const LEVEL = {
@@ -10,7 +10,6 @@ const LEVEL = {
 
 const DIRECTIONS = ['equipment', 'people', 'ads', 'security', 'economy'];
 
-// Общая сумма инвестиций (0..500)
 function totalInvested(directions) {
   return DIRECTIONS.reduce((sum, d) => sum + (directions[d] || 0), 0);
 }
@@ -23,27 +22,21 @@ function calcInvestments(directions) {
   return LEVEL.HIGH;
 }
 
-// Бюджет — инверсная шкала, линейная интерполяция:
-// invested = 165 (все на 33%) → бюджет 66%
-// invested = 500 (все на 100%) → бюджет 33%
-// invested = 0                    → бюджет ~82% (не больше 100)
-// invested = 500+                 → бюджет 33% (не ниже 33)
+// Бюджет: 500 инвестиций → 33%, 165 инвестиций → 66%, 0 → 100%
 function calcBudgetPercent(invested) {
-  const low = 165;   // все на 33%
-  const high = 500;  // все на 100%
+  const low = 165;
+  const high = 500;
   const budgetAtLow = 66;
   const budgetAtHigh = 33;
 
   let percent;
   if (invested <= low) {
-    // Ниже 165 — бюджет чуть растёт, но не больше 100
     percent = budgetAtLow + (low - invested) * (100 - budgetAtLow) / low;
     percent = Math.min(100, percent);
   } else {
     percent = budgetAtLow - (invested - low) * (budgetAtLow - budgetAtHigh) / (high - low);
     percent = Math.max(budgetAtHigh, percent);
   }
-
   return Math.round(percent);
 }
 
@@ -53,6 +46,7 @@ function createDirections(level) {
   return dirs;
 }
 
+// Создать завод по типу
 function createFactory(type) {
   const isGood = type === 'good';
 
@@ -78,7 +72,6 @@ function setLevel(factory, direction, level) {
   if (![LEVEL.LOW, LEVEL.MID, LEVEL.HIGH].includes(level)) return { error: 'Неизвестный уровень' };
 
   factory.directions[direction] = level;
-
   factory.invested = totalInvested(factory.directions);
   factory.investments = calcInvestments(factory.directions);
   factory.budgetPercent = calcBudgetPercent(factory.invested);
@@ -86,14 +79,23 @@ function setLevel(factory, direction, level) {
   return { ok: true, factory };
 }
 
-function isBankrupt(factory) {
-  return factory.bankrupt || factory.budgetPercent < 0;
+// Публичный снимок завода (что отправляем клиенту)
+function factorySnapshot(factory) {
+  if (!factory) return null;
+  return {
+    directions: factory.directions,
+    invested: factory.invested,
+    investments: factory.investments,
+    budgetPercent: factory.budgetPercent,
+    reputation: factory.reputation,
+    bankrupt: factory.bankrupt
+  };
 }
 
 module.exports = {
   createFactory,
   setLevel,
-  isBankrupt,
+  factorySnapshot,
   calcInvestments,
   calcBudgetPercent,
   LEVEL,
