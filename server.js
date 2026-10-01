@@ -9,6 +9,7 @@ const smoking = require('./server/smoking');
 const { assignRoles } = require('./server/roles');
 const director = require('./server/cabinets/director');
 const security = require('./server/cabinets/security');
+const { applyIndicatorChanges, resetReports, autoFillReports, factorySnapshot } = require('./server/factory');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -72,14 +73,7 @@ io.on('connection', (socket) => {
     // Безопаснику — дополнительно его данные
     const sec = hall.players.find(x => x.role === 'security');
     if (sec) {
-      io.to(sec.id).emit('security_update', {
-        decisionsLeft: sec.decisionsLeft,
-        dossier: sec.dossier,
-        suspicions: sec.suspicions,
-        returns: sec.returns,
-        kickbacks: sec.kickbacks,
-        deal: securitySnapshotDeal(sec)
-      });
+      io.to(sec.id).emit('security_update', security.securitySnapshot(sec));
     }
 
     console.log('Директор выбрал завод:', type);
@@ -127,7 +121,17 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
+// ─── Директор сдаёт отчёт ───
+  socket.on('director_submit_report', ({ indicator }) => {
+    const result = director.submitReportAction(socket.id, indicator);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
 
+    // Только Директору — обновлённые отчёты
+    socket.emit('factory_update', result.factory);
+  });
   // ═══════════════════════════════════════════
   // БЕЗОПАСНИК
   // ═══════════════════════════════════════════
@@ -146,6 +150,31 @@ io.on('connection', (socket) => {
       returns: sec.returns,
       kickbacks: sec.kickbacks
     });
+
+      // ─── Безопасник прикрывает отдел ───
+  socket.on('security_cover_department', ({ indicator }) => {
+    const result = security.coverDepartment(socket.id, indicator);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    const sec = getPlayer(socket.id);
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    socket.emit('security_update', security.securitySnapshot(sec));
+  });
+
+  // ─── Безопасник отвечает «подделан» ───
+  socket.on('security_answer_forged', ({ indicator }) => {
+    const result = security.answerForged(socket.id, indicator);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    const sec = getPlayer(socket.id);
+    socket.emit('security_update', security.securitySnapshot(sec));
+  });
 
     socket.emit('security_check_pending', {
       targetTitle: result.targetTitle
@@ -251,8 +280,19 @@ io.on('connection', (socket) => {
     });
 
     if (result.newShift) {
+      // Автономное поведение завода
+      applyIndicatorChanges(hall.factory);
+
+      // Сброс и автоотчёты
+      resetReports(hall.factory);
+      autoFillReports(hall.factory);
+
+      // Продвинуть проверки отчётов по этапам
+      security.processChecksOnShiftStart();
+
       const checkResults = security.resolvePendingChecks();
       security.recalcSuspicionsAfterShift();
+
 
       hall.players.forEach(p => {
         io.to(p.id).emit('new_shift', {
@@ -260,15 +300,26 @@ io.on('connection', (socket) => {
           decisionsLeft: p.decisionsLeft
         });
 
+        // Директору — обновление завода
+ if (p.role === 'director' && hall.factory) {
+          io.to(p.id).emit('factory_update', factorySnapshot(hall.factory, { forDirector: true }));
+
+          // Проверить: пришёл ли ответ по проверке
+          const reply = hall.reportChecks.find(c =>
+            c.directorId === p.id && c.directorNotified
+          );
+          if (reply) {
+            io.to(p.id).emit('report_check_reply', {
+              indicator: reply.indicator,
+              answer: reply.answer
+            });
+            // Помечаем, что уведомление показано (чтобы не спамить)
+            reply.notifiedOnce = true;
+          }
+        }
+
         if (p.role === 'security') {
-          io.to(p.id).emit('security_update', {
-            decisionsLeft: p.decisionsLeft,
-            dossier: p.dossier,
-            suspicions: p.suspicions,
-            returns: p.returns,
-            kickbacks: p.kickbacks,
-            deal: securitySnapshotDeal(p)
-          });
+          io.to(p.id).emit('security_update', security.securitySnapshot(p));
 
           if (checkResults && checkResults.length > 0) {
             io.to(p.id).emit('security_check_results', { results: checkResults });

@@ -35,9 +35,26 @@ const hall = {
     directorId: null
   },
 
-  // Журнал откатов: { shift, amount, type }
+  // Журнал краж: { shift, amount, type }
   // type: 'budget' | 'direction'
-  theftsLog: []
+  theftsLog: [],
+
+  // Активные проверки отчётов
+  // {
+  //   directorId,
+  //   indicator,            // какой отчёт
+  //   requestedShift,       // смена запроса
+  //   checked: false,       // проверен ли (смена N+1)
+  //   isForged: null,       // подделан ли (узнаётся в N+1)
+  //   coverAttempted: false,// попытка прикрытия (смена N+1)
+  //   departmentAgreed: null,// ответ отдела (смена N+2)
+  //   theftAmount: 0,       // сколько откатил отдел
+  //   theftResolved: false, // деньги уже перераспределены?
+  //   answerSent: false,    // Безопасник ответил
+  //   answer: null,         // 'real' | 'forged'
+  //   directorNotified: false// Директор получил ответ (N+4)
+  // }
+  reportChecks: []
 };
 
 function addPlayer(socketId, name) {

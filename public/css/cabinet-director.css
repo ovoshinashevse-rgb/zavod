@@ -247,3 +247,132 @@ body.poor .decision-dot.active {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ═══════════════════════════════════════════
+   ОТЧЁТЫ ОТДЕЛОВ — Директор
+   ═══════════════════════════════════════════ */
+
+.reports-box {
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  text-align: left;
+}
+
+.reports-title {
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 14px;
+}
+
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  font-size: 15px;
+}
+
+.report-row .report-label {
+  opacity: 0.7;
+}
+
+.report-row .report-value {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.report-row .report-value.high {
+  color: #4ecdc4;
+}
+.report-row .report-value.mid {
+  color: #e8c050;
+}
+.report-row .report-value.low {
+  color: #d94a3a;
+}
+.report-row .report-value.missing {
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ─── Маленькая кнопка «Сдать отчёт» ─── */
+.report-tiny-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 100px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-family: inherit;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.report-tiny-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.report-tiny-btn:active {
+  transform: scale(0.98);
+}
+
+/* ═══════════════════════════════════════════
+   КРАСИВАЯ КНОПКА «ПРОВЕРИТЬ» В ОТЧЁТАХ
+   ═══════════════════════════════════════════ */
+
+.report-check-btn {
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.report-check-btn:hover:not(:disabled) {
+  background: rgba(255, 140, 60, 0.15);
+  border-color: rgba(255, 140, 60, 0.4);
+  color: #ffb073;
+}
+
+.report-check-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.report-check-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.report-check-btn.active {
+  background: rgba(255, 140, 60, 0.2);
+  border-color: rgba(255, 140, 60, 0.5);
+  color: #ffb073;
+  animation: report-pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes report-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 140, 60, 0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 140, 60, 0); }
+}

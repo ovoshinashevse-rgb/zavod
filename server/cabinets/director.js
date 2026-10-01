@@ -8,9 +8,14 @@ const {
   setLevel,
   takeFromBudget,
   takeFromDirection,
+  submitReport,
   factorySnapshot,
-  DECISION_COST
+  DECISION_COST,
+  INDICATORS
 } = require('../factory');
+
+const REPORT_CHECK_DECISION_COST = 2;    // стоимость запроса
+const REPORT_CHECK_DELAY = 4;            // через сколько смен придёт ответ
 
 // Проверить, что Директор может делать действие
 function canAct(p) {
@@ -136,11 +141,82 @@ function finishShift(socketId) {
 
   return { ok: true, newShift: false };
 }
+// Сдать отчёт по показателю
+function submitReportAction(socketId, indicatorKey) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'director') return { error: 'Только Директор' };
+  if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
+  if (!hall.factory) return { error: 'Завод ещё не создан' };
+  if (p.finished) return { error: 'Вы уже завершили смену' };
 
+  if (!INDICATORS.includes(indicatorKey)) {
+    return { error: 'Неизвестный показатель' };
+  }
+
+  if (hall.factory.reportsSubmitted[indicatorKey]) {
+    return { error: 'Отчёт уже сдан' };
+  }
+
+  const result = submitReport(hall.factory, indicatorKey);
+  if (result.error) return result;
+
+  return {
+    ok: true,
+    factory: factorySnapshot(hall.factory, { forDirector: true })
+  };
+}
+// Запросить проверку отчёта
+function requestReportCheck(socketId, indicator) {
+  const p = getPlayer(socketId);
+  const check = canAct(p);
+  if (check.error) return check;
+
+  if (!INDICATORS.includes(indicator)) {
+    return { error: 'Неизвестный показатель' };
+  }
+
+  // Один активный запрос
+  const active = hall.reportChecks.find(c =>
+    c.directorId === socketId && !c.directorNotified
+  );
+  if (active) {
+    return { error: 'Уже есть активный запрос' };
+  }
+
+  // Проверка стоимости
+  if (p.decisionsLeft < REPORT_CHECK_DECISION_COST) {
+    return { error: 'Недостаточно решений для запроса проверки' };
+  }
+
+  p.decisionsLeft -= REPORT_CHECK_DECISION_COST;
+
+  hall.reportChecks.push({
+    directorId: socketId,
+    indicator: indicator,
+    requestedShift: hall.shift,
+    checked: false,
+    isForged: null,
+    coverAttempted: false,
+    departmentAgreed: null,
+    theftAmount: 0,
+    theftResolved: false,
+    answerSent: false,
+    answer: null,
+    directorNotified: false
+  });
+
+  return {
+    ok: true,
+    decisionsLeft: p.decisionsLeft,
+    indicator: indicator
+  };
+}
 module.exports = {
   chooseFactory,
   setDirectionLevel,
   takeFromBudgetAction,
   takeFromDirectionAction,
+  submitReportAction,
+  requestReportCheck,
   finishShift
 };

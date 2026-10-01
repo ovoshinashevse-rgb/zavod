@@ -97,7 +97,6 @@
   </div>
 
   <!-- ЭКРАН 6a: СМЕНА ДИРЕКТОРА -->
-  <!-- ЭКРАН 6a: СМЕНА ДИРЕКТОРА -->
   <div class="glass hidden" id="wrap-game-director">
     <div id="screen-game-director" class="shift">
 
@@ -116,6 +115,7 @@
             <div class="scale-fill mid" id="reputation-fill" style="width:50%"></div>
           </div>
         </div>
+
 
         <div class="status-item">
           <div class="status-header">
@@ -151,6 +151,7 @@
       <div class="shift-actions" id="main-actions">
         <button class="btn" id="btn-set-level">Инвестиции в отдел</button>
         <button class="btn secondary" id="btn-take">Забрать себе</button>
+        <button class="btn secondary" id="btn-reports">Отчёты</button>
         <button class="btn secondary" id="btn-finish">Завершить смену</button>
       </div>
 
@@ -238,7 +239,7 @@
         <button class="btn secondary" id="btn-back-take-dirs">← Назад</button>
       </div>
 
-      <!-- Подменю: Забрать из инвестиций — сколько -->
+     <!-- Подменю: Забрать из инвестиций — сколько -->
       <div class="submenu hidden" id="submenu-take-levels">
         <div class="submenu-title" id="take-levels-title">До какого уровня опустить</div>
 
@@ -260,6 +261,13 @@
         </button>
 
         <button class="btn secondary" id="btn-back-take-levels">← Назад</button>
+      </div>
+
+      <!-- Подменю: Отчёты -->
+      <div class="submenu hidden" id="submenu-reports">
+        <div class="submenu-title">Отчёты отделов</div>
+        <div class="reports-list" id="reports-list"></div>
+        <button class="btn secondary" id="btn-back-reports">← Назад</button>
       </div>
 
     </div>
@@ -320,10 +328,9 @@
 
       <!-- Действия -->
       <div class="shift-actions" id="security-actions">
-        <button class="btn" id="btn-security-check">Проверить</button>
-        <button class="btn secondary" id="btn-security-report">Донести</button>
-        <button class="btn secondary" id="btn-security-deal">Предложить сговор</button>
-        <button class="btn secondary" id="btn-security-break-deal" style="display:none;">Разорвать сговор</button>
+        <button class="btn" id="btn-security-check">Проверка</button>
+        <button class="btn secondary" id="btn-security-check-reports">Отчёты по проверкам</button>
+        <button class="btn secondary" id="btn-security-request-reports">Отчёты по запросам</button>
         <button class="btn secondary" id="btn-finish-security">Завершить смену</button>
       </div>
 
@@ -335,24 +342,25 @@
       </div>
 
       <!-- Подменю: кого проверить -->
-      <div class="submenu hidden" id="submenu-check">
+      <!-- Подменю: Проверка — кого проверить -->
+      <div class="submenu hidden" id="submenu-security-check">
         <div class="submenu-title">Кого проверить</div>
         <button class="btn" data-check-target="" id="btn-check-list"></button>
-        <button class="btn secondary" id="btn-back-check">← Назад</button>
+        <button class="btn secondary" id="btn-back-security-check">← Назад</button>
       </div>
 
-      <!-- Подменю: на кого донести -->
-      <div class="submenu hidden" id="submenu-report">
-        <div class="submenu-title">На кого донести</div>
-        <button class="btn" data-report-target="" id="btn-report-list"></button>
-        <button class="btn secondary" id="btn-back-report">← Назад</button>
+      <!-- Подменю: Отчёты по проверкам -->
+      <div class="submenu hidden" id="submenu-security-check-reports">
+        <div class="submenu-title">Отчёты по проверкам</div>
+        <div class="dossier-list" id="check-reports-list"></div>
+        <button class="btn secondary" id="btn-back-security-check-reports">← Назад</button>
       </div>
 
-      <!-- Подменю: результат проверки -->
-      <div class="submenu hidden" id="submenu-check-result">
-        <div class="submenu-title">Результат проверки</div>
-        <div class="check-result-box" id="check-result-box"></div>
-        <button class="btn secondary" id="btn-back-check-result">← Назад</button>
+      <!-- Подменю: Отчёты по запросам -->
+      <div class="submenu hidden" id="submenu-security-request-reports">
+        <div class="submenu-title">Отчёты по запросам</div>
+        <div class="dossier-list" id="request-reports-list"></div>
+        <button class="btn secondary" id="btn-back-security-request-reports">← Назад</button>
       </div>
 
     </div>

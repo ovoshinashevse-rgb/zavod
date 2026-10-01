@@ -19,14 +19,27 @@
     100: 'Высокий'
   };
 
-  // Стоимость решений для каждого уровня
   const DECISION_COST = {
     33:  1,
     66:  2,
     100: 3
   };
 
-  // ─── Локальное состояние ───
+  const INDICATOR_LABELS = {
+    quality:    'Качество',
+    clients:    'Клиенты',
+    employees:  'Сотрудники',
+    equipment:  'Оборудование',
+    reputation: 'Репутация'
+  };
+
+  const REPORT_LABELS = {
+    high:    'высокое',
+    mid:     'среднее',
+    low:     'низкое',
+    missing: 'не сдан'
+  };
+
   let decisionsLeft = 3;
 
   function colorClass(value) {
@@ -94,6 +107,54 @@
     } else {
       pocketBox.classList.add('hidden');
     }
+
+    // Отчёты
+    renderReports();
+  }
+
+  // ─── Отрисовка отчётов ───
+  function renderReports() {
+    const f = state.factory;
+    const box = document.getElementById('reports-list');
+    if (!box) return;
+
+    box.innerHTML = '';
+
+    const indicators = ['quality', 'clients', 'employees', 'equipment', 'reputation'];
+
+    // Есть ли активный запрос
+    const hasActiveCheck = f.activeCheck && !f.activeCheck.directorNotified;
+
+    indicators.forEach(key => {
+      const row = document.createElement('div');
+      row.className = 'report-row';
+
+      const value = (f.reports && f.reports[key]) || 'missing';
+      const label = REPORT_LABELS[value] || '—';
+
+      const isActive = f.activeCheck && f.activeCheck.indicator === key;
+      const disabled = hasActiveCheck || value === 'missing';
+
+      row.innerHTML =
+        '<span class="report-label">' + INDICATOR_LABELS[key] + '</span>' +
+        '<span class="report-value ' + value + '">' + label + '</span>';
+
+      const btn = document.createElement('button');
+      btn.className = 'report-check-btn';
+      btn.dataset.indicator = key;
+      btn.textContent = isActive ? 'Проверяется…' : 'Проверить';
+      btn.disabled = disabled;
+      if (isActive) btn.classList.add('active');
+
+      btn.onclick = () => {
+        if (btn.disabled) return;
+        socket.emit('director_request_check', { indicator: key });
+        toast('Отчёт отправлен на проверку');
+      };
+
+      row.appendChild(btn);
+      box.appendChild(row);
+    });
   }
 
   window.renderScales = renderScales;
@@ -114,6 +175,12 @@
     const noDecisions = left <= 0;
     document.getElementById('btn-set-level').disabled = noDecisions;
     document.getElementById('btn-take').disabled = noDecisions;
+
+    // Проверка отчёта — 2 решения
+    const reportBtns = document.querySelectorAll('.report-check-btn');
+    reportBtns.forEach(b => {
+      b.disabled = b.disabled || decisionsLeft < 2;
+    });
   }
 
   // ─── Обновить доступность кнопок уровней ───
@@ -121,7 +188,6 @@
     document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(b => {
       const lvl = parseInt(b.dataset.lvl, 10);
       const cost = DECISION_COST[lvl];
-      // Блокируем, если уже на этом уровне ИЛИ если решений не хватает
       const current = (state.factory.directions && state.factory.directions[selectedDir]) || 0;
       const isSame = (lvl === current);
       const notEnough = (decisionsLeft < cost);
@@ -155,6 +221,7 @@
   const submenuTakeDirs  = document.getElementById('submenu-take-dirs');
   const submenuTakeLvls  = document.getElementById('submenu-take-levels');
   const shiftDone        = document.getElementById('shift-done-director');
+  const submenuReports   = document.getElementById('submenu-reports');
 
   let selectedDir      = null;
   let pendingLevel     = null;
@@ -162,7 +229,7 @@
   let pendingTakeDirLvl = null;
 
   function hideAllSubmenus() {
-    [submenuDirs, submenuLevels, submenuTakeSrc, submenuTakeBud, submenuTakeDirs, submenuTakeLvls]
+    [submenuDirs, submenuLevels, submenuTakeSrc, submenuTakeBud, submenuTakeDirs, submenuTakeLvls, submenuReports]
       .forEach(el => el && el.classList.add('hidden'));
     hideDirPreview();
     selectedDir = null;
@@ -384,6 +451,18 @@
     socket.emit('player_finish_shift');
   };
 
+  // ─── Кнопка «Отчёты» ───
+  document.getElementById('btn-reports').onclick = () => {
+    mainActions.classList.add('hidden');
+    submenuReports.classList.remove('hidden');
+    renderReports();
+  };
+
+  document.getElementById('btn-back-reports').onclick = () => {
+    submenuReports.classList.add('hidden');
+    mainActions.classList.remove('hidden');
+  };
+
   function enterShiftDone() {
     hideAllSubmenus();
     mainActions.classList.add('hidden');
@@ -408,6 +487,9 @@
     if (state.myRole !== 'director') return;
     state.factory = data;
     renderScales();
+    if (document.getElementById('reports-list')) {
+      renderReports();
+    }
     if (selectedDir) {
       resetPreviewLevel(selectedDir);
       updateLevelButtonsAvailability();
@@ -438,6 +520,12 @@
     shiftDone.classList.add('hidden');
     renderDecisions(dl || 3);
     showMainActions();
+  });
+
+  socket.on('report_check_reply', ({ indicator, answer }) => {
+    if (state.myRole !== 'director') return;
+    const label = answer === 'real' ? 'настоящий' : 'подделан';
+    toast('Ответ по отчёту «' + INDICATOR_LABELS[indicator] + '»: ' + label);
   });
 
   socket.on('game_over', ({ reason }) => {

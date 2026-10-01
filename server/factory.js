@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// ЗАВОД — уровни, деньги, инвестиции, бюджет
+// ЗАВОД — показатели, отделы, деньги, откаты
 // ═══════════════════════════════════════════
 
 const { hall } = require('./hall');
@@ -12,32 +12,48 @@ const LEVEL = {
 
 const DIRECTIONS = ['equipment', 'people', 'ads', 'security', 'economy'];
 
-// Стоимость отката (сколько уходит в карман)
-const TAKE_AMOUNT = {
-  33:  10,
-  66:  25,
-  100: 50
+// Показатели завода
+const INDICATORS = [
+  'quality',       // Качество продукта
+  'clients',       // Постоянные клиенты
+  'employees',     // Сотрудники
+  'equipment',     // Оборудование
+  'reputation'     // Репутация
+];
+
+// К какому отделу привязан каждый показатель
+// (для среднего по двум отделам — массив из двух)
+const INDICATOR_SOURCE = {
+  quality:    ['equipment', 'people'],
+  clients:    ['ads', 'quality'],         // качество — не отдел, но влияет
+  employees:  ['people'],
+  equipment:  ['equipment'],
+  reputation: ['equipment', 'people', 'ads', 'security', 'economy']   // всё
 };
 
-// Стоимость вложения (сколько уходит из кассы в отдел)
-const INVEST_COST = {
-  33:  10,
-  66:  25,
-  100: 50
+// Стоимость отката
+const TAKE_AMOUNT = { 33: 10, 66: 25, 100: 50 };
+
+// Стоимость вложения
+const INVEST_COST = { 33: 10, 66: 25, 100: 50 };
+
+// Стоимость решений
+const DECISION_COST = { 33: 1, 66: 2, 100: 3 };
+
+// Прирост / падение показателей за смену
+const INDICATOR_GAIN = {
+  100: 2,     // высокий уровень → +2
+  66:  0,     // средний → 0
+  33:  -4     // низкий → −4
 };
 
-// Стоимость решений для каждого уровня
-const DECISION_COST = {
-  33:  1,
-  66:  2,
-  100: 3
-};
+// Порог, ниже которого начинаются проблемы
+const LOW_THRESHOLD = 40;
 
 function totalInvested(directions) {
   return DIRECTIONS.reduce((sum, d) => sum + (directions[d] || 0), 0);
 }
 
-// Общая шкала инвестиций — среднее по 5 отделам, округлённое до 3 уровней
 function calcInvestments(directions) {
   const avg = totalInvested(directions) / DIRECTIONS.length;
   if (avg < 50) return LEVEL.LOW;
@@ -45,11 +61,6 @@ function calcInvestments(directions) {
   return LEVEL.HIGH;
 }
 
-// Бюджет — производная от money
-// money 0   → 0%
-// money 165 → 33%
-// money 330 → 66%
-// money 500 → 100%
 function calcBudgetPercent(money) {
   const percent = Math.round((money / 500) * 100);
   return Math.max(0, Math.min(100, percent));
@@ -61,18 +72,26 @@ function createDirections(level) {
   return dirs;
 }
 
-// Создать завод по типу
+function createIndicators(startValue) {
+  const ind = {};
+  INDICATORS.forEach(k => ind[k] = startValue);
+  return ind;
+}
+
 function createFactory(type) {
   const isGood = type === 'good';
 
   const startLevel = isGood ? LEVEL.HIGH : LEVEL.LOW;
   const directions = createDirections(startLevel);
   const invested = totalInvested(directions);
-
-  // money рассчитываем так, чтобы бюджет был нужным
-  // Хороший: invested 500, money 165 → бюджет 33%
-  // Плохой:   invested 165, money 330 → бюджет 66%
   const money = isGood ? 165 : 330;
+
+  // Пять показателей
+  const indicators = createIndicators(isGood ? 70 : 30);
+
+  // Отчёты (сдал ли Директор)
+  const reportsSubmitted = {};
+  INDICATORS.forEach(k => reportsSubmitted[k] = false);
 
   return {
     type: type,
@@ -81,13 +100,13 @@ function createFactory(type) {
     investments: calcInvestments(directions),
     money: money,
     budgetPercent: calcBudgetPercent(money),
-    reputation: isGood ? 70 : 30,
+    indicators: indicators,
+    reportsSubmitted: reportsSubmitted,
     pocket: 0,
     bankrupt: false
   };
 }
 
-// Вложить в отдел — деньги из кассы в отдел
 function setLevel(factory, direction, level) {
   if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
   if (!DIRECTIONS.includes(direction)) return { error: 'Неизвестный отдел' };
@@ -96,21 +115,13 @@ function setLevel(factory, direction, level) {
   const current = factory.directions[direction];
   if (current === level) return { error: 'Уже на этом уровне' };
 
-  // Разница: если повышаем — деньги из кассы уходят.
-  // Если понижаем — деньги возвращаются в кассу.
-  const diff = level - current;   // > 0 — вложение, < 0 — деинвестиция
-
-  // Стоимость перехода
+  const diff = level - current;
   const cost = Math.abs(diff);
 
   if (diff > 0) {
-    // Вложение — уходит из кассы
-    if (factory.money < cost) {
-      return { error: 'В кассе недостаточно денег' };
-    }
+    if (factory.money < cost) return { error: 'В кассе недостаточно денег' };
     factory.money -= cost;
   } else {
-    // Деинвестиция — возвращается в кассу
     factory.money += cost;
   }
 
@@ -122,7 +133,6 @@ function setLevel(factory, direction, level) {
   return { ok: true, factory };
 }
 
-// Откат из бюджета — деньги из кассы в карман
 function takeFromBudget(factory, level) {
   if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
   const amount = TAKE_AMOUNT[level];
@@ -132,12 +142,7 @@ function takeFromBudget(factory, level) {
   factory.budgetPercent = calcBudgetPercent(factory.money);
   factory.pocket += amount;
 
-  hall.theftsLog.push({
-    shift: hall.shift,
-    amount: amount,
-    type: 'budget'
-  });
-
+  hall.theftsLog.push({ shift: hall.shift, amount: amount, type: 'budget' });
   applyKickback(amount);
 
   if (factory.money < 0) {
@@ -148,8 +153,6 @@ function takeFromBudget(factory, level) {
   return { ok: true, factory };
 }
 
-// Откат из инвестиций — деньги из отдела в карман
-// Касса НЕ трогается.
 function takeFromDirection(factory, direction, level) {
   if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
   if (!DIRECTIONS.includes(direction)) return { error: 'Неизвестный отдел' };
@@ -165,18 +168,12 @@ function takeFromDirection(factory, direction, level) {
   factory.invested = totalInvested(factory.directions);
   factory.investments = calcInvestments(factory.directions);
 
-  hall.theftsLog.push({
-    shift: hall.shift,
-    amount: diff,
-    type: 'direction'
-  });
-
+  hall.theftsLog.push({ shift: hall.shift, amount: diff, type: 'direction' });
   applyKickback(diff);
 
   return { ok: true, factory };
 }
 
-// Доля Безопасника от отката (при активном сговоре)
 function applyKickback(amount) {
   if (!hall.deal.active) return;
   const sec = hall.players.find(x => x.role === 'security');
@@ -185,7 +182,6 @@ function applyKickback(amount) {
   sec.kickbacks += share;
 }
 
-// Конфискация — из кармана в кассу (при доносе)
 function confiscatePocket(factory, amount) {
   const taken = Math.min(factory.pocket, amount);
   factory.pocket -= taken;
@@ -194,18 +190,98 @@ function confiscatePocket(factory, amount) {
   return taken;
 }
 
-function factorySnapshot(factory, forDirector = false) {
+// Прирост / падение показателей в конце смены
+// Логика: смотрим на связанные отделы. Считаем средний уровень.
+// Применяем INDICATOR_GAIN.
+function applyIndicatorChanges(factory) {
+  if (!factory) return;
+
+  INDICATORS.forEach(key => {
+    const sources = INDICATOR_SOURCE[key] || [];
+    let total = 0;
+    let count = 0;
+
+    sources.forEach(src => {
+      // Если источник — другой показатель (например, clients зависит от quality)
+      if (INDICATORS.includes(src)) {
+        total += factory.indicators[src] || 0;
+        count++;
+      } else if (DIRECTIONS.includes(src)) {
+        total += factory.directions[src] || 0;
+        count++;
+      }
+    });
+
+    if (count === 0) return;
+
+    const avg = total / count;
+
+    let gain = 0;
+    if (avg >= 83) gain = INDICATOR_GAIN[100];      // +2
+    else if (avg >= 50) gain = INDICATOR_GAIN[66];  // 0
+    else gain = INDICATOR_GAIN[33];                 // −4
+
+    factory.indicators[key] = Math.max(0, Math.min(100, factory.indicators[key] + gain));
+  });
+}
+
+// Директор «сдаёт отчёт»
+function submitReport(factory, indicatorKey) {
+  if (!INDICATORS.includes(indicatorKey)) return { error: 'Неизвестный показатель' };
+  factory.reportsSubmitted[indicatorKey] = true;
+  return { ok: true };
+}
+
+// Сбросить отчёты в новой смене
+function resetReports(factory) {
+  if (!factory) return;
+  INDICATORS.forEach(k => factory.reportsSubmitted[k] = false);
+}
+
+// Автоматически заполнить отчёты (эмуляция ролей, которых пока нет)
+// Позже, когда появятся реальные роли — они будут сдавать сами и подделывать
+function autoFillReports(factory) {
+  if (!factory) return;
+  INDICATORS.forEach(k => {
+    factory.reportsSubmitted[k] = true;
+  });
+}
+
+// Качественная оценка
+function qualitative(value) {
+  if (value < 30) return 'low';
+  if (value < 60) return 'mid';
+  return 'high';
+}
+
+// Снимок завода
+// opts.forDirector — с карманом и отчётами
+function factorySnapshot(factory, opts = {}) {
   if (!factory) return null;
+
   const snapshot = {
     directions: factory.directions,
     invested: factory.invested,
     investments: factory.investments,
     money: factory.money,
     budgetPercent: factory.budgetPercent,
-    reputation: factory.reputation,
     bankrupt: factory.bankrupt
   };
-  if (forDirector) snapshot.pocket = factory.pocket;
+
+  if (opts.forDirector) {
+    snapshot.pocket = factory.pocket;
+
+    const reports = {};
+    INDICATORS.forEach(k => {
+      if (factory.reportsSubmitted[k]) {
+        reports[k] = qualitative(factory.indicators[k]);
+      } else {
+        reports[k] = 'missing';
+      }
+    });
+    snapshot.reports = reports;
+  }
+
   return snapshot;
 }
 
@@ -215,12 +291,20 @@ module.exports = {
   takeFromBudget,
   takeFromDirection,
   confiscatePocket,
+  applyIndicatorChanges,
+  submitReport,
+  resetReports,
+  autoFillReports,
   factorySnapshot,
   calcInvestments,
   calcBudgetPercent,
+  qualitative,
   LEVEL,
   DIRECTIONS,
+  INDICATORS,
+  INDICATOR_SOURCE,
   TAKE_AMOUNT,
   INVEST_COST,
-  DECISION_COST
+  DECISION_COST,
+  LOW_THRESHOLD
 };

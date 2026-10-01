@@ -5,7 +5,7 @@
 .shift-security {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   text-align: center;
 }
 
@@ -78,7 +78,6 @@
 .dossier-row .result.much {
   color: #d94a3a;
 }
-
 .dossier-row .result.pending {
   color: #a0a0a0;
   font-style: italic;
@@ -108,7 +107,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   РЕЗУЛЬТАТ ПРОВЕРКИ
+   РЕЗУЛЬТАТ ПРОВЕРКИ — висит до конца смены
    ═══════════════════════════════════════════ */
 .check-result-box {
   padding: 28px 24px;
@@ -148,7 +147,6 @@
 /* ═══════════════════════════════════════════
    ПОДОЗРЕНИЯ — свой цвет порогов
    ═══════════════════════════════════════════ */
-/* Значения совпадают с общими, но оставим для ясности */
 #suspicions-fill.low {
   background: linear-gradient(90deg, #3aa86a 0%, #4ec97c 100%);
 }
@@ -212,4 +210,17 @@
   line-height: 1.55;
   opacity: 0.85;
   margin-bottom: 28px;
+}
+
+/* ─── Маленькие кнопки в подменю ─── */
+.btn-small {
+  padding: 10px 16px;
+  font-size: 14px;
+  margin: 0;
+  flex: 1;
+  margin-top: 0;
+}
+.btn-small.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
 }

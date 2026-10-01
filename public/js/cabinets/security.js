@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// КАБИНЕТ БЕЗОПАСНИКА — проверки, сговор, донос
+// КАБИНЕТ БЕЗОПАСНИКА — проверки, сговор, запросы
 // ═══════════════════════════════════════════
 
 (function () {
@@ -12,7 +12,8 @@
     dossier: [],
     decisionsLeft: 2,
     currentShift: 1,
-    deal: { pending: false, active: false, iAmSecurity: false, iAmDirector: false }
+    deal: { pending: false, active: false, iAmSecurity: false, iAmDirector: false },
+    reportChecks: []
   };
 
   // ─── Точки решений ───
@@ -26,17 +27,7 @@
       dot.className = 'decision-dot' + (i < left ? ' active' : '');
       box.appendChild(dot);
     }
-
-    const noDecisions = left <= 0;
-    const btnCheck = document.getElementById('btn-security-check');
-    const btnReport = document.getElementById('btn-security-report');
-    const btnDeal = document.getElementById('btn-security-deal');
-    const btnBreak = document.getElementById('btn-security-break-deal');
-
-    if (btnCheck) btnCheck.disabled = noDecisions;
-    if (btnReport) btnReport.disabled = noDecisions;
-    if (btnDeal) btnDeal.disabled = noDecisions || secState.deal.active;
-    if (btnBreak) btnBreak.disabled = noDecisions;
+    secState.decisionsLeft = left;
   }
 
   // ─── Подозрения ───
@@ -46,7 +37,6 @@
     if (!fill || !word) return;
 
     fill.style.width = value + '%';
-
     if (value <= 30) {
       fill.className = 'scale-fill low';
       word.textContent = 'чисто';
@@ -59,7 +49,6 @@
     }
   }
 
-  // ─── Слова для качественных шкал ───
   function qualitativeWord(value) {
     if (!value || value <= 0) return 'пусто';
     if (value < 30) return 'немного';
@@ -67,7 +56,6 @@
     return 'много';
   }
 
-  // ─── Возврат ───
   function renderReturns(value) {
     const fill = document.getElementById('returns-fill');
     const word = document.getElementById('returns-word');
@@ -79,7 +67,6 @@
     word.textContent = qualitativeWord(value);
   }
 
-  // ─── Откат ───
   function renderKickbacks(value) {
     const fill = document.getElementById('kickbacks-fill');
     const word = document.getElementById('kickbacks-word');
@@ -91,7 +78,7 @@
     word.textContent = qualitativeWord(value);
   }
 
-  // ─── Досье ───
+  // ─── Досье (главный экран) ───
   function renderDossier(dossier) {
     const box = document.getElementById('dossier-list');
     if (!box) return;
@@ -103,7 +90,6 @@
     }
 
     const recent = dossier.slice(-5).reverse();
-
     recent.forEach(d => {
       const row = document.createElement('div');
       row.className = 'dossier-row';
@@ -123,75 +109,208 @@
     });
   }
 
+  // ─── Отчёты по проверкам ───
+  function renderCheckReports(dossier) {
+    const box = document.getElementById('check-reports-list');
+    if (!box) return;
+    box.innerHTML = '';
+
+    const recent = (dossier || []).slice(-5).reverse();
+
+    if (recent.length === 0) {
+      box.innerHTML = '<div class="dossier-empty">Пока нет проверок.</div>';
+      return;
+    }
+
+    recent.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'dossier-row';
+      row.style.flexDirection = 'column';
+      row.style.alignItems = 'flex-start';
+      row.style.gap = '8px';
+
+      let label = '—';
+      if (d.result === 'pending') label = 'Проверка в процессе…';
+      if (d.result === 'clean')   label = 'Чисто';
+      if (d.result === 'little')  label = 'Откат был';
+      if (d.result === 'much')    label = 'Откат серьёзный';
+
+      row.innerHTML =
+        '<div style="display:flex;justify-content:space-between;width:100%;">' +
+          '<span class="shift-num">Смена ' + d.shift + '</span>' +
+          '<span class="result ' + d.result + '">' + label + '</span>' +
+        '</div>';
+
+      if (d.result === 'little' || d.result === 'much') {
+        const btnRow = document.createElement('div');
+        btnRow.style.display = 'flex';
+        btnRow.style.gap = '8px';
+        btnRow.style.width = '100%';
+
+        const btnConf = document.createElement('button');
+        btnConf.className = 'btn btn-small';
+        btnConf.textContent = 'Конфисковать';
+        btnConf.disabled = secState.decisionsLeft < 1;
+        btnConf.onclick = () => {
+          socket.emit('security_report', { targetId: d.targetId });
+        };
+
+        const btnDeal = document.createElement('button');
+        btnDeal.className = 'btn btn-small secondary';
+        btnDeal.textContent = 'Сговор';
+        btnDeal.disabled = secState.decisionsLeft < 2 || secState.deal.active;
+        btnDeal.onclick = () => {
+          socket.emit('security_offer_deal');
+        };
+
+        btnRow.appendChild(btnConf);
+        btnRow.appendChild(btnDeal);
+        row.appendChild(btnRow);
+      }
+
+      box.appendChild(row);
+    });
+
+    if (secState.deal.active) {
+      const row = document.createElement('div');
+      row.className = 'dossier-row';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-small secondary';
+      btn.textContent = 'Разорвать сговор';
+      btn.disabled = secState.decisionsLeft < 1;
+      btn.onclick = () => socket.emit('security_break_deal');
+      row.appendChild(btn);
+      box.appendChild(row);
+    }
+  }
+
+  // ─── Отчёты по запросам ───
+  function renderRequestReports() {
+    const box = document.getElementById('request-reports-list');
+    if (!box) return;
+    box.innerHTML = '';
+
+    if (!secState.reportChecks || secState.reportChecks.length === 0) {
+      box.innerHTML = '<div class="dossier-empty">Пока нет запросов.</div>';
+      return;
+    }
+
+    secState.reportChecks.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'dossier-row';
+      row.style.flexDirection = 'column';
+      row.style.alignItems = 'flex-start';
+      row.style.gap = '8px';
+
+      row.innerHTML =
+        '<div style="display:flex;justify-content:space-between;width:100%;">' +
+          '<span class="shift-num">Смена ' + c.requestedShift + '</span>' +
+          '<span class="target-name">' + c.title + '</span>' +
+        '</div>' +
+        '<div style="font-size:14px;opacity:0.7;">Директор просит проверить отчёт.</div>';
+
+      const btnRow = document.createElement('div');
+      btnRow.style.display = 'flex';
+      btnRow.style.gap = '8px';
+      btnRow.style.width = '100%';
+
+      const btnCover = document.createElement('button');
+      btnCover.className = 'btn btn-small secondary';
+      btnCover.textContent = 'Прикрыть';
+      btnCover.disabled = secState.decisionsLeft < 2;
+      btnCover.onclick = () => {
+        socket.emit('security_cover_department', { indicator: c.indicator });
+      };
+
+      const btnForged = document.createElement('button');
+      btnForged.className = 'btn btn-small';
+      btnForged.textContent = 'Ответить «подделан»';
+      btnForged.onclick = () => {
+        socket.emit('security_answer_forged', { indicator: c.indicator });
+      };
+
+      btnRow.appendChild(btnCover);
+      btnRow.appendChild(btnForged);
+      row.appendChild(btnRow);
+
+      box.appendChild(row);
+    });
+  }
+
   // ─── Сговор ───
   function renderDeal(deal) {
     const box = document.getElementById('deal-status');
-    const btnDeal = document.getElementById('btn-security-deal');
-    const btnBreak = document.getElementById('btn-security-break-deal');
+    if (!box) return;
 
     if (deal.active) {
       box.textContent = 'Сговор активен. Вы получаете долю с каждого отката.';
       box.className = 'deal-status active';
       box.classList.remove('hidden');
-      btnDeal.style.display = 'none';
-      btnBreak.style.display = 'block';
     } else if (deal.pending) {
       box.textContent = 'Предложение отправлено. Ждём ответа Директора…';
       box.className = 'deal-status pending';
       box.classList.remove('hidden');
-      btnDeal.style.display = 'none';
-      btnBreak.style.display = 'none';
     } else {
       box.classList.add('hidden');
-      btnDeal.style.display = 'block';
-      btnBreak.style.display = 'none';
     }
   }
 
-  function showCheckResult(result, targetTitle) {
-    const box = document.getElementById('check-result-box');
-
-    let label = '—';
-    let cls = '';
-    if (result === 'clean')  { label = 'Чисто';           cls = 'clean'; }
-    if (result === 'little') { label = 'Откат был';       cls = 'little'; }
-    if (result === 'much')   { label = 'Откат серьёзный'; cls = 'much'; }
-
-    box.className = 'check-result-box ' + cls;
-    box.innerHTML = label + '<span class="result-sub">' + targetTitle + '</span>';
-
-    hideAllSubmenus();
-    document.getElementById('submenu-check-result').classList.remove('hidden');
-  }
+  // ─── Управление подменю ───
+  const securityActions = document.getElementById('security-actions');
 
   function hideAllSubmenus() {
-    document.getElementById('submenu-check').classList.add('hidden');
-    document.getElementById('submenu-report').classList.add('hidden');
-    document.getElementById('submenu-check-result').classList.add('hidden');
+    document.getElementById('submenu-security-check').classList.add('hidden');
+    document.getElementById('submenu-security-check-reports').classList.add('hidden');
+    document.getElementById('submenu-security-request-reports').classList.add('hidden');
   }
 
   function showActions() {
     hideAllSubmenus();
-    document.getElementById('security-actions').classList.remove('hidden');
+    securityActions.classList.remove('hidden');
     document.getElementById('shift-done-security').classList.add('hidden');
   }
 
-  // ─── Кнопки ───
+  // ═══════════════════════════════════════════
+  // КНОПКИ ГЛАВНОГО ЭКРАНА
+  // ═══════════════════════════════════════════
   document.getElementById('btn-security-check').onclick = () => {
     const target = state.players && state.players.find(p => p.role === 'director');
     if (!target) { toast('Некого проверять'); return; }
 
+    securityActions.classList.add('hidden');     // ← СКРЫВАЕМ ГЛАВНЫЕ КНОПКИ
     hideAllSubmenus();
-    const submenu = document.getElementById('submenu-check');
+    const submenu = document.getElementById('submenu-security-check');
     const listBtn = document.getElementById('btn-check-list');
     listBtn.textContent = 'Директор';
     listBtn.dataset.checkTarget = target.id;
     submenu.classList.remove('hidden');
   };
 
-  document.getElementById('btn-back-check').onclick = () => {
+  document.getElementById('btn-security-check-reports').onclick = () => {
+    securityActions.classList.add('hidden');     // ← СКРЫВАЕМ ГЛАВНЫЕ КНОПКИ
     hideAllSubmenus();
-    document.getElementById('security-actions').classList.remove('hidden');
+    document.getElementById('submenu-security-check-reports').classList.remove('hidden');
+    renderCheckReports(secState.dossier);
+  };
+
+  document.getElementById('btn-security-request-reports').onclick = () => {
+    securityActions.classList.add('hidden');     // ← СКРЫВАЕМ ГЛАВНЫЕ КНОПКИ
+    hideAllSubmenus();
+    document.getElementById('submenu-security-request-reports').classList.remove('hidden');
+    renderRequestReports();
+  };
+
+  // ─── Кнопки «Назад» ───
+  document.getElementById('btn-back-security-check').onclick = () => {
+    showActions();
+  };
+
+  document.getElementById('btn-back-security-check-reports').onclick = () => {
+    showActions();
+  };
+
+  document.getElementById('btn-back-security-request-reports').onclick = () => {
+    showActions();
   };
 
   document.getElementById('btn-check-list').onclick = (e) => {
@@ -200,47 +319,13 @@
     socket.emit('security_check', { targetId: targetId });
   };
 
-  document.getElementById('btn-security-report').onclick = () => {
-    const ready = secState.dossier
-      .filter(d => d.result && d.result !== 'pending')
-      .sort((a, b) => b.shift - a.shift);
-
-    if (ready.length === 0) {
-      toast('Нет проверок с результатом');
-      return;
-    }
-
-    const last = ready[0];
-
-    hideAllSubmenus();
-    const submenu = document.getElementById('submenu-report');
-    const listBtn = document.getElementById('btn-report-list');
-    listBtn.textContent = 'Директор';
-    listBtn.dataset.reportTarget = last.targetId;
-    submenu.classList.remove('hidden');
+  document.getElementById('btn-finish-security').onclick = () => {
+    socket.emit('player_finish_shift');
   };
 
-  document.getElementById('btn-back-report').onclick = () => {
-    hideAllSubmenus();
-    document.getElementById('security-actions').classList.remove('hidden');
-  };
-
-  document.getElementById('btn-report-list').onclick = (e) => {
-    const targetId = e.currentTarget.dataset.reportTarget;
-    if (!targetId) return;
-    socket.emit('security_report', { targetId: targetId });
-  };
-
-  document.getElementById('btn-security-deal').onclick = () => socket.emit('security_offer_deal');
-  document.getElementById('btn-security-break-deal').onclick = () => socket.emit('security_break_deal');
-  document.getElementById('btn-finish-security').onclick = () => socket.emit('player_finish_shift');
-
-  document.getElementById('btn-back-check-result').onclick = () => {
-    hideAllSubmenus();
-    document.getElementById('security-actions').classList.remove('hidden');
-  };
-
-  // ─── События с сервера ───
+  // ═══════════════════════════════════════════
+  // СОБЫТИЯ С СЕРВЕРА
+  // ═══════════════════════════════════════════
   socket.on('security_update', (data) => {
     if (typeof data.suspicions !== 'undefined') {
       secState.suspicions = data.suspicions;
@@ -266,18 +351,24 @@
       secState.deal = data.deal;
       renderDeal(data.deal);
     }
+    if (data.reportChecks) {
+      secState.reportChecks = data.reportChecks;
+    }
   });
 
   socket.on('security_check_pending', () => {
     toast('Проверка принята. Результат — в следующую смену.');
-    hideAllSubmenus();
-    document.getElementById('security-actions').classList.remove('hidden');
+    showActions();
   });
 
   socket.on('security_check_results', ({ results }) => {
     if (!results || results.length === 0) return;
     const r = results[0];
-    showCheckResult(r.result, r.targetTitle);
+    let label = 'Чисто';
+    if (r.result === 'little') label = 'Откат был';
+    if (r.result === 'much')   label = 'Откат серьёзный';
+
+    toast('Проверка: ' + label);
   });
 
   socket.on('deal_activated', () => {
@@ -300,14 +391,14 @@
     toast('Сговор разорван');
   });
 
-  socket.on('report_happened', ({ targetTitle }) => {
+  socket.on('report_happened', () => {
     toast('Вы вернули деньги заводу');
   });
 
   socket.on('new_shift', ({ shift, decisionsLeft }) => {
     secState.currentShift = shift || (secState.currentShift + 1);
     document.getElementById('shift-done-security').classList.add('hidden');
-    document.getElementById('security-actions').classList.remove('hidden');
+    securityActions.classList.remove('hidden');
     renderDecisions(decisionsLeft || 0);
     hideAllSubmenus();
   });
@@ -317,7 +408,7 @@
     const me = finished.find(p => p.id === socket.id);
     if (me && me.finished) {
       hideAllSubmenus();
-      document.getElementById('security-actions').classList.add('hidden');
+      securityActions.classList.add('hidden');
       document.getElementById('shift-done-security').classList.remove('hidden');
     }
   });
