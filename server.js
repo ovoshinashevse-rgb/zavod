@@ -7,7 +7,6 @@ const path = require('path');
 const { hall, addPlayer, getPlayer, removePlayer, allDecided } = require('./server/hall');
 const smoking = require('./server/smoking');
 const { assignRoles } = require('./server/roles');
-const { factorySnapshot } = require('./server/factory');
 const director = require('./server/cabinets/director');
 
 const app = express();
@@ -58,9 +57,25 @@ io.on('connection', (socket) => {
       return;
     }
 
-    io.emit('factory_chosen', {
+    // Директору — с карманом
+    socket.emit('factory_chosen', {
       type: result.type,
       factory: result.factory
+    });
+
+    // Остальным — без кармана
+    hall.players.filter(p => p.id !== socket.id).forEach(p => {
+      io.to(p.id).emit('factory_chosen', {
+        type: result.type,
+        factory: {
+          directions: result.factory.directions,
+          invested: result.factory.invested,
+          investments: result.factory.investments,
+          budgetPercent: result.factory.budgetPercent,
+          reputation: result.factory.reputation,
+          bankrupt: result.factory.bankrupt
+        }
+      });
     });
 
     console.log('Директор выбрал завод:', type);
@@ -74,12 +89,39 @@ io.on('connection', (socket) => {
       return;
     }
 
-    io.emit('factory_update', result.factory);
+    emitFactory(result.factory);
 
     if (result.bankrupt) {
       hall.phase = 'end';
       io.emit('game_over', { reason: 'Завод обанкротился.' });
     }
+  });
+
+  // ─── Директор забирает из бюджета ───
+  socket.on('director_take_budget', ({ level }) => {
+    const result = director.takeFromBudgetAction(socket.id, level);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    emitFactory(result.factory);
+
+    if (result.bankrupt) {
+      hall.phase = 'end';
+      io.emit('game_over', { reason: 'Завод обанкротился.' });
+    }
+  });
+
+  // ─── Директор забирает из инвестиций ───
+  socket.on('director_take_direction', ({ direction, level }) => {
+    const result = director.takeFromDirectionAction(socket.id, direction, level);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    emitFactory(result.factory);
   });
 
   // ─── Отключение ───
@@ -112,6 +154,28 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+// ─── Отправить завод всем ───
+// Директору — с карманом. Остальным — без.
+function emitFactory(snapshotWithPocket) {
+  // Снимок без кармана
+  const snapshotNoPocket = {
+    directions: snapshotWithPocket.directions,
+    invested: snapshotWithPocket.invested,
+    investments: snapshotWithPocket.investments,
+    budgetPercent: snapshotWithPocket.budgetPercent,
+    reputation: snapshotWithPocket.reputation,
+    bankrupt: snapshotWithPocket.bankrupt
+  };
+
+  hall.players.forEach(p => {
+    if (p.role === 'director') {
+      io.to(p.id).emit('factory_update', snapshotWithPocket);
+    } else {
+      io.to(p.id).emit('factory_update', snapshotNoPocket);
+    }
+  });
+}
 
 // ─── Старт игры: раздать роли ───
 function startRoles() {

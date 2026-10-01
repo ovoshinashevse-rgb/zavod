@@ -130,8 +130,17 @@
           </div>
         </div>
 
-        <div class="pocket hidden" id="pocket-box">В кармане: немного</div>
-      </div>
+        <div class="status-item hidden" id="pocket-box">
+  <div class="status-header">
+    <span class="status-label">В кармане</span>
+    <span class="status-value" id="pocket-word">пусто</span>
+  </div>
+  <div class="scale">
+    <div class="scale-fill mid" id="pocket-fill" style="width:0%"></div>
+  </div>
+</div>
+
+   </div>
 
       <!-- Действия Директора -->
       <div class="shift-actions" id="main-actions">
@@ -148,7 +157,7 @@
         </div>
       </div>
 
-      <!-- Подменю: выбор отдела -->
+      <!-- Подменю: выбор отдела (для инвестиций) -->
       <div class="submenu hidden" id="submenu-dirs">
         <div class="submenu-title">Какой отдел</div>
 
@@ -167,7 +176,7 @@
         <button class="btn secondary" id="btn-back-dirs">← Назад</button>
       </div>
 
-      <!-- Подменю: выбор уровня -->
+      <!-- Подменю: выбор уровня (для инвестиций) -->
       <div class="submenu hidden" id="submenu-levels">
         <div class="submenu-title" id="levels-title">Уровень</div>
 
@@ -189,6 +198,64 @@
         </button>
 
         <button class="btn secondary" id="btn-back-levels">← Назад</button>
+      </div>
+
+      <!-- Подменю: Забрать себе — откуда -->
+      <div class="submenu hidden" id="submenu-take-source">
+        <div class="submenu-title">Откуда забрать</div>
+        <button class="btn" id="btn-take-budget">Из бюджета</button>
+        <button class="btn" id="btn-take-investments">Из инвестиций</button>
+        <button class="btn secondary" id="btn-back-take-source">← Назад</button>
+      </div>
+
+      <!-- Подменю: Забрать из бюджета — сколько -->
+      <div class="submenu hidden" id="submenu-take-budget">
+        <div class="submenu-title">Сколько забрать</div>
+        <button class="btn btn-amount" data-take-lvl="33">
+          <span class="amt-name">Низкий уровень</span>
+        </button>
+        <button class="btn btn-amount" data-take-lvl="66">
+          <span class="amt-name">Средний уровень</span>
+        </button>
+        <button class="btn btn-amount" data-take-lvl="100">
+          <span class="amt-name">Высокий уровень</span>
+        </button>
+        <button class="btn secondary" id="btn-back-take-budget">← Назад</button>
+      </div>
+
+      <!-- Подменю: Забрать из инвестиций — какой отдел -->
+      <div class="submenu hidden" id="submenu-take-dirs">
+        <div class="submenu-title">Из какого отдела</div>
+        <button class="btn" data-take-dir="equipment">Оборудование</button>
+        <button class="btn" data-take-dir="people">Люди</button>
+        <button class="btn" data-take-dir="ads">Реклама</button>
+        <button class="btn" data-take-dir="security">Безопасность</button>
+        <button class="btn" data-take-dir="economy">Экономика</button>
+        <button class="btn secondary" id="btn-back-take-dirs">← Назад</button>
+      </div>
+
+      <!-- Подменю: Забрать из инвестиций — сколько -->
+      <div class="submenu hidden" id="submenu-take-levels">
+        <div class="submenu-title" id="take-levels-title">До какого уровня опустить</div>
+
+        <div class="preview-scale">
+          <span class="status-label" id="take-levels-preview-label">Отдел</span>
+          <div class="scale">
+            <div class="scale-fill mid" id="take-preview-fill" style="width:50%"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-amount" data-take-dir-lvl="33">
+          <span class="amt-name">До низкого</span>
+        </button>
+        <button class="btn btn-amount" data-take-dir-lvl="66">
+          <span class="amt-name">До среднего</span>
+        </button>
+        <button class="btn btn-amount" data-take-dir-lvl="100">
+          <span class="amt-name">До высокого</span>
+        </button>
+
+        <button class="btn secondary" id="btn-back-take-levels">← Назад</button>
       </div>
 
     </div>
@@ -217,7 +284,6 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- Скрипты — порядок важен -->
   <script src="/js/app.js"></script>
   <script src="/js/smoking.js"></script>
   <script src="/js/badge.js"></script>

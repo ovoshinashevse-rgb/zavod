@@ -10,6 +10,12 @@ const LEVEL = {
 
 const DIRECTIONS = ['equipment', 'people', 'ads', 'security', 'economy'];
 
+const TAKE_FROM_BUDGET = {
+  33:  10,
+  66:  25,
+  100: 50
+};
+
 function totalInvested(directions) {
   return DIRECTIONS.reduce((sum, d) => sum + (directions[d] || 0), 0);
 }
@@ -46,7 +52,6 @@ function createDirections(level) {
   return dirs;
 }
 
-// Создать завод по типу
 function createFactory(type) {
   const isGood = type === 'good';
 
@@ -61,28 +66,83 @@ function createFactory(type) {
     investments: calcInvestments(directions),
     budgetPercent: calcBudgetPercent(invested),
     reputation: isGood ? 70 : 30,
+    pocket: 0,
     bankrupt: false
   };
 }
 
-// Установить уровень отдела
+// Установить уровень отдела (инвестиции или деинвестиции)
+// Это ЕДИНСТВЕННОЕ место, где меняется бюджет через отделы.
 function setLevel(factory, direction, level) {
   if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
   if (!DIRECTIONS.includes(direction)) return { error: 'Неизвестный отдел' };
   if (![LEVEL.LOW, LEVEL.MID, LEVEL.HIGH].includes(level)) return { error: 'Неизвестный уровень' };
 
+  const current = factory.directions[direction];
+  if (current === level) return { error: 'Уже на этом уровне' };
+
+  // Разница между текущим и новым уровнем
+  const diff = current - level;  // > 0 — деинвестиция (деньги в кассу),
+                                 // < 0 — инвестиция (деньги из кассы)
+
+  // Меняем отдел
   factory.directions[direction] = level;
+
+  // Обновляем invested и investments
   factory.invested = totalInvested(factory.directions);
   factory.investments = calcInvestments(factory.directions);
+
+  // Меняем бюджет: если вложили — бюджет уменьшается,
+  // если забрали — бюджет растёт.
+  // Пересчитываем бюджет от общего invested.
   factory.budgetPercent = calcBudgetPercent(factory.invested);
 
   return { ok: true, factory };
 }
 
-// Публичный снимок завода (что отправляем клиенту)
-function factorySnapshot(factory) {
+// Украсть из бюджета
+function takeFromBudget(factory, level) {
+  if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
+  const amount = TAKE_FROM_BUDGET[level];
+  if (!amount) return { error: 'Неизвестный уровень' };
+
+  factory.budgetPercent = Math.max(0, factory.budgetPercent - amount);
+  factory.pocket += amount;
+
+  if (factory.budgetPercent < 0) {
+    factory.bankrupt = true;
+    return { bankrupt: true, factory };
+  }
+
+  return { ok: true, factory };
+}
+
+// Украсть из инвестиций — опустить отдел. Бюджет НЕ трогаем. Деньги в карман.
+function takeFromDirection(factory, direction, level) {
+  if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
+  if (!DIRECTIONS.includes(direction)) return { error: 'Неизвестный отдел' };
+  if (![LEVEL.LOW, LEVEL.MID, LEVEL.HIGH].includes(level)) return { error: 'Неизвестный уровень' };
+
+  const current = factory.directions[direction];
+  if (level >= current) {
+    return { error: 'Нельзя поднять отдел воровством' };
+  }
+
+  // Разница уходит в карман
+  const diff = current - level;
+  factory.pocket += diff;
+  factory.directions[direction] = level;
+
+  // Пересчитываем только инвестиции. Бюджет — НЕ трогаем.
+  factory.invested = totalInvested(factory.directions);
+  factory.investments = calcInvestments(factory.directions);
+
+  return { ok: true, factory };
+}
+
+function factorySnapshot(factory, forDirector = false) {
   if (!factory) return null;
-  return {
+  const snapshot = {
     directions: factory.directions,
     invested: factory.invested,
     investments: factory.investments,
@@ -90,14 +150,19 @@ function factorySnapshot(factory) {
     reputation: factory.reputation,
     bankrupt: factory.bankrupt
   };
+  if (forDirector) snapshot.pocket = factory.pocket;
+  return snapshot;
 }
 
 module.exports = {
   createFactory,
   setLevel,
+  takeFromBudget,
+  takeFromDirection,
   factorySnapshot,
   calcInvestments,
   calcBudgetPercent,
   LEVEL,
-  DIRECTIONS
+  DIRECTIONS,
+  TAKE_FROM_BUDGET
 };
