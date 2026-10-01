@@ -99,6 +99,12 @@
   <div class="glass hidden" id="wrap-game">
     <div id="screen-game" class="shift">
 
+      <!-- Счётчик решений -->
+      <div class="decisions-bar">
+        <span class="decisions-label">Ваши решения</span>
+        <span class="decisions-dots" id="decisions-dots"></span>
+      </div>
+
       <div class="shift-status">
         <div class="status-item">
           <div class="status-header">
@@ -157,7 +163,7 @@
         <button class="btn secondary" id="btn-finish-other">Завершить смену</button>
       </div>
 
-      <!-- Сообщение «Смена завершена» — показывается всем, кто нажал -->
+      <!-- Сообщение «Смена завершена» -->
       <div class="hidden" id="shift-done">
         <div class="subtitle">
           Смена завершена.<br>

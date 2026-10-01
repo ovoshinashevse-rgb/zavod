@@ -2,7 +2,7 @@
 // РОЛИ — случайная раздача по числу игроков
 // ═══════════════════════════════════════════
 
-const { hall, ALL_ROLES, ROLE_LABELS } = require('./hall');
+const { hall, ALL_ROLES, ROLE_LABELS, DECISIONS_PER_SHIFT } = require('./hall');
 
 function shuffle(arr) {
   const a = arr.slice();
@@ -28,7 +28,7 @@ function pickRolesForCount(count) {
   return ['director', 'security', 'accountant', 'engineer', 'hr', 'marketer'];
 }
 
-// Раздать роли всем в зале. Возвращает список { id, role, label }
+// Раздать роли всем в зале
 function assignRoles() {
   hall.phase = 'roles';
 
@@ -37,6 +37,10 @@ function assignRoles() {
 
   hall.players.forEach((p, i) => {
     p.role = roles[i];
+    p.decisionsLeft = DECISIONS_PER_SHIFT[p.role] || 0;   // ставим решения сразу
+    p.finished = false;
+    p.dossier = [];
+    p.suspicions = 0;
   });
 
   return hall.players.map(p => ({

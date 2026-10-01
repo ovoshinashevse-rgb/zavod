@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// КАБИНЕТ ДИРЕКТОРА — шкалы, уровни, воровство
+// КАБИНЕТ ДИРЕКТОРА — шкалы, решения, воровство
 // ═══════════════════════════════════════════
 
 (function () {
@@ -35,7 +35,6 @@
     return high;
   }
 
-  // Цвет и слова для кармана
   function pocketColorClass(value) {
     if (value <= 0) return 'mid';
     if (value < 50) return 'mid';
@@ -68,7 +67,6 @@
     budFill.className = 'scale-fill ' + colorClass(f.budgetPercent);
     document.getElementById('budget-word').textContent = wordFor(f.budgetPercent, 'bud');
 
-    // Карман — только если пришёл в снимке (для Директора)
     const pocketBox = document.getElementById('pocket-box');
     if (typeof f.pocket !== 'undefined') {
       const pocketPercent = Math.min(100, f.pocket);
@@ -89,6 +87,23 @@
   }
 
   window.renderScales = renderScales;
+
+  // ─── Отрисовка точек решений ───
+  function renderDecisions(left) {
+    const max = 3;   // у Директора 3 решения
+    const box = document.getElementById('decisions-dots');
+    box.innerHTML = '';
+    for (let i = 0; i < max; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'decision-dot' + (i < left ? ' active' : '');
+      box.appendChild(dot);
+    }
+
+    // Если решений нет — блокируем основные кнопки
+    const noDecisions = left <= 0;
+    document.getElementById('btn-set-level').disabled = noDecisions;
+    document.getElementById('btn-take').disabled = noDecisions;
+  }
 
   // ─── Подменю ───
   const mainActions      = document.getElementById('main-actions');
@@ -346,7 +361,6 @@
     socket.emit('player_finish_shift');
   };
 
-  // Завершение смены — прячем действия, показываем «Смена завершена»
   function enterShiftDone() {
     hideAllSubmenus();
     mainActions.classList.add('hidden');
@@ -357,10 +371,11 @@
   // ═══════════════════════════════════════════
   // СОБЫТИЯ С СЕРВЕРА
   // ═══════════════════════════════════════════
-  socket.on('factory_chosen', ({ type, factory }) => {
+  socket.on('factory_chosen', ({ type, factory, decisionsLeft }) => {
     applyTheme(type === 'good' ? 'rich' : 'poor');
     state.factory = factory;
     renderScales();
+    renderDecisions(decisionsLeft || 0);
 
     if (state.myRole === 'director') {
       document.getElementById('main-actions').classList.remove('hidden');
@@ -387,7 +402,10 @@
     }
   });
 
-  // ─── Игрок завершил смену ───
+  socket.on('decisions_update', ({ decisionsLeft }) => {
+    renderDecisions(decisionsLeft);
+  });
+
   socket.on('shift_progress', ({ finished }) => {
     const me = finished.find(p => p.id === socket.id);
     if (me && me.finished) {
@@ -395,9 +413,9 @@
     }
   });
 
-  // ─── Новая смена ───
-  socket.on('new_shift', () => {
+  socket.on('new_shift', ({ decisionsLeft }) => {
     shiftDone.classList.add('hidden');
+    renderDecisions(decisionsLeft || 0);
 
     if (state.myRole === 'director') {
       document.getElementById('main-actions').classList.remove('hidden');

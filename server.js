@@ -57,17 +57,19 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Директору — с карманом
+    // Директору — с карманом и решениями
     socket.emit('factory_chosen', {
       type: result.type,
-      factory: result.factory
+      factory: result.factory,
+      decisionsLeft: 3
     });
 
-    // Остальным — без кармана
+    // Остальным — без кармана, со своими решениями
     hall.players.filter(p => p.id !== socket.id).forEach(p => {
       io.to(p.id).emit('factory_chosen', {
         type: result.type,
-        factory: stripPocket(result.factory)
+        factory: stripPocket(result.factory),
+        decisionsLeft: p.decisionsLeft || 0
       });
     });
 
@@ -83,6 +85,7 @@ io.on('connection', (socket) => {
     }
 
     emitFactory(result.factory);
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
 
     if (result.bankrupt) {
       hall.phase = 'end';
@@ -99,6 +102,7 @@ io.on('connection', (socket) => {
     }
 
     emitFactory(result.factory);
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
 
     if (result.bankrupt) {
       hall.phase = 'end';
@@ -115,6 +119,7 @@ io.on('connection', (socket) => {
     }
 
     emitFactory(result.factory);
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
 
   // ─── Игрок завершает смену ───
@@ -125,14 +130,18 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Сообщаем всем, что этот игрок завершил смену
     io.emit('shift_progress', {
       finished: hall.players.map(p => ({ id: p.id, name: p.name, finished: p.finished }))
     });
 
-    // Если все завершили — начинаем новую смену
     if (result.newShift) {
-      io.emit('new_shift', { shift: result.shift });
+      // При новой смене раздаём обновлённые решения каждому
+      hall.players.forEach(p => {
+        io.to(p.id).emit('new_shift', {
+          shift: result.shift,
+          decisionsLeft: p.decisionsLeft
+        });
+      });
     }
   });
 
@@ -180,7 +189,6 @@ function stripPocket(snapshot) {
 }
 
 // ─── Отправить завод всем ───
-// Директору — с карманом. Остальным — без.
 function emitFactory(snapshotWithPocket) {
   const snapshotNoPocket = stripPocket(snapshotWithPocket);
 
