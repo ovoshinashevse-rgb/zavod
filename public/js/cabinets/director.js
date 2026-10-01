@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// КАБИНЕТ ДИРЕКТОРА — шкалы, решения, воровство
+// КАБИНЕТ ДИРЕКТОРА — шкалы, решения, откаты
 // ═══════════════════════════════════════════
 
 (function () {
@@ -18,6 +18,16 @@
     66:  'Средний',
     100: 'Высокий'
   };
+
+  // Стоимость решений для каждого уровня
+  const DECISION_COST = {
+    33:  1,
+    66:  2,
+    100: 3
+  };
+
+  // ─── Локальное состояние ───
+  let decisionsLeft = 3;
 
   function colorClass(value) {
     if (value < 50) return 'low';
@@ -49,9 +59,10 @@
 
   // ─── Отрисовка шкал ───
   function renderScales() {
-    const f = state.factory;
-
     const repFill = document.getElementById('reputation-fill');
+    if (!repFill) return;
+
+    const f = state.factory;
     repFill.style.width = f.reputation + '%';
     repFill.className = 'scale-fill ' + colorClass(f.reputation);
     document.getElementById('reputation-word').textContent = wordFor(f.reputation, 'rep');
@@ -89,6 +100,7 @@
 
   // ─── Отрисовка точек решений ───
   function renderDecisions(left) {
+    decisionsLeft = left;
     const max = 3;
     const box = document.getElementById('decisions-dots-director');
     if (!box) return;
@@ -102,6 +114,36 @@
     const noDecisions = left <= 0;
     document.getElementById('btn-set-level').disabled = noDecisions;
     document.getElementById('btn-take').disabled = noDecisions;
+  }
+
+  // ─── Обновить доступность кнопок уровней ───
+  function updateLevelButtonsAvailability() {
+    document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(b => {
+      const lvl = parseInt(b.dataset.lvl, 10);
+      const cost = DECISION_COST[lvl];
+      // Блокируем, если уже на этом уровне ИЛИ если решений не хватает
+      const current = (state.factory.directions && state.factory.directions[selectedDir]) || 0;
+      const isSame = (lvl === current);
+      const notEnough = (decisionsLeft < cost);
+      b.disabled = isSame || notEnough;
+    });
+  }
+
+  function updateTakeLevelButtonsAvailability() {
+    document.querySelectorAll('#submenu-take-budget .btn[data-take-lvl]').forEach(b => {
+      const lvl = parseInt(b.dataset.takeLvl, 10);
+      const cost = DECISION_COST[lvl];
+      b.disabled = (decisionsLeft < cost);
+    });
+
+    document.querySelectorAll('#submenu-take-levels .btn[data-take-dir-lvl]').forEach(b => {
+      const lvl = parseInt(b.dataset.takeDirLvl, 10);
+      const cost = DECISION_COST[lvl];
+      const current = (state.factory.directions && state.factory.directions[takeDir]) || 0;
+      const isSameOrHigher = (lvl >= current);
+      const notEnough = (decisionsLeft < cost);
+      b.disabled = isSameOrHigher || notEnough;
+    });
   }
 
   // ─── Подменю ───
@@ -135,6 +177,7 @@
     shiftDone.classList.add('hidden');
   }
 
+  // ─── Превью уровня ───
   function showPreviewLevel(dir, targetLevel) {
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
     const fill = document.getElementById('preview-fill');
@@ -154,14 +197,6 @@
     document.getElementById('levels-preview-label').textContent = DIRECTION_LABELS[dir];
   }
 
-  function updateLevelButtons(dir) {
-    const current = (state.factory.directions && state.factory.directions[dir]) || 0;
-    document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(b => {
-      const lvl = parseInt(b.dataset.lvl, 10);
-      b.disabled = (lvl === current);
-    });
-  }
-
   function showTakePreview(dir, targetLevel) {
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
     const fill = document.getElementById('take-preview-fill');
@@ -177,14 +212,6 @@
     fill.style.width = value + '%';
     fill.className = 'scale-fill ' + colorClass(value);
     document.getElementById('take-levels-preview-label').textContent = DIRECTION_LABELS[dir];
-  }
-
-  function updateTakeLevelButtons(dir) {
-    const current = (state.factory.directions && state.factory.directions[dir]) || 0;
-    document.querySelectorAll('#submenu-take-levels .btn[data-take-dir-lvl]').forEach(b => {
-      const lvl = parseInt(b.dataset.takeDirLvl, 10);
-      b.disabled = (lvl >= current);
-    });
   }
 
   function showDirPreview(dir) {
@@ -224,7 +251,7 @@
       submenuLevels.classList.remove('hidden');
       document.getElementById('levels-title').textContent = DIRECTION_LABELS[selectedDir];
       resetPreviewLevel(selectedDir);
-      updateLevelButtons(selectedDir);
+      updateLevelButtonsAvailability();
     };
   });
 
@@ -277,6 +304,7 @@
   document.getElementById('btn-take-budget').onclick = () => {
     submenuTakeSrc.classList.add('hidden');
     submenuTakeBud.classList.remove('hidden');
+    updateTakeLevelButtonsAvailability();
   };
 
   document.getElementById('btn-back-take-budget').onclick = () => {
@@ -288,8 +316,9 @@
     const lvl = parseInt(btn.dataset.takeLvl, 10);
 
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       socket.emit('director_take_budget', { level: lvl });
-      toast('Забрано из бюджета: ' + LEVEL_LABELS[lvl].toLowerCase() + ' уровень');
+      toast('Откат из бюджета: ' + LEVEL_LABELS[lvl].toLowerCase() + ' уровень');
       showMainActions();
     });
   });
@@ -312,7 +341,7 @@
       submenuTakeLvls.classList.remove('hidden');
       document.getElementById('take-levels-title').textContent = 'Опустить: ' + DIRECTION_LABELS[takeDir];
       resetTakePreview(takeDir);
-      updateTakeLevelButtons(takeDir);
+      updateTakeLevelButtonsAvailability();
     };
   });
 
@@ -343,7 +372,7 @@
       }
 
       socket.emit('director_take_direction', { direction: takeDir, level: lvl });
-      toast('Забрано из ' + DIRECTION_LABELS[takeDir].toLowerCase() + ': до ' + LEVEL_LABELS[lvl].toLowerCase() + ' уровня');
+      toast('Откат из ' + DIRECTION_LABELS[takeDir].toLowerCase() + ': до ' + LEVEL_LABELS[lvl].toLowerCase() + ' уровня');
       showMainActions();
     });
   });
@@ -364,13 +393,13 @@
   // ═══════════════════════════════════════════
   // СОБЫТИЯ С СЕРВЕРА
   // ═══════════════════════════════════════════
-  socket.on('factory_chosen', ({ type, factory, decisionsLeft }) => {
+  socket.on('factory_chosen', ({ type, factory, decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
 
     applyTheme(type === 'good' ? 'rich' : 'poor');
     state.factory = factory;
     renderScales();
-    renderDecisions(decisionsLeft || 0);
+    renderDecisions(dl || 3);
     showMainActions();
     show('screen-game-director');
   });
@@ -381,17 +410,19 @@
     renderScales();
     if (selectedDir) {
       resetPreviewLevel(selectedDir);
-      updateLevelButtons(selectedDir);
+      updateLevelButtonsAvailability();
     }
     if (takeDir) {
       resetTakePreview(takeDir);
-      updateTakeLevelButtons(takeDir);
+      updateTakeLevelButtonsAvailability();
     }
   });
 
-  socket.on('decisions_update', ({ decisionsLeft }) => {
+  socket.on('decisions_update', ({ decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
-    renderDecisions(decisionsLeft);
+    renderDecisions(dl);
+    updateLevelButtonsAvailability();
+    updateTakeLevelButtonsAvailability();
   });
 
   socket.on('shift_progress', ({ finished }) => {
@@ -402,10 +433,10 @@
     }
   });
 
-  socket.on('new_shift', ({ decisionsLeft }) => {
+  socket.on('new_shift', ({ decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
     shiftDone.classList.add('hidden');
-    renderDecisions(decisionsLeft || 0);
+    renderDecisions(dl || 3);
     showMainActions();
   });
 

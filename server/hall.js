@@ -29,13 +29,13 @@ const hall = {
 
   // Сговор
   deal: {
-    pending: false,    // предложение отправлено, ждём ответа
-    active: false,     // сговор заключён
+    pending: false,
+    active: false,
     securityId: null,
     directorId: null
   },
 
-  // Журнал краж: { shift, amount, type }
+  // Журнал откатов: { shift, amount, type }
   // type: 'budget' | 'direction'
   theftsLog: []
 };
@@ -50,8 +50,10 @@ function addPlayer(socketId, name) {
       role: null,
       finished: false,
       decisionsLeft: 0,
-      dossier: [],        // проверки Безопасника: { shift, targetId, result }
-      suspicions: 0       // шкала подозрений Безопасника
+      dossier: [],        // проверки Безопасника
+      suspicions: 0,      // шкала подозрений
+      returns: 0,         // шкала возврата (для Безопасника)
+      kickbacks: 0        // шкала отката (для Безопасника)
     };
     hall.players.push(p);
   } else {

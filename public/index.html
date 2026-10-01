@@ -97,6 +97,7 @@
   </div>
 
   <!-- ЭКРАН 6a: СМЕНА ДИРЕКТОРА -->
+  <!-- ЭКРАН 6a: СМЕНА ДИРЕКТОРА -->
   <div class="glass hidden" id="wrap-game-director">
     <div id="screen-game-director" class="shift">
 
@@ -265,7 +266,7 @@
   </div>
 
   <!-- ЭКРАН 6b: СМЕНА БЕЗОПАСНИКА -->
-  <div class="glass hidden" id="wrap-game-security">
+ <div class="glass hidden" id="wrap-game-security">
     <div id="screen-game-security" class="shift shift-security">
 
       <div class="decisions-bar">
@@ -273,7 +274,7 @@
         <span class="decisions-dots" id="decisions-dots-security"></span>
       </div>
 
-      <!-- Подозрения -->
+      <!-- Три шкалы Безопасника -->
       <div class="shift-status">
         <div class="status-item">
           <div class="status-header">
@@ -282,6 +283,26 @@
           </div>
           <div class="scale">
             <div class="scale-fill mid" id="suspicions-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Конфисковано</span>
+            <span class="status-value" id="returns-word">пусто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="returns-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Откат</span>
+            <span class="status-value" id="kickbacks-word">пусто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="kickbacks-fill" style="width:0%"></div>
           </div>
         </div>
       </div>

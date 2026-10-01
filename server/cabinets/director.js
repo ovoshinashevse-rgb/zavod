@@ -2,16 +2,17 @@
 // КАБИНЕТ ДИРЕКТОРА — действия в смену
 // ═══════════════════════════════════════════
 
-const { hall, getPlayer, allFinishedShift, resetFinished } = require('../hall');
+const { hall, getPlayer, allFinishedShift, resetFinished, DECISIONS_PER_SHIFT } = require('../hall');
 const {
   createFactory,
   setLevel,
   takeFromBudget,
   takeFromDirection,
-  factorySnapshot
+  factorySnapshot,
+  DECISION_COST
 } = require('../factory');
 
-// Проверить: может ли Директор делать действие
+// Проверить, что Директор может делать действие
 function canAct(p) {
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
   if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
@@ -31,9 +32,10 @@ function chooseFactory(socketId, type) {
   hall.factory = createFactory(type);
   hall.phase = 'game';
   hall.shift = 1;
+
   hall.players.forEach(x => {
     x.finished = false;
-    x.decisionsLeft = (x.role === 'director') ? 3 : (x.role === 'security' ? 2 : 0);
+    x.decisionsLeft = DECISIONS_PER_SHIFT[x.role] || 0;
   });
 
   return {
@@ -49,10 +51,17 @@ function setDirectionLevel(socketId, direction, level) {
   const check = canAct(p);
   if (check.error) return check;
 
+  // Сколько решений стоит это действие
+  const cost = DECISION_COST[level];
+  if (!cost) return { error: 'Неизвестный уровень' };
+  if (p.decisionsLeft < cost) {
+    return { error: 'Недостаточно решений для этого действия' };
+  }
+
   const result = setLevel(hall.factory, direction, level);
   if (result.error) return result;
 
-  p.decisionsLeft -= 1;
+  p.decisionsLeft -= cost;
 
   return {
     ok: true,
@@ -62,16 +71,22 @@ function setDirectionLevel(socketId, direction, level) {
   };
 }
 
-// Забрать себе из бюджета
+// Откат из бюджета
 function takeFromBudgetAction(socketId, level) {
   const p = getPlayer(socketId);
   const check = canAct(p);
   if (check.error) return check;
 
+  const cost = DECISION_COST[level];
+  if (!cost) return { error: 'Неизвестный уровень' };
+  if (p.decisionsLeft < cost) {
+    return { error: 'Недостаточно решений для этого действия' };
+  }
+
   const result = takeFromBudget(hall.factory, level);
   if (result.error) return result;
 
-  p.decisionsLeft -= 1;
+  p.decisionsLeft -= cost;
 
   return {
     ok: true,
@@ -81,16 +96,22 @@ function takeFromBudgetAction(socketId, level) {
   };
 }
 
-// Забрать себе из инвестиций
+// Откат из инвестиций
 function takeFromDirectionAction(socketId, direction, level) {
   const p = getPlayer(socketId);
   const check = canAct(p);
   if (check.error) return check;
 
+  const cost = DECISION_COST[level];
+  if (!cost) return { error: 'Неизвестный уровень' };
+  if (p.decisionsLeft < cost) {
+    return { error: 'Недостаточно решений для этого действия' };
+  }
+
   const result = takeFromDirection(hall.factory, direction, level);
   if (result.error) return result;
 
-  p.decisionsLeft -= 1;
+  p.decisionsLeft -= cost;
 
   return {
     ok: true,

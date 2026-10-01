@@ -79,6 +79,10 @@
   socket.on('smoking_update', ({ players }) => {
     state.players = players;
   });
+    // ─── Список игроков с ролями ───
+  socket.on('players_roles', ({ players }) => {
+    state.players = players;
+  });
 
   // ─── Сохраняем роль ───
   socket.on('your_role', ({ role }) => {

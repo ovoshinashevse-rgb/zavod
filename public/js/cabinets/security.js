@@ -5,18 +5,21 @@
 (function () {
   const { socket, state, show, toast } = window.App;
 
-  // ─── Локальное состояние ───
   const secState = {
     suspicions: 0,
+    returns: 0,
+    kickbacks: 0,
     dossier: [],
     decisionsLeft: 2,
+    currentShift: 1,
     deal: { pending: false, active: false, iAmSecurity: false, iAmDirector: false }
   };
 
-  // ─── Отрисовка точек решений ───
+  // ─── Точки решений ───
   function renderDecisions(left) {
     const max = 2;
     const box = document.getElementById('decisions-dots-security');
+    if (!box) return;
     box.innerHTML = '';
     for (let i = 0; i < max; i++) {
       const dot = document.createElement('span');
@@ -25,16 +28,22 @@
     }
 
     const noDecisions = left <= 0;
-    document.getElementById('btn-security-check').disabled = noDecisions;
-    document.getElementById('btn-security-report').disabled = noDecisions;
-    document.getElementById('btn-security-deal').disabled = noDecisions || secState.deal.active;
-    document.getElementById('btn-security-break-deal').disabled = left <= 0;
+    const btnCheck = document.getElementById('btn-security-check');
+    const btnReport = document.getElementById('btn-security-report');
+    const btnDeal = document.getElementById('btn-security-deal');
+    const btnBreak = document.getElementById('btn-security-break-deal');
+
+    if (btnCheck) btnCheck.disabled = noDecisions;
+    if (btnReport) btnReport.disabled = noDecisions;
+    if (btnDeal) btnDeal.disabled = noDecisions || secState.deal.active;
+    if (btnBreak) btnBreak.disabled = noDecisions;
   }
 
-  // ─── Отрисовка подозрений ───
+  // ─── Подозрения ───
   function renderSuspicions(value) {
     const fill = document.getElementById('suspicions-fill');
     const word = document.getElementById('suspicions-word');
+    if (!fill || !word) return;
 
     fill.style.width = value + '%';
 
@@ -50,9 +59,42 @@
     }
   }
 
-  // ─── Отрисовка досье ───
+  // ─── Слова для качественных шкал ───
+  function qualitativeWord(value) {
+    if (!value || value <= 0) return 'пусто';
+    if (value < 30) return 'немного';
+    if (value < 70) return 'нормально';
+    return 'много';
+  }
+
+  // ─── Возврат ───
+  function renderReturns(value) {
+    const fill = document.getElementById('returns-fill');
+    const word = document.getElementById('returns-word');
+    if (!fill || !word) return;
+
+    const percent = Math.min(100, value);
+    fill.style.width = percent + '%';
+    fill.className = 'scale-fill ' + (value > 0 ? 'high' : 'mid');
+    word.textContent = qualitativeWord(value);
+  }
+
+  // ─── Откат ───
+  function renderKickbacks(value) {
+    const fill = document.getElementById('kickbacks-fill');
+    const word = document.getElementById('kickbacks-word');
+    if (!fill || !word) return;
+
+    const percent = Math.min(100, value);
+    fill.style.width = percent + '%';
+    fill.className = 'scale-fill ' + (value > 0 ? 'low' : 'mid');
+    word.textContent = qualitativeWord(value);
+  }
+
+  // ─── Досье ───
   function renderDossier(dossier) {
     const box = document.getElementById('dossier-list');
+    if (!box) return;
     box.innerHTML = '';
 
     if (!dossier || dossier.length === 0) {
@@ -60,7 +102,6 @@
       return;
     }
 
-    // Последние 5 записей — сверху
     const recent = dossier.slice(-5).reverse();
 
     recent.forEach(d => {
@@ -68,37 +109,36 @@
       row.className = 'dossier-row';
 
       let label = '—';
-      if (d.result === 'clean')  label = 'Чисто';
-      if (d.result === 'little') label = 'Воровал мало';
-      if (d.result === 'much')   label = 'Воровал много';
+      if (d.result === 'pending') label = 'Ждёт ответа';
+      if (d.result === 'clean')   label = 'Чисто';
+      if (d.result === 'little')  label = 'Откат был';
+      if (d.result === 'much')    label = 'Откат серьёзный';
 
       row.innerHTML =
         '<span class="shift-num">Смена ' + d.shift + '</span>' +
-        '<span class="target-name">' + d.targetName + '</span>' +
+        '<span class="target-name">' + (d.targetTitle || '—') + '</span>' +
         '<span class="result ' + d.result + '">' + label + '</span>';
 
       box.appendChild(row);
     });
   }
 
-  // ─── Отрисовка статуса сговора ───
+  // ─── Сговор ───
   function renderDeal(deal) {
     const box = document.getElementById('deal-status');
     const btnDeal = document.getElementById('btn-security-deal');
     const btnBreak = document.getElementById('btn-security-break-deal');
 
     if (deal.active) {
-      box.textContent = 'Сговор активен. Вы получаете 30% с каждой кражи.';
+      box.textContent = 'Сговор активен. Вы получаете долю с каждого отката.';
       box.className = 'deal-status active';
       box.classList.remove('hidden');
-
       btnDeal.style.display = 'none';
       btnBreak.style.display = 'block';
     } else if (deal.pending) {
       box.textContent = 'Предложение отправлено. Ждём ответа Директора…';
       box.className = 'deal-status pending';
       box.classList.remove('hidden');
-
       btnDeal.style.display = 'none';
       btnBreak.style.display = 'none';
     } else {
@@ -108,28 +148,22 @@
     }
   }
 
-  // ─── Показать результат проверки ───
-  function showCheckResult(result, targetName, basedOnShift) {
+  function showCheckResult(result, targetTitle) {
     const box = document.getElementById('check-result-box');
 
     let label = '—';
     let cls = '';
     if (result === 'clean')  { label = 'Чисто';           cls = 'clean'; }
-    if (result === 'little') { label = 'Воровал мало';    cls = 'little'; }
-    if (result === 'much')   { label = 'Воровал много';   cls = 'much'; }
+    if (result === 'little') { label = 'Откат был';       cls = 'little'; }
+    if (result === 'much')   { label = 'Откат серьёзный'; cls = 'much'; }
 
     box.className = 'check-result-box ' + cls;
-    box.innerHTML =
-      label +
-      '<span class="result-sub">' + targetName +
-      ' · проверка по смене ' + basedOnShift + '</span>';
+    box.innerHTML = label + '<span class="result-sub">' + targetTitle + '</span>';
 
-    // Показать подменю результата
     hideAllSubmenus();
     document.getElementById('submenu-check-result').classList.remove('hidden');
   }
 
-  // ─── Подменю ───
   function hideAllSubmenus() {
     document.getElementById('submenu-check').classList.add('hidden');
     document.getElementById('submenu-report').classList.add('hidden');
@@ -142,19 +176,15 @@
     document.getElementById('shift-done-security').classList.add('hidden');
   }
 
-  // ─── Кнопка: Проверить ───
+  // ─── Кнопки ───
   document.getElementById('btn-security-check').onclick = () => {
-    // Найти Директора (пока единственная цель)
     const target = state.players && state.players.find(p => p.role === 'director');
-    if (!target) {
-      toast('Некого проверять');
-      return;
-    }
+    if (!target) { toast('Некого проверять'); return; }
 
     hideAllSubmenus();
     const submenu = document.getElementById('submenu-check');
     const listBtn = document.getElementById('btn-check-list');
-    listBtn.textContent = target.name;
+    listBtn.textContent = 'Директор';
     listBtn.dataset.checkTarget = target.id;
     submenu.classList.remove('hidden');
   };
@@ -170,20 +200,22 @@
     socket.emit('security_check', { targetId: targetId });
   };
 
-  // ─── Кнопка: Донести ───
   document.getElementById('btn-security-report').onclick = () => {
-    // Найти в досье, кого можно донести
-    const recent = secState.dossier.filter(d => d.shift >= secState.currentShift - 2);
-    if (recent.length === 0) {
-      toast('Некого доносить — сначала проверьте');
+    const ready = secState.dossier
+      .filter(d => d.result && d.result !== 'pending')
+      .sort((a, b) => b.shift - a.shift);
+
+    if (ready.length === 0) {
+      toast('Нет проверок с результатом');
       return;
     }
+
+    const last = ready[0];
 
     hideAllSubmenus();
     const submenu = document.getElementById('submenu-report');
     const listBtn = document.getElementById('btn-report-list');
-    const last = recent[recent.length - 1];
-    listBtn.textContent = last.targetName;
+    listBtn.textContent = 'Директор';
     listBtn.dataset.reportTarget = last.targetId;
     submenu.classList.remove('hidden');
   };
@@ -199,33 +231,28 @@
     socket.emit('security_report', { targetId: targetId });
   };
 
-  // ─── Кнопка: Сговор ───
-  document.getElementById('btn-security-deal').onclick = () => {
-    socket.emit('security_offer_deal');
-  };
-
-  // ─── Кнопка: Разорвать сговор ───
-  document.getElementById('btn-security-break-deal').onclick = () => {
-    socket.emit('security_break_deal');
-  };
-
-  // ─── Кнопка: Завершить смену ───
-  document.getElementById('btn-finish-security').onclick = () => {
-    socket.emit('player_finish_shift');
-  };
+  document.getElementById('btn-security-deal').onclick = () => socket.emit('security_offer_deal');
+  document.getElementById('btn-security-break-deal').onclick = () => socket.emit('security_break_deal');
+  document.getElementById('btn-finish-security').onclick = () => socket.emit('player_finish_shift');
 
   document.getElementById('btn-back-check-result').onclick = () => {
     hideAllSubmenus();
     document.getElementById('security-actions').classList.remove('hidden');
   };
 
-  // ═══════════════════════════════════════════
-  // СОБЫТИЯ С СЕРВЕРА
-  // ═══════════════════════════════════════════
+  // ─── События с сервера ───
   socket.on('security_update', (data) => {
     if (typeof data.suspicions !== 'undefined') {
       secState.suspicions = data.suspicions;
       renderSuspicions(data.suspicions);
+    }
+    if (typeof data.returns !== 'undefined') {
+      secState.returns = data.returns;
+      renderReturns(data.returns);
+    }
+    if (typeof data.kickbacks !== 'undefined') {
+      secState.kickbacks = data.kickbacks;
+      renderKickbacks(data.kickbacks);
     }
     if (data.dossier) {
       secState.dossier = data.dossier;
@@ -241,12 +268,16 @@
     }
   });
 
-  socket.on('security_check_result', ({ result, targetName, basedOnShift }) => {
-    showCheckResult(result, targetName, basedOnShift);
+  socket.on('security_check_pending', () => {
+    toast('Проверка принята. Результат — в следующую смену.');
+    hideAllSubmenus();
+    document.getElementById('security-actions').classList.remove('hidden');
   });
 
-  socket.on('deal_offered', () => {
-    // Это для Директора — обрабатывает director.js
+  socket.on('security_check_results', ({ results }) => {
+    if (!results || results.length === 0) return;
+    const r = results[0];
+    showCheckResult(r.result, r.targetTitle);
   });
 
   socket.on('deal_activated', () => {
@@ -269,21 +300,20 @@
     toast('Сговор разорван');
   });
 
-  socket.on('report_happened', ({ targetName, confiscated }) => {
-    // Это событие для всех — обрабатываем где нужно
-    console.log('Донос:', targetName, 'конфисковано', confiscated);
+  socket.on('report_happened', ({ targetTitle }) => {
+    toast('Вы вернули деньги заводу');
   });
 
-  // ─── Новая смена ───
-  socket.on('new_shift', ({ decisionsLeft }) => {
+  socket.on('new_shift', ({ shift, decisionsLeft }) => {
+    secState.currentShift = shift || (secState.currentShift + 1);
     document.getElementById('shift-done-security').classList.add('hidden');
     document.getElementById('security-actions').classList.remove('hidden');
     renderDecisions(decisionsLeft || 0);
     hideAllSubmenus();
   });
 
-  // ─── Завершил смену ───
   socket.on('shift_progress', ({ finished }) => {
+    if (state.myRole !== 'security') return;
     const me = finished.find(p => p.id === socket.id);
     if (me && me.finished) {
       hideAllSubmenus();
@@ -292,27 +322,18 @@
     }
   });
 
-  // ─── Получили роль — если мы Безопасник, показать экран ───
-  socket.on('your_role', ({ role }) => {
-    if (role === 'security') {
-      // Ничего пока — переход сделает badge.js
-    }
-  });
-
-  // ─── Игра началась (пришёл завод) ───
   socket.on('factory_chosen', ({ type }) => {
     if (state.myRole !== 'security') return;
 
     show('screen-game-security');
     renderDecisions(secState.decisionsLeft);
     renderSuspicions(secState.suspicions);
+    renderReturns(secState.returns);
+    renderKickbacks(secState.kickbacks);
     renderDossier(secState.dossier);
     renderDeal(secState.deal);
     showActions();
   });
-
-  // ─── Подсказки для сговора — Директор получит модалку, но Безопасник наблюдает
-  socket.on('security_check_result_self', () => {});
 
   console.log('Cabinet Security: модуль готов');
 })();

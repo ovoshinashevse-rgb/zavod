@@ -5,7 +5,15 @@
 const { hall, getPlayer } = require('../hall');
 const { confiscatePocket } = require('../factory');
 
-// Проверить: может ли Безопасник делать действие
+const ROLE_TITLES = {
+  director: 'Директор',
+  security: 'Безопасник',
+  accountant: 'Бухгалтер',
+  engineer: 'Инженер',
+  hr: 'HR',
+  marketer: 'Маркетолог'
+};
+
 function canAct(p) {
   if (!p || p.role !== 'security') return { error: 'Только Безопасник' };
   if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
@@ -14,14 +22,7 @@ function canAct(p) {
   return { ok: true };
 }
 
-// Сколько раз цель воровала в указанную смену
-function theftsInShift(shiftNumber, targetId) {
-  // В журнале записаны кражи Директора (он один, кто ворует).
-  // Пока что targetId — только Директор.
-  return hall.theftsLog.filter(t => t.shift === shiftNumber).length;
-}
-
-// Проверить игрока
+// Проверка — отложенная. Результат в следующую смену.
 function checkPlayer(socketId, targetId) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -34,37 +35,53 @@ function checkPlayer(socketId, targetId) {
   const target = getPlayer(targetId);
   if (!target) return { error: 'Игрок не найден' };
 
-  // Смотрим на прошлую смену (текущая — hall.shift, прошлая — hall.shift - 1)
-  const pastShift = hall.shift - 1;
-  const thefts = theftsInShift(pastShift, targetId);
-
-  let result;
-  if (thefts === 0) result = 'clean';
-  else if (thefts === 1) result = 'little';
-  else result = 'much';
-
-  // Записываем в досье
   p.dossier.push({
     shift: hall.shift,
     targetId: targetId,
-    targetName: target.name,
-    result: result,
-    basedOnShift: pastShift
+    targetRole: target.role,
+    targetTitle: ROLE_TITLES[target.role] || '—',
+    result: 'pending'
   });
 
   p.decisionsLeft -= 1;
 
   return {
     ok: true,
-    result: result,
-    targetName: target.name,
-    basedOnShift: pastShift,
+    pending: true,
+    targetTitle: ROLE_TITLES[target.role] || '—',
     decisionsLeft: p.decisionsLeft,
     dossier: p.dossier
   };
 }
 
-// Предложить сговор Директору
+// Обработать отложенные проверки при новой смене
+function resolvePendingChecks() {
+  const sec = hall.players.find(x => x.role === 'security');
+  if (!sec) return null;
+
+  const pastShift = hall.shift - 1;
+  const results = [];
+
+  sec.dossier.forEach(d => {
+    if (d.result !== 'pending') return;
+    if (d.shift !== pastShift) return;
+
+    const thefts = hall.theftsLog.filter(t => t.shift === pastShift).length;
+
+    if (thefts === 0) d.result = 'clean';
+    else if (thefts === 1) d.result = 'little';
+    else d.result = 'much';
+
+    results.push({
+      targetTitle: d.targetTitle,
+      result: d.result
+    });
+  });
+
+  return results;
+}
+
+// Сговор
 function offerDeal(socketId) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -73,7 +90,6 @@ function offerDeal(socketId) {
   if (hall.deal.active) return { error: 'Сговор уже активен' };
   if (hall.deal.pending) return { error: 'Предложение уже отправлено' };
 
-  // Найти Директора
   const director = hall.players.find(x => x.role === 'director');
   if (!director) return { error: 'Директор не найден' };
 
@@ -91,7 +107,6 @@ function offerDeal(socketId) {
   };
 }
 
-// Директор соглашается на сговор
 function acceptDeal(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
@@ -100,11 +115,9 @@ function acceptDeal(socketId) {
 
   hall.deal.pending = false;
   hall.deal.active = true;
-
   return { ok: true, active: true };
 }
 
-// Директор отказывается
 function declineDeal(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
@@ -114,11 +127,9 @@ function declineDeal(socketId) {
   hall.deal.pending = false;
   hall.deal.securityId = null;
   hall.deal.directorId = null;
-
   return { ok: true, declined: true };
 }
 
-// Разорвать сговор (любой из двоих)
 function breakDeal(socketId) {
   const p = getPlayer(socketId);
   if (!p) return { error: 'Игрок не найден' };
@@ -127,7 +138,6 @@ function breakDeal(socketId) {
     return { error: 'Вы не участник сговора' };
   }
 
-  // Если рвёт Безопасник — тратит решение
   if (p.role === 'security') {
     if (p.decisionsLeft <= 0) return { error: 'Решения закончились' };
     p.decisionsLeft -= 1;
@@ -138,14 +148,10 @@ function breakDeal(socketId) {
   hall.deal.securityId = null;
   hall.deal.directorId = null;
 
-  return {
-    ok: true,
-    broken: true,
-    decisionsLeft: p.decisionsLeft
-  };
+  return { ok: true, broken: true, decisionsLeft: p.decisionsLeft };
 }
 
-// Донести на игрока
+// Донос — конфискация из кармана в кассу
 function reportPlayer(socketId, targetId) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -154,80 +160,69 @@ function reportPlayer(socketId, targetId) {
   const target = getPlayer(targetId);
   if (!target) return { error: 'Игрок не найден' };
 
-  // Донести можно только на того, кого проверял в последние 2 смены
-  const recent = p.dossier.filter(d =>
-    d.targetId === targetId && d.shift >= hall.shift - 2
+  const ready = p.dossier.filter(d =>
+    d.targetId === targetId &&
+    d.result !== 'pending' &&
+    d.shift >= hall.shift - 2
   );
-  if (recent.length === 0) {
-    return { error: 'Вы не проверяли этого игрока недавно' };
+  if (ready.length === 0) {
+    return { error: 'Нет результатов проверки на этого игрока' };
   }
 
-  // Конфискуем 50% кармана цели
+  // Конфискация: 50% кармана идёт в кассу завода (money)
   const pocket = hall.factory.pocket || 0;
   const confiscated = confiscatePocket(hall.factory, Math.floor(pocket / 2));
 
-  // Понижаем подозрения
-  p.suspicions = Math.max(0, p.suspicions - 30);
+  // Безопаснику — плюс в «конфисковано»
+  p.returns += confiscated;
 
-  // Очищаем досье по этой цели
+  p.suspicions = Math.max(0, p.suspicions - 30);
   p.dossier = p.dossier.filter(d => d.targetId !== targetId);
 
   p.decisionsLeft -= 1;
 
   return {
     ok: true,
-    targetName: target.name,
+    targetTitle: ROLE_TITLES[target.role] || '—',
     confiscated: confiscated,
     decisionsLeft: p.decisionsLeft,
     suspicions: p.suspicions,
+    returns: p.returns,
     dossier: p.dossier
   };
 }
 
-// Пересчёт подозрений в конце смены
-// Вызывается, когда начинается новая смена
+// Пересчёт подозрений после смены
 function recalcSuspicionsAfterShift() {
-  const security = hall.players.find(x => x.role === 'security');
-  if (!security) return;
+  const sec = hall.players.find(x => x.role === 'security');
+  if (!sec) return;
 
   const director = hall.players.find(x => x.role === 'director');
   if (!director) return;
 
-  // Сколько было краж в прошлую смену
   const pastShift = hall.shift - 1;
   const thefts = hall.theftsLog.filter(t => t.shift === pastShift);
 
-  if (thefts.length === 0) return;   // нечего считать
+  if (thefts.length === 0) return;
 
-  // Проверял ли Безопасник Директора в прошлую смену
-  const checked = security.dossier.some(d =>
+  const checked = sec.dossier.some(d =>
     d.shift === pastShift && d.targetId === director.id
   );
 
-  // Сговор активен?
-  const dealActive = hall.deal.active;
+  if (!checked) sec.suspicions += 20;
+  if (hall.deal.active) sec.suspicions += 10;
+  if (thefts.length >= 2) sec.suspicions += 5;
 
-  if (!checked) {
-    security.suspicions += 20;
-  }
-  if (dealActive) {
-    security.suspicions += 10;
-  }
-  if (thefts.length >= 2) {
-    security.suspicions += 5;
-  }
-
-  // Ограничиваем 0..100
-  security.suspicions = Math.max(0, Math.min(100, security.suspicions));
-
-  return { suspicions: security.suspicions };
+  sec.suspicions = Math.max(0, Math.min(100, sec.suspicions));
+  return { suspicions: sec.suspicions };
 }
 
-// Снимок Безопасника — что отправляем клиенту
 function securitySnapshot(p) {
   if (!p || p.role !== 'security') return null;
   return {
     suspicions: p.suspicions,
+    returns: p.returns,
+    kickbacks: p.kickbacks,
     dossier: p.dossier,
     decisionsLeft: p.decisionsLeft,
     deal: {
@@ -241,11 +236,13 @@ function securitySnapshot(p) {
 
 module.exports = {
   checkPlayer,
+  resolvePendingChecks,
   offerDeal,
   acceptDeal,
   declineDeal,
   breakDeal,
   reportPlayer,
   recalcSuspicionsAfterShift,
-  securitySnapshot
+  securitySnapshot,
+  ROLE_TITLES
 };

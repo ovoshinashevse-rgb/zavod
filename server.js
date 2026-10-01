@@ -59,6 +59,7 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Каждому игроку — свой снимок
     hall.players.forEach(p => {
       const payload = {
         type: result.type,
@@ -67,6 +68,19 @@ io.on('connection', (socket) => {
       };
       io.to(p.id).emit('factory_chosen', payload);
     });
+
+    // Безопаснику — дополнительно его данные
+    const sec = hall.players.find(x => x.role === 'security');
+    if (sec) {
+      io.to(sec.id).emit('security_update', {
+        decisionsLeft: sec.decisionsLeft,
+        dossier: sec.dossier,
+        suspicions: sec.suspicions,
+        returns: sec.returns,
+        kickbacks: sec.kickbacks,
+        deal: securitySnapshotDeal(sec)
+      });
+    }
 
     console.log('Директор выбрал завод:', type);
   });
@@ -124,16 +138,17 @@ io.on('connection', (socket) => {
       return;
     }
 
+    const sec = getPlayer(socket.id);
     socket.emit('security_update', {
-      decisionsLeft: result.decisionsLeft,
-      dossier: result.dossier,
-      suspicions: getSecuritySuspicions()
+      decisionsLeft: sec.decisionsLeft,
+      dossier: sec.dossier,
+      suspicions: sec.suspicions,
+      returns: sec.returns,
+      kickbacks: sec.kickbacks
     });
 
-    socket.emit('security_check_result', {
-      result: result.result,
-      targetName: result.targetName,
-      basedOnShift: result.basedOnShift
+    socket.emit('security_check_pending', {
+      targetTitle: result.targetTitle
     });
   });
 
@@ -146,15 +161,15 @@ io.on('connection', (socket) => {
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
 
-    // Уведомляем Директора
     io.to(result.directorId).emit('deal_offered');
 
-    // Обновляем Безопасника
     const sec = getPlayer(socket.id);
     socket.emit('security_update', {
       decisionsLeft: sec.decisionsLeft,
       dossier: sec.dossier,
       suspicions: sec.suspicions,
+      returns: sec.returns,
+      kickbacks: sec.kickbacks,
       deal: securitySnapshotDeal(sec)
     });
   });
@@ -166,7 +181,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Обоим — сообщение
     io.to(hall.deal.securityId).emit('deal_activated');
     io.to(hall.deal.directorId).emit('deal_activated');
   });
@@ -188,7 +202,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Обоим — сообщение
     hall.players.forEach(p => {
       if (p.role === 'security' || p.role === 'director') {
         io.to(p.id).emit('deal_broken');
@@ -205,23 +218,21 @@ io.on('connection', (socket) => {
       return;
     }
 
-    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
-
-    // Обновляем Безопасника
     const sec = getPlayer(socket.id);
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     socket.emit('security_update', {
       decisionsLeft: sec.decisionsLeft,
       dossier: sec.dossier,
-      suspicions: sec.suspicions
+      suspicions: sec.suspicions,
+      returns: sec.returns,
+      kickbacks: sec.kickbacks
     });
 
-    // Всем — сообщение о доносе
     io.emit('report_happened', {
-      targetName: result.targetName,
-      confiscated: result.confiscated
+      targetTitle: result.targetTitle
     });
 
-    // Обновляем завод (карман конфискован в бюджет)
     emitFactory(hall.factory);
   });
 
@@ -240,7 +251,7 @@ io.on('connection', (socket) => {
     });
 
     if (result.newShift) {
-      // Пересчитываем подозрения
+      const checkResults = security.resolvePendingChecks();
       security.recalcSuspicionsAfterShift();
 
       hall.players.forEach(p => {
@@ -249,14 +260,19 @@ io.on('connection', (socket) => {
           decisionsLeft: p.decisionsLeft
         });
 
-        // Безопаснику — обновление
         if (p.role === 'security') {
           io.to(p.id).emit('security_update', {
             decisionsLeft: p.decisionsLeft,
             dossier: p.dossier,
             suspicions: p.suspicions,
+            returns: p.returns,
+            kickbacks: p.kickbacks,
             deal: securitySnapshotDeal(p)
           });
+
+          if (checkResults && checkResults.length > 0) {
+            io.to(p.id).emit('security_check_results', { results: checkResults });
+          }
         }
       });
     }
@@ -327,23 +343,24 @@ function securitySnapshotDeal(p) {
   };
 }
 
-// ─── Текущие подозрения Безопасника ───
-function getSecuritySuspicions() {
-  const sec = hall.players.find(x => x.role === 'security');
-  return sec ? sec.suspicions : 0;
-}
-
-// ─── Старт игры: раздать роли ───
+// ─── Старт игры ───
 function startRoles() {
   const assignments = assignRoles();
 
-  // Сбрасываем журнал краж и сговор
   hall.theftsLog = [];
   hall.deal = { pending: false, active: false, securityId: null, directorId: null };
 
   assignments.forEach(a => {
     io.to(a.id).emit('your_role', { role: a.role, label: a.label });
   });
+
+  const playersWithRoles = hall.players.map(p => ({
+    id: p.id,
+    name: p.name,
+    role: p.role
+  }));
+  io.emit('players_roles', { players: playersWithRoles });
+
   console.log('Роли розданы:', assignments.map(a => a.role).join(', '));
 }
 
