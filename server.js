@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const { createFactory, invest, isBankrupt } = require('./server/game');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,14 +13,15 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─────────────────────────────────────────────
-// ОДИН ОБЩИЙ ЗАЛ
+// ОБЩИЙ ЗАЛ
 // ─────────────────────────────────────────────
 const hall = {
   players: [],
-  phase: 'lobby',
+  phase: 'lobby',       // lobby → smoking → roles → game → paused → end
   paused: false,
   disconnected: [],
-  smokeLevel: 0   // <── накопительный счётчик дымности
+  smokeLevel: 0,
+  factory: null         // состояние завода (создаётся при старте игры)
 };
 
 const ALL_ROLES = ['director', 'security', 'accountant', 'engineer', 'hr', 'marketer'];
@@ -67,6 +69,16 @@ function emitSmokingUpdate() {
   });
 }
 
+function emitFactory() {
+  if (!hall.factory) return;
+  io.emit('factory_update', {
+    budget: hall.factory.budget,
+    reputation: hall.factory.reputation,
+    investments: hall.factory.investments,
+    bankrupt: hall.factory.bankrupt
+  });
+}
+
 io.on('connection', (socket) => {
   console.log('Подключился:', socket.id);
 
@@ -83,7 +95,6 @@ io.on('connection', (socket) => {
     emitSmokingUpdate();
   });
 
-  // Накопительное действие: каждая затяжка +1, каждая отмашка −1
   socket.on('smoke_action', ({ type }) => {
     const p = hall.players.find(x => x.id === socket.id);
     if (!p) return;
@@ -92,7 +103,7 @@ io.on('connection', (socket) => {
       hall.smokeLevel = Math.min(12, hall.smokeLevel + 1);
       p.status = 'smoke';
     } else if (type === 'wave') {
-      if (hall.smokeLevel <= 0) return; // нельзя уйти в минус
+      if (hall.smokeLevel <= 0) return;
       hall.smokeLevel = Math.max(0, hall.smokeLevel - 1);
       p.status = 'wave';
     } else {
@@ -101,7 +112,6 @@ io.on('connection', (socket) => {
 
     emitSmokingUpdate();
 
-    // Если все определились (у каждого статус не thinking) — старт
     const allDecided = hall.players.length >= 2 &&
                        hall.players.every(x => x.status !== 'thinking');
     if (allDecided && hall.phase === 'smoking') {
@@ -113,6 +123,29 @@ io.on('connection', (socket) => {
     hall.players.filter(x => x.status === 'thinking').forEach(p => {
       io.to(p.id).emit('hurried');
     });
+  });
+
+  // ─── Действие Директора: вложение ───
+  socket.on('director_invest', ({ direction, amount }) => {
+    if (!hall.factory) return;
+    const p = hall.players.find(x => x.id === socket.id);
+    if (!p || p.role !== 'director') return;
+    if (hall.phase !== 'game') return;
+
+    const result = invest(hall.factory, direction, amount);
+
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    // Рассылаем новое состояние всем
+    emitFactory();
+
+    if (result.bankrupt) {
+      hall.phase = 'end';
+      io.emit('game_over', { reason: 'Завод обанкротился.' });
+    }
   });
 
   socket.on('disconnect', () => {
@@ -146,6 +179,10 @@ io.on('connection', (socket) => {
 
 function startGame() {
   hall.phase = 'roles';
+
+  // Создаём состояние завода
+  hall.factory = createFactory();
+
   const count = hall.players.length;
   const roles = shuffle(pickRolesForCount(count));
 
