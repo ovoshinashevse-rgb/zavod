@@ -20,6 +20,7 @@ const hall = {
   paused: false,
   disconnected: [],
   smokeLevel: 0,
+  shift: 0,         // номер смены
   factory: null
 };
 
@@ -27,11 +28,18 @@ const hall = {
 function addPlayer(socketId, name) {
   let p = hall.players.find(x => x.id === socketId);
   if (!p) {
-    p = { id: socketId, name: name || 'Сотрудник', status: 'thinking', role: null };
+    p = {
+      id: socketId,
+      name: name || 'Сотрудник',
+      status: 'thinking',
+      role: null,
+      finished: false     // завершил ли игрок текущую смену
+    };
     hall.players.push(p);
   } else {
     p.name = name || p.name;
     p.status = 'thinking';
+    p.finished = false;
   }
   return p;
 }
@@ -48,6 +56,17 @@ function allDecided() {
   return hall.players.length >= 2 && hall.players.every(x => x.status !== 'thinking');
 }
 
+// Все ли завершили смену
+function allFinishedShift() {
+  return hall.players.length >= 2 && hall.players.every(x => x.finished);
+}
+
+// Сбросить флаги finished у всех — начать новую смену
+function resetFinished() {
+  hall.players.forEach(p => p.finished = false);
+  hall.shift += 1;
+}
+
 module.exports = {
   hall,
   ALL_ROLES,
@@ -55,5 +74,7 @@ module.exports = {
   addPlayer,
   getPlayer,
   removePlayer,
-  allDecided
+  allDecided,
+  allFinishedShift,
+  resetFinished
 };

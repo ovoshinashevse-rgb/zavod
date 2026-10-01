@@ -131,16 +131,15 @@
         </div>
 
         <div class="status-item hidden" id="pocket-box">
-  <div class="status-header">
-    <span class="status-label">В кармане</span>
-    <span class="status-value" id="pocket-word">пусто</span>
-  </div>
-  <div class="scale">
-    <div class="scale-fill mid" id="pocket-fill" style="width:0%"></div>
-  </div>
-</div>
-
-   </div>
+          <div class="status-header">
+            <span class="status-label">В кармане</span>
+            <span class="status-value" id="pocket-word">пусто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="pocket-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
 
       <!-- Действия Директора -->
       <div class="shift-actions" id="main-actions">
@@ -154,6 +153,15 @@
         <div class="subtitle">
           Вы на смене.<br>
           Ваша роль скоро откроется.
+        </div>
+        <button class="btn secondary" id="btn-finish-other">Завершить смену</button>
+      </div>
+
+      <!-- Сообщение «Смена завершена» — показывается всем, кто нажал -->
+      <div class="hidden" id="shift-done">
+        <div class="subtitle">
+          Смена завершена.<br>
+          Ожидайте коллег…
         </div>
       </div>
 

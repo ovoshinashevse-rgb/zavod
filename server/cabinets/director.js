@@ -2,7 +2,7 @@
 // КАБИНЕТ ДИРЕКТОРА — действия в смену
 // ═══════════════════════════════════════════
 
-const { hall, getPlayer } = require('../hall');
+const { hall, getPlayer, allFinishedShift, resetFinished } = require('../hall');
 const {
   createFactory,
   setLevel,
@@ -20,11 +20,13 @@ function chooseFactory(socketId, type) {
 
   hall.factory = createFactory(type);
   hall.phase = 'game';
+  hall.shift = 1;                    // первая смена
+  hall.players.forEach(x => x.finished = false);
 
   return {
     ok: true,
     type: type,
-    factory: factorySnapshot(hall.factory, true)   // Директору — с карманом
+    factory: factorySnapshot(hall.factory, true)
   };
 }
 
@@ -34,6 +36,7 @@ function setDirectionLevel(socketId, direction, level) {
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
   if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
   if (!hall.factory) return { error: 'Завод ещё не создан' };
+  if (p.finished) return { error: 'Вы уже завершили смену' };
 
   const result = setLevel(hall.factory, direction, level);
   if (result.error) return result;
@@ -51,6 +54,7 @@ function takeFromBudgetAction(socketId, level) {
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
   if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
   if (!hall.factory) return { error: 'Завод ещё не создан' };
+  if (p.finished) return { error: 'Вы уже завершили смену' };
 
   const result = takeFromBudget(hall.factory, level);
   if (result.error) return result;
@@ -62,12 +66,13 @@ function takeFromBudgetAction(socketId, level) {
   };
 }
 
-// Забрать себе из инвестиций (опустить отдел)
+// Забрать себе из инвестиций
 function takeFromDirectionAction(socketId, direction, level) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
   if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
   if (!hall.factory) return { error: 'Завод ещё не создан' };
+  if (p.finished) return { error: 'Вы уже завершили смену' };
 
   const result = takeFromDirection(hall.factory, direction, level);
   if (result.error) return result;
@@ -78,9 +83,28 @@ function takeFromDirectionAction(socketId, direction, level) {
   };
 }
 
+// Завершить смену
+function finishShift(socketId) {
+  const p = getPlayer(socketId);
+  if (!p) return { error: 'Игрок не найден' };
+  if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
+  if (p.finished) return { error: 'Вы уже завершили смену' };
+
+  p.finished = true;
+
+  // Проверяем, все ли завершили
+  if (allFinishedShift()) {
+    resetFinished();
+    return { ok: true, newShift: true, shift: hall.shift };
+  }
+
+  return { ok: true, newShift: false };
+}
+
 module.exports = {
   chooseFactory,
   setDirectionLevel,
   takeFromBudgetAction,
-  takeFromDirectionAction
+  takeFromDirectionAction,
+  finishShift
 };

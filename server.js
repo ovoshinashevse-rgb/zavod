@@ -67,14 +67,7 @@ io.on('connection', (socket) => {
     hall.players.filter(p => p.id !== socket.id).forEach(p => {
       io.to(p.id).emit('factory_chosen', {
         type: result.type,
-        factory: {
-          directions: result.factory.directions,
-          invested: result.factory.invested,
-          investments: result.factory.investments,
-          budgetPercent: result.factory.budgetPercent,
-          reputation: result.factory.reputation,
-          bankrupt: result.factory.bankrupt
-        }
+        factory: stripPocket(result.factory)
       });
     });
 
@@ -124,6 +117,25 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
   });
 
+  // ─── Игрок завершает смену ───
+  socket.on('player_finish_shift', () => {
+    const result = director.finishShift(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    // Сообщаем всем, что этот игрок завершил смену
+    io.emit('shift_progress', {
+      finished: hall.players.map(p => ({ id: p.id, name: p.name, finished: p.finished }))
+    });
+
+    // Если все завершили — начинаем новую смену
+    if (result.newShift) {
+      io.emit('new_shift', { shift: result.shift });
+    }
+  });
+
   // ─── Отключение ───
   socket.on('disconnect', () => {
     const p = getPlayer(socket.id);
@@ -155,18 +167,22 @@ io.on('connection', (socket) => {
   });
 });
 
+// ─── Снимок без кармана ───
+function stripPocket(snapshot) {
+  return {
+    directions: snapshot.directions,
+    invested: snapshot.invested,
+    investments: snapshot.investments,
+    budgetPercent: snapshot.budgetPercent,
+    reputation: snapshot.reputation,
+    bankrupt: snapshot.bankrupt
+  };
+}
+
 // ─── Отправить завод всем ───
 // Директору — с карманом. Остальным — без.
 function emitFactory(snapshotWithPocket) {
-  // Снимок без кармана
-  const snapshotNoPocket = {
-    directions: snapshotWithPocket.directions,
-    invested: snapshotWithPocket.invested,
-    investments: snapshotWithPocket.investments,
-    budgetPercent: snapshotWithPocket.budgetPercent,
-    reputation: snapshotWithPocket.reputation,
-    bankrupt: snapshotWithPocket.bankrupt
-  };
+  const snapshotNoPocket = stripPocket(snapshotWithPocket);
 
   hall.players.forEach(p => {
     if (p.role === 'director') {

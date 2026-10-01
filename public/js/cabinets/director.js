@@ -35,6 +35,19 @@
     return high;
   }
 
+  // Цвет и слова для кармана
+  function pocketColorClass(value) {
+    if (value <= 0) return 'mid';
+    if (value < 50) return 'mid';
+    return 'high';
+  }
+
+  function pocketWord(value) {
+    if (!value || value <= 0) return 'пусто';
+    if (value < 30) return 'немного';
+    if (value < 70) return 'нормально';
+    return 'много';
+  }
 
   // ─── Отрисовка шкал ───
   function renderScales() {
@@ -58,7 +71,7 @@
     // Карман — только если пришёл в снимке (для Директора)
     const pocketBox = document.getElementById('pocket-box');
     if (typeof f.pocket !== 'undefined') {
-      const pocketPercent = Math.min(100, f.pocket);   // 100 карман = заполненная шкала
+      const pocketPercent = Math.min(100, f.pocket);
       const pocketFill = document.getElementById('pocket-fill');
 
       pocketFill.style.width = pocketPercent + '%';
@@ -75,24 +88,9 @@
     }
   }
 
-   // Цвет для кармана — отличается от обычных шкал
-  function pocketColorClass(value) {
-    if (value <= 0) return 'mid';        // серо-жёлтый (пусто)
-    if (value < 50) return 'mid';         // жёлтый (немного)
-    return 'high';                        // зелёный (много)
-  }
-
-  // Слова для кармана
-  function pocketWord(value) {
-    if (!value || value <= 0) return 'пусто';
-    if (value < 30) return 'немного';
-    if (value < 70) return 'нормально';
-    return 'много';
-  }
-
   window.renderScales = renderScales;
 
-  // ─── Подменю (все) ───
+  // ─── Подменю ───
   const mainActions      = document.getElementById('main-actions');
   const submenuDirs      = document.getElementById('submenu-dirs');
   const submenuLevels    = document.getElementById('submenu-levels');
@@ -100,11 +98,12 @@
   const submenuTakeBud   = document.getElementById('submenu-take-budget');
   const submenuTakeDirs  = document.getElementById('submenu-take-dirs');
   const submenuTakeLvls  = document.getElementById('submenu-take-levels');
+  const shiftDone        = document.getElementById('shift-done');
 
-  let selectedDir      = null;   // отдел для инвестиций
-  let pendingLevel     = null;   // уровень (инвестиции)
-  let takeDir          = null;   // отдел для кражи
-  let pendingTakeDirLvl = null;  // уровень (кража из инвестиций)
+  let selectedDir      = null;
+  let pendingLevel     = null;
+  let takeDir          = null;
+  let pendingTakeDirLvl = null;
 
   function hideAllSubmenus() {
     [submenuDirs, submenuLevels, submenuTakeSrc, submenuTakeBud, submenuTakeDirs, submenuTakeLvls]
@@ -119,9 +118,10 @@
   function showMainActions() {
     hideAllSubmenus();
     mainActions.classList.remove('hidden');
+    shiftDone.classList.add('hidden');
   }
 
-  // ─── Превью уровня (для инвестиций) ───
+  // ─── Превью уровня ───
   function showPreviewLevel(dir, targetLevel) {
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
     const fill = document.getElementById('preview-fill');
@@ -149,7 +149,6 @@
     });
   }
 
-  // ─── Превью уровня для кражи из инвестиций ───
   function showTakePreview(dir, targetLevel) {
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
     const fill = document.getElementById('take-preview-fill');
@@ -171,12 +170,10 @@
     const current = (state.factory.directions && state.factory.directions[dir]) || 0;
     document.querySelectorAll('#submenu-take-levels .btn[data-take-dir-lvl]').forEach(b => {
       const lvl = parseInt(b.dataset.takeDirLvl, 10);
-      // Нельзя опустить на уровень ВЫШЕ или РАВНЫЙ текущему
       b.disabled = (lvl >= current);
     });
   }
 
-  // ─── Превью отдела (для инвестиций) ───
   function showDirPreview(dir) {
     const box = document.getElementById('dir-preview');
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
@@ -264,7 +261,6 @@
     mainActions.classList.remove('hidden');
   };
 
-  // ─── Из бюджета ───
   document.getElementById('btn-take-budget').onclick = () => {
     submenuTakeSrc.classList.add('hidden');
     submenuTakeBud.classList.remove('hidden');
@@ -285,7 +281,6 @@
     });
   });
 
-  // ─── Из инвестиций ───
   document.getElementById('btn-take-investments').onclick = () => {
     submenuTakeSrc.classList.add('hidden');
     submenuTakeDirs.classList.remove('hidden');
@@ -341,9 +336,23 @@
   });
 
   // ═══════════════════════════════════════════
-  // ЗАГЛУШКИ
+  // ЗАВЕРШИТЬ СМЕНУ
   // ═══════════════════════════════════════════
-  document.getElementById('btn-finish').onclick = () => toast('Завершить смену — скоро');
+  document.getElementById('btn-finish').onclick = () => {
+    socket.emit('player_finish_shift');
+  };
+
+  document.getElementById('btn-finish-other').onclick = () => {
+    socket.emit('player_finish_shift');
+  };
+
+  // Завершение смены — прячем действия, показываем «Смена завершена»
+  function enterShiftDone() {
+    hideAllSubmenus();
+    mainActions.classList.add('hidden');
+    document.getElementById('other-role-stub').classList.add('hidden');
+    shiftDone.classList.remove('hidden');
+  }
 
   // ═══════════════════════════════════════════
   // СОБЫТИЯ С СЕРВЕРА
@@ -375,6 +384,28 @@
     if (takeDir) {
       resetTakePreview(takeDir);
       updateTakeLevelButtons(takeDir);
+    }
+  });
+
+  // ─── Игрок завершил смену ───
+  socket.on('shift_progress', ({ finished }) => {
+    const me = finished.find(p => p.id === socket.id);
+    if (me && me.finished) {
+      enterShiftDone();
+    }
+  });
+
+  // ─── Новая смена ───
+  socket.on('new_shift', () => {
+    shiftDone.classList.add('hidden');
+
+    if (state.myRole === 'director') {
+      document.getElementById('main-actions').classList.remove('hidden');
+      document.getElementById('other-role-stub').classList.add('hidden');
+      showMainActions();
+    } else {
+      document.getElementById('main-actions').classList.add('hidden');
+      document.getElementById('other-role-stub').classList.remove('hidden');
     }
   });
 
