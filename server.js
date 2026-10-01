@@ -8,6 +8,7 @@ const { hall, addPlayer, getPlayer, removePlayer, allDecided } = require('./serv
 const smoking = require('./server/smoking');
 const { assignRoles } = require('./server/roles');
 const director = require('./server/cabinets/director');
+const security = require('./server/cabinets/security');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,14 +43,15 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Поторопить ───
   socket.on('hurry', () => {
     hall.players.filter(x => x.status === 'thinking').forEach(p => {
       io.to(p.id).emit('hurried');
     });
   });
 
-  // ─── Директор выбирает завод ───
+  // ═══════════════════════════════════════════
+  // ДИРЕКТОР
+  // ═══════════════════════════════════════════
   socket.on('director_choose_factory', ({ type }) => {
     const result = director.chooseFactory(socket.id, type);
     if (result.error) {
@@ -57,26 +59,18 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Директору — с карманом и решениями
-    socket.emit('factory_chosen', {
-      type: result.type,
-      factory: result.factory,
-      decisionsLeft: 3
-    });
-
-    // Остальным — без кармана, со своими решениями
-    hall.players.filter(p => p.id !== socket.id).forEach(p => {
-      io.to(p.id).emit('factory_chosen', {
+    hall.players.forEach(p => {
+      const payload = {
         type: result.type,
-        factory: stripPocket(result.factory),
+        factory: (p.role === 'director') ? result.factory : stripPocket(result.factory),
         decisionsLeft: p.decisionsLeft || 0
-      });
+      };
+      io.to(p.id).emit('factory_chosen', payload);
     });
 
     console.log('Директор выбрал завод:', type);
   });
 
-  // ─── Директор устанавливает уровень отдела ───
   socket.on('director_set_level', ({ direction, level }) => {
     const result = director.setDirectionLevel(socket.id, direction, level);
     if (result.error) {
@@ -93,7 +87,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Директор забирает из бюджета ───
   socket.on('director_take_budget', ({ level }) => {
     const result = director.takeFromBudgetAction(socket.id, level);
     if (result.error) {
@@ -110,7 +103,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Директор забирает из инвестиций ───
   socket.on('director_take_direction', ({ direction, level }) => {
     const result = director.takeFromDirectionAction(socket.id, direction, level);
     if (result.error) {
@@ -122,7 +114,120 @@ io.on('connection', (socket) => {
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
 
-  // ─── Игрок завершает смену ───
+  // ═══════════════════════════════════════════
+  // БЕЗОПАСНИК
+  // ═══════════════════════════════════════════
+  socket.on('security_check', ({ targetId }) => {
+    const result = security.checkPlayer(socket.id, targetId);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('security_update', {
+      decisionsLeft: result.decisionsLeft,
+      dossier: result.dossier,
+      suspicions: getSecuritySuspicions()
+    });
+
+    socket.emit('security_check_result', {
+      result: result.result,
+      targetName: result.targetName,
+      basedOnShift: result.basedOnShift
+    });
+  });
+
+  socket.on('security_offer_deal', () => {
+    const result = security.offerDeal(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+
+    // Уведомляем Директора
+    io.to(result.directorId).emit('deal_offered');
+
+    // Обновляем Безопасника
+    const sec = getPlayer(socket.id);
+    socket.emit('security_update', {
+      decisionsLeft: sec.decisionsLeft,
+      dossier: sec.dossier,
+      suspicions: sec.suspicions,
+      deal: securitySnapshotDeal(sec)
+    });
+  });
+
+  socket.on('director_accept_deal', () => {
+    const result = security.acceptDeal(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    // Обоим — сообщение
+    io.to(hall.deal.securityId).emit('deal_activated');
+    io.to(hall.deal.directorId).emit('deal_activated');
+  });
+
+  socket.on('director_decline_deal', () => {
+    const result = security.declineDeal(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    io.to(hall.deal.securityId).emit('deal_declined');
+  });
+
+  socket.on('security_break_deal', () => {
+    const result = security.breakDeal(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    // Обоим — сообщение
+    hall.players.forEach(p => {
+      if (p.role === 'security' || p.role === 'director') {
+        io.to(p.id).emit('deal_broken');
+      }
+    });
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+  });
+
+  socket.on('security_report', ({ targetId }) => {
+    const result = security.reportPlayer(socket.id, targetId);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+
+    // Обновляем Безопасника
+    const sec = getPlayer(socket.id);
+    socket.emit('security_update', {
+      decisionsLeft: sec.decisionsLeft,
+      dossier: sec.dossier,
+      suspicions: sec.suspicions
+    });
+
+    // Всем — сообщение о доносе
+    io.emit('report_happened', {
+      targetName: result.targetName,
+      confiscated: result.confiscated
+    });
+
+    // Обновляем завод (карман конфискован в бюджет)
+    emitFactory(hall.factory);
+  });
+
+  // ═══════════════════════════════════════════
+  // ЗАВЕРШЕНИЕ СМЕНЫ
+  // ═══════════════════════════════════════════
   socket.on('player_finish_shift', () => {
     const result = director.finishShift(socket.id);
     if (result.error) {
@@ -135,12 +240,24 @@ io.on('connection', (socket) => {
     });
 
     if (result.newShift) {
-      // При новой смене раздаём обновлённые решения каждому
+      // Пересчитываем подозрения
+      security.recalcSuspicionsAfterShift();
+
       hall.players.forEach(p => {
         io.to(p.id).emit('new_shift', {
           shift: result.shift,
           decisionsLeft: p.decisionsLeft
         });
+
+        // Безопаснику — обновление
+        if (p.role === 'security') {
+          io.to(p.id).emit('security_update', {
+            decisionsLeft: p.decisionsLeft,
+            dossier: p.dossier,
+            suspicions: p.suspicions,
+            deal: securitySnapshotDeal(p)
+          });
+        }
       });
     }
   });
@@ -162,7 +279,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Возвращение ───
   socket.on('reconnect_player', ({ name }) => {
     hall.disconnected = hall.disconnected.filter(x => x.name !== name);
     if (hall.disconnected.length === 0) {
@@ -201,9 +317,30 @@ function emitFactory(snapshotWithPocket) {
   });
 }
 
+// ─── Снимок сговора ───
+function securitySnapshotDeal(p) {
+  return {
+    pending: hall.deal.pending,
+    active: hall.deal.active,
+    iAmSecurity: hall.deal.securityId === p.id,
+    iAmDirector: hall.deal.directorId === p.id
+  };
+}
+
+// ─── Текущие подозрения Безопасника ───
+function getSecuritySuspicions() {
+  const sec = hall.players.find(x => x.role === 'security');
+  return sec ? sec.suspicions : 0;
+}
+
 // ─── Старт игры: раздать роли ───
 function startRoles() {
   const assignments = assignRoles();
+
+  // Сбрасываем журнал краж и сговор
+  hall.theftsLog = [];
+  hall.deal = { pending: false, active: false, securityId: null, directorId: null };
+
   assignments.forEach(a => {
     io.to(a.id).emit('your_role', { role: a.role, label: a.label });
   });

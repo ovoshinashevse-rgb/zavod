@@ -1,0 +1,210 @@
+/* ═══════════════════════════════════════════
+   КАБИНЕТ БЕЗОПАСНИКА — стили
+   ═══════════════════════════════════════════ */
+
+.shift-security {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   ДОСЬЕ — список проверок
+   ═══════════════════════════════════════════ */
+.dossier-box {
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  text-align: left;
+}
+
+.dossier-title {
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 14px;
+}
+
+.dossier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dossier-empty {
+  font-size: 15px;
+  opacity: 0.4;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.dossier-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  font-size: 15px;
+  transition: background 0.3s ease;
+}
+
+.dossier-row .shift-num {
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+.dossier-row .target-name {
+  flex: 1;
+  text-align: left;
+  margin-left: 12px;
+  font-weight: 500;
+}
+
+.dossier-row .result {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.dossier-row .result.clean {
+  color: #4ecdc4;
+}
+.dossier-row .result.little {
+  color: #e8c050;
+}
+.dossier-row .result.much {
+  color: #d94a3a;
+}
+
+/* ═══════════════════════════════════════════
+   СТАТУС СГОВОРА
+   ═══════════════════════════════════════════ */
+.deal-status {
+  padding: 16px 22px;
+  border-radius: 20px;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.deal-status.pending {
+  background: rgba(232, 192, 80, 0.12);
+  border: 1px solid rgba(232, 192, 80, 0.35);
+  color: #e8c050;
+}
+
+.deal-status.active {
+  background: rgba(217, 74, 58, 0.12);
+  border: 1px solid rgba(217, 74, 58, 0.35);
+  color: #d94a3a;
+}
+
+/* ═══════════════════════════════════════════
+   РЕЗУЛЬТАТ ПРОВЕРКИ
+   ═══════════════════════════════════════════ */
+.check-result-box {
+  padding: 28px 24px;
+  margin: 16px 0;
+  border-radius: 24px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.check-result-box.clean {
+  background: rgba(78, 205, 196, 0.12);
+  border: 1px solid rgba(78, 205, 196, 0.35);
+  color: #4ecdc4;
+}
+.check-result-box.little {
+  background: rgba(232, 192, 80, 0.12);
+  border: 1px solid rgba(232, 192, 80, 0.35);
+  color: #e8c050;
+}
+.check-result-box.much {
+  background: rgba(217, 74, 58, 0.12);
+  border: 1px solid rgba(217, 74, 58, 0.35);
+  color: #d94a3a;
+}
+
+.check-result-box .result-sub {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ═══════════════════════════════════════════
+   ПОДОЗРЕНИЯ — свой цвет порогов
+   ═══════════════════════════════════════════ */
+/* Значения совпадают с общими, но оставим для ясности */
+#suspicions-fill.low {
+  background: linear-gradient(90deg, #3aa86a 0%, #4ec97c 100%);
+}
+#suspicions-fill.mid {
+  background: linear-gradient(90deg, #d9a93a 0%, #e8c050 100%);
+}
+#suspicions-fill.high {
+  background: linear-gradient(90deg, #b03830 0%, #d94a3a 100%);
+}
+
+/* ═══════════════════════════════════════════
+   МОДАЛЬНОЕ ОКНО СГОВОРА
+   ═══════════════════════════════════════════ */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: modal-in 0.3s ease;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-card {
+  max-width: 380px;
+  width: 100%;
+  padding: 36px 32px;
+  background: rgba(30, 25, 20, 0.95);
+  border: 1px solid rgba(255, 170, 90, 0.3);
+  border-radius: 32px;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+  animation: modal-card-in 0.3s ease;
+}
+
+@keyframes modal-card-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, #fff 0%, #ffb073 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.modal-text {
+  font-size: 17px;
+  line-height: 1.55;
+  opacity: 0.85;
+  margin-bottom: 28px;
+}

@@ -19,7 +19,6 @@
     100: 'Высокий'
   };
 
-  // ─── Цвет по значению ───
   function colorClass(value) {
     if (value < 50) return 'low';
     if (value < 83) return 'mid';
@@ -90,8 +89,9 @@
 
   // ─── Отрисовка точек решений ───
   function renderDecisions(left) {
-    const max = 3;   // у Директора 3 решения
-    const box = document.getElementById('decisions-dots');
+    const max = 3;
+    const box = document.getElementById('decisions-dots-director');
+    if (!box) return;
     box.innerHTML = '';
     for (let i = 0; i < max; i++) {
       const dot = document.createElement('span');
@@ -99,7 +99,6 @@
       box.appendChild(dot);
     }
 
-    // Если решений нет — блокируем основные кнопки
     const noDecisions = left <= 0;
     document.getElementById('btn-set-level').disabled = noDecisions;
     document.getElementById('btn-take').disabled = noDecisions;
@@ -113,7 +112,7 @@
   const submenuTakeBud   = document.getElementById('submenu-take-budget');
   const submenuTakeDirs  = document.getElementById('submenu-take-dirs');
   const submenuTakeLvls  = document.getElementById('submenu-take-levels');
-  const shiftDone        = document.getElementById('shift-done');
+  const shiftDone        = document.getElementById('shift-done-director');
 
   let selectedDir      = null;
   let pendingLevel     = null;
@@ -122,7 +121,7 @@
 
   function hideAllSubmenus() {
     [submenuDirs, submenuLevels, submenuTakeSrc, submenuTakeBud, submenuTakeDirs, submenuTakeLvls]
-      .forEach(el => el.classList.add('hidden'));
+      .forEach(el => el && el.classList.add('hidden'));
     hideDirPreview();
     selectedDir = null;
     pendingLevel = null;
@@ -136,7 +135,6 @@
     shiftDone.classList.add('hidden');
   }
 
-  // ─── Превью уровня ───
   function showPreviewLevel(dir, targetLevel) {
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
     const fill = document.getElementById('preview-fill');
@@ -357,14 +355,9 @@
     socket.emit('player_finish_shift');
   };
 
-  document.getElementById('btn-finish-other').onclick = () => {
-    socket.emit('player_finish_shift');
-  };
-
   function enterShiftDone() {
     hideAllSubmenus();
     mainActions.classList.add('hidden');
-    document.getElementById('other-role-stub').classList.add('hidden');
     shiftDone.classList.remove('hidden');
   }
 
@@ -372,24 +365,18 @@
   // СОБЫТИЯ С СЕРВЕРА
   // ═══════════════════════════════════════════
   socket.on('factory_chosen', ({ type, factory, decisionsLeft }) => {
+    if (state.myRole !== 'director') return;
+
     applyTheme(type === 'good' ? 'rich' : 'poor');
     state.factory = factory;
     renderScales();
     renderDecisions(decisionsLeft || 0);
-
-    if (state.myRole === 'director') {
-      document.getElementById('main-actions').classList.remove('hidden');
-      document.getElementById('other-role-stub').classList.add('hidden');
-      showMainActions();
-    } else {
-      document.getElementById('main-actions').classList.add('hidden');
-      document.getElementById('other-role-stub').classList.remove('hidden');
-    }
-
-    show('screen-game');
+    showMainActions();
+    show('screen-game-director');
   });
 
   socket.on('factory_update', (data) => {
+    if (state.myRole !== 'director') return;
     state.factory = data;
     renderScales();
     if (selectedDir) {
@@ -403,10 +390,12 @@
   });
 
   socket.on('decisions_update', ({ decisionsLeft }) => {
+    if (state.myRole !== 'director') return;
     renderDecisions(decisionsLeft);
   });
 
   socket.on('shift_progress', ({ finished }) => {
+    if (state.myRole !== 'director') return;
     const me = finished.find(p => p.id === socket.id);
     if (me && me.finished) {
       enterShiftDone();
@@ -414,17 +403,10 @@
   });
 
   socket.on('new_shift', ({ decisionsLeft }) => {
+    if (state.myRole !== 'director') return;
     shiftDone.classList.add('hidden');
     renderDecisions(decisionsLeft || 0);
-
-    if (state.myRole === 'director') {
-      document.getElementById('main-actions').classList.remove('hidden');
-      document.getElementById('other-role-stub').classList.add('hidden');
-      showMainActions();
-    } else {
-      document.getElementById('main-actions').classList.add('hidden');
-      document.getElementById('other-role-stub').classList.remove('hidden');
-    }
+    showMainActions();
   });
 
   socket.on('game_over', ({ reason }) => {
@@ -433,6 +415,36 @@
   });
 
   socket.on('error_msg', (msg) => toast(msg));
+
+  // ═══════════════════════════════════════════
+  // СГОВОР — модальное окно для Директора
+  // ═══════════════════════════════════════════
+  socket.on('deal_offered', () => {
+    if (state.myRole !== 'director') return;
+    document.getElementById('deal-modal').classList.remove('hidden');
+  });
+
+  socket.on('deal_activated', () => {
+    if (state.myRole !== 'director') return;
+    document.getElementById('deal-modal').classList.add('hidden');
+    toast('Сговор заключён');
+  });
+
+  socket.on('deal_broken', () => {
+    if (state.myRole !== 'director') return;
+    document.getElementById('deal-modal').classList.add('hidden');
+    toast('Сговор разорван');
+  });
+
+  document.getElementById('btn-deal-accept').onclick = () => {
+    socket.emit('director_accept_deal');
+    document.getElementById('deal-modal').classList.add('hidden');
+  };
+
+  document.getElementById('btn-deal-decline').onclick = () => {
+    socket.emit('director_decline_deal');
+    document.getElementById('deal-modal').classList.add('hidden');
+  };
 
   console.log('Cabinet Director: модуль готов');
 })();

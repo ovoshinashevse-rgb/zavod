@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/css/themes.css">
 <link rel="stylesheet" href="/css/badge.css">
 <link rel="stylesheet" href="/css/cabinet-director.css">
+<link rel="stylesheet" href="/css/cabinet-security.css">
 </head>
 <body>
 
@@ -95,14 +96,13 @@
     </div>
   </div>
 
-  <!-- ЭКРАН 6: СМЕНА -->
-  <div class="glass hidden" id="wrap-game">
-    <div id="screen-game" class="shift">
+  <!-- ЭКРАН 6a: СМЕНА ДИРЕКТОРА -->
+  <div class="glass hidden" id="wrap-game-director">
+    <div id="screen-game-director" class="shift">
 
-      <!-- Счётчик решений -->
       <div class="decisions-bar">
         <span class="decisions-label">Ваши решения</span>
-        <span class="decisions-dots" id="decisions-dots"></span>
+        <span class="decisions-dots" id="decisions-dots-director"></span>
       </div>
 
       <div class="shift-status">
@@ -147,31 +147,20 @@
         </div>
       </div>
 
-      <!-- Действия Директора -->
       <div class="shift-actions" id="main-actions">
         <button class="btn" id="btn-set-level">Инвестиции в отдел</button>
         <button class="btn secondary" id="btn-take">Забрать себе</button>
         <button class="btn secondary" id="btn-finish">Завершить смену</button>
       </div>
 
-      <!-- Заглушка для остальных ролей -->
-      <div class="hidden" id="other-role-stub">
-        <div class="subtitle">
-          Вы на смене.<br>
-          Ваша роль скоро откроется.
-        </div>
-        <button class="btn secondary" id="btn-finish-other">Завершить смену</button>
-      </div>
-
-      <!-- Сообщение «Смена завершена» -->
-      <div class="hidden" id="shift-done">
+      <div class="hidden" id="shift-done-director">
         <div class="subtitle">
           Смена завершена.<br>
           Ожидайте коллег…
         </div>
       </div>
 
-      <!-- Подменю: выбор отдела (для инвестиций) -->
+      <!-- Подменю: выбор отдела -->
       <div class="submenu hidden" id="submenu-dirs">
         <div class="submenu-title">Какой отдел</div>
 
@@ -190,7 +179,7 @@
         <button class="btn secondary" id="btn-back-dirs">← Назад</button>
       </div>
 
-      <!-- Подменю: выбор уровня (для инвестиций) -->
+      <!-- Подменю: выбор уровня -->
       <div class="submenu hidden" id="submenu-levels">
         <div class="submenu-title" id="levels-title">Уровень</div>
 
@@ -275,6 +264,93 @@
     </div>
   </div>
 
+  <!-- ЭКРАН 6b: СМЕНА БЕЗОПАСНИКА -->
+  <div class="glass hidden" id="wrap-game-security">
+    <div id="screen-game-security" class="shift shift-security">
+
+      <div class="decisions-bar">
+        <span class="decisions-label">Ваши решения</span>
+        <span class="decisions-dots" id="decisions-dots-security"></span>
+      </div>
+
+      <!-- Подозрения -->
+      <div class="shift-status">
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Подозрения</span>
+            <span class="status-value" id="suspicions-word">чисто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="suspicions-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Досье -->
+      <div class="dossier-box" id="dossier-box">
+        <div class="dossier-title">Досье</div>
+        <div class="dossier-list" id="dossier-list">
+          <div class="dossier-empty">Пока пусто.</div>
+        </div>
+      </div>
+
+      <!-- Сговор — статус -->
+      <div class="deal-status hidden" id="deal-status"></div>
+
+      <!-- Действия -->
+      <div class="shift-actions" id="security-actions">
+        <button class="btn" id="btn-security-check">Проверить</button>
+        <button class="btn secondary" id="btn-security-report">Донести</button>
+        <button class="btn secondary" id="btn-security-deal">Предложить сговор</button>
+        <button class="btn secondary" id="btn-security-break-deal" style="display:none;">Разорвать сговор</button>
+        <button class="btn secondary" id="btn-finish-security">Завершить смену</button>
+      </div>
+
+      <div class="hidden" id="shift-done-security">
+        <div class="subtitle">
+          Смена завершена.<br>
+          Ожидайте коллег…
+        </div>
+      </div>
+
+      <!-- Подменю: кого проверить -->
+      <div class="submenu hidden" id="submenu-check">
+        <div class="submenu-title">Кого проверить</div>
+        <button class="btn" data-check-target="" id="btn-check-list"></button>
+        <button class="btn secondary" id="btn-back-check">← Назад</button>
+      </div>
+
+      <!-- Подменю: на кого донести -->
+      <div class="submenu hidden" id="submenu-report">
+        <div class="submenu-title">На кого донести</div>
+        <button class="btn" data-report-target="" id="btn-report-list"></button>
+        <button class="btn secondary" id="btn-back-report">← Назад</button>
+      </div>
+
+      <!-- Подменю: результат проверки -->
+      <div class="submenu hidden" id="submenu-check-result">
+        <div class="submenu-title">Результат проверки</div>
+        <div class="check-result-box" id="check-result-box"></div>
+        <button class="btn secondary" id="btn-back-check-result">← Назад</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Модальное окно сговора — для Директора -->
+  <div class="modal hidden" id="deal-modal">
+    <div class="modal-card">
+      <div class="modal-title">Сговор</div>
+      <div class="modal-text">
+        Безопасник предлагает сговор.<br>
+        Он не будет вас проверять,<br>
+        но получит 30% с каждой кражи.
+      </div>
+      <button class="btn" id="btn-deal-accept">Согласен</button>
+      <button class="btn secondary" id="btn-deal-decline">Отказать</button>
+    </div>
+  </div>
+
   <!-- ЭКРАН 7: ПАУЗА -->
   <div class="glass hidden" id="wrap-pause">
     <div id="screen-pause">
@@ -303,5 +379,6 @@
   <script src="/js/badge.js"></script>
   <script src="/js/choose-factory.js"></script>
   <script src="/js/cabinets/director.js"></script>
+  <script src="/js/cabinets/security.js"></script>
 </body>
 </html>

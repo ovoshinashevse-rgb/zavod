@@ -2,6 +2,8 @@
 // ЗАВОД — уровни отделов, инвестиции, бюджет
 // ═══════════════════════════════════════════
 
+const { hall } = require('./hall');
+
 const LEVEL = {
   LOW:    33,
   MID:    66,
@@ -20,7 +22,6 @@ function totalInvested(directions) {
   return DIRECTIONS.reduce((sum, d) => sum + (directions[d] || 0), 0);
 }
 
-// Общая шкала инвестиций — среднее по 5 отделам, округлённое до 3 уровней
 function calcInvestments(directions) {
   const avg = totalInvested(directions) / DIRECTIONS.length;
   if (avg < 50) return LEVEL.LOW;
@@ -28,7 +29,6 @@ function calcInvestments(directions) {
   return LEVEL.HIGH;
 }
 
-// Бюджет: 500 инвестиций → 33%, 165 инвестиций → 66%, 0 → 100%
 function calcBudgetPercent(invested) {
   const low = 165;
   const high = 500;
@@ -71,8 +71,7 @@ function createFactory(type) {
   };
 }
 
-// Установить уровень отдела (инвестиции или деинвестиции)
-// Это ЕДИНСТВЕННОЕ место, где меняется бюджет через отделы.
+// Установить уровень отдела
 function setLevel(factory, direction, level) {
   if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
   if (!DIRECTIONS.includes(direction)) return { error: 'Неизвестный отдел' };
@@ -81,26 +80,15 @@ function setLevel(factory, direction, level) {
   const current = factory.directions[direction];
   if (current === level) return { error: 'Уже на этом уровне' };
 
-  // Разница между текущим и новым уровнем
-  const diff = current - level;  // > 0 — деинвестиция (деньги в кассу),
-                                 // < 0 — инвестиция (деньги из кассы)
-
-  // Меняем отдел
   factory.directions[direction] = level;
-
-  // Обновляем invested и investments
   factory.invested = totalInvested(factory.directions);
   factory.investments = calcInvestments(factory.directions);
-
-  // Меняем бюджет: если вложили — бюджет уменьшается,
-  // если забрали — бюджет растёт.
-  // Пересчитываем бюджет от общего invested.
   factory.budgetPercent = calcBudgetPercent(factory.invested);
 
   return { ok: true, factory };
 }
 
-// Украсть из бюджета
+// Украсть из бюджета (с записью в журнал краж)
 function takeFromBudget(factory, level) {
   if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
   const amount = TAKE_FROM_BUDGET[level];
@@ -108,6 +96,13 @@ function takeFromBudget(factory, level) {
 
   factory.budgetPercent = Math.max(0, factory.budgetPercent - amount);
   factory.pocket += amount;
+
+  // Запись в журнал краж
+  hall.theftsLog.push({
+    shift: hall.shift,
+    amount: amount,
+    type: 'budget'
+  });
 
   if (factory.budgetPercent < 0) {
     factory.bankrupt = true;
@@ -117,7 +112,7 @@ function takeFromBudget(factory, level) {
   return { ok: true, factory };
 }
 
-// Украсть из инвестиций — опустить отдел. Бюджет НЕ трогаем. Деньги в карман.
+// Украсть из инвестиций (опустить отдел)
 function takeFromDirection(factory, direction, level) {
   if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
   if (!DIRECTIONS.includes(direction)) return { error: 'Неизвестный отдел' };
@@ -128,16 +123,30 @@ function takeFromDirection(factory, direction, level) {
     return { error: 'Нельзя поднять отдел воровством' };
   }
 
-  // Разница уходит в карман
   const diff = current - level;
   factory.pocket += diff;
   factory.directions[direction] = level;
 
-  // Пересчитываем только инвестиции. Бюджет — НЕ трогаем.
   factory.invested = totalInvested(factory.directions);
   factory.investments = calcInvestments(factory.directions);
 
+  // Запись в журнал краж
+  hall.theftsLog.push({
+    shift: hall.shift,
+    amount: diff,
+    type: 'direction'
+  });
+
   return { ok: true, factory };
+}
+
+// Конфисковать из кармана Директора (для доноса)
+// amount — сколько забрать. Если больше кармана — заберём всё.
+function confiscatePocket(factory, amount) {
+  const taken = Math.min(factory.pocket, amount);
+  factory.pocket -= taken;
+  factory.budgetPercent = Math.min(100, factory.budgetPercent + taken);
+  return taken;
 }
 
 function factorySnapshot(factory, forDirector = false) {
@@ -159,6 +168,7 @@ module.exports = {
   setLevel,
   takeFromBudget,
   takeFromDirection,
+  confiscatePocket,
   factorySnapshot,
   calcInvestments,
   calcBudgetPercent,
