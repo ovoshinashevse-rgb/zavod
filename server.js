@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { createFactory, invest, isBankrupt } = require('./server/game');
+const { createFactory, setLevel } = require('./server/game');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,11 +17,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ─────────────────────────────────────────────
 const hall = {
   players: [],
-  phase: 'lobby',       // lobby → smoking → roles → game → paused → end
+  phase: 'lobby',
   paused: false,
   disconnected: [],
   smokeLevel: 0,
-  factory: null         // состояние завода (создаётся при старте игры)
+  factory: null
 };
 
 const ALL_ROLES = ['director', 'security', 'accountant', 'engineer', 'hr', 'marketer'];
@@ -72,9 +72,11 @@ function emitSmokingUpdate() {
 function emitFactory() {
   if (!hall.factory) return;
   io.emit('factory_update', {
-    budget: hall.factory.budget,
-    reputation: hall.factory.reputation,
+    directions: hall.factory.directions,
+    invested: hall.factory.invested,
     investments: hall.factory.investments,
+    budgetPercent: hall.factory.budgetPercent,
+    reputation: hall.factory.reputation,
     bankrupt: hall.factory.bankrupt
   });
 }
@@ -115,7 +117,7 @@ io.on('connection', (socket) => {
     const allDecided = hall.players.length >= 2 &&
                        hall.players.every(x => x.status !== 'thinking');
     if (allDecided && hall.phase === 'smoking') {
-      startGame();
+      startRoles();
     }
   });
 
@@ -125,21 +127,45 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ─── Действие Директора: вложение ───
-  socket.on('director_invest', ({ direction, amount }) => {
+  // ─── Директор выбрал завод ───
+  socket.on('director_choose_factory', ({ type }) => {
+    const p = hall.players.find(x => x.id === socket.id);
+    if (!p || p.role !== 'director') return;
+    if (hall.phase !== 'roles') return;
+    if (type !== 'good' && type !== 'bad') return;
+
+    hall.factory = createFactory(type);
+    hall.phase = 'game';
+
+    io.emit('factory_chosen', {
+      type: type,
+      factory: {
+        directions: hall.factory.directions,
+        invested: hall.factory.invested,
+        investments: hall.factory.investments,
+        budgetPercent: hall.factory.budgetPercent,
+        reputation: hall.factory.reputation,
+        bankrupt: hall.factory.bankrupt
+      }
+    });
+
+    console.log('Директор выбрал завод:', type);
+  });
+
+  // ─── Директор устанавливает уровень отдела ───
+  socket.on('director_set_level', ({ direction, level }) => {
     if (!hall.factory) return;
     const p = hall.players.find(x => x.id === socket.id);
     if (!p || p.role !== 'director') return;
     if (hall.phase !== 'game') return;
 
-    const result = invest(hall.factory, direction, amount);
+    const result = setLevel(hall.factory, direction, level);
 
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
     }
 
-    // Рассылаем новое состояние всем
     emitFactory();
 
     if (result.bankrupt) {
@@ -177,11 +203,8 @@ io.on('connection', (socket) => {
   });
 });
 
-function startGame() {
+function startRoles() {
   hall.phase = 'roles';
-
-  // Создаём состояние завода
-  hall.factory = createFactory();
 
   const count = hall.players.length;
   const roles = shuffle(pickRolesForCount(count));

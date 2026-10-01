@@ -65,7 +65,37 @@
     <button class="btn" id="btn-start-shift" style="max-width:340px;margin:28px auto 0;">Приступить</button>
   </div>
 
-  <!-- ЭКРАН 4: СМЕНА -->
+  <!-- ЭКРАН 4: ВЫБОР ЗАВОДА -->
+  <div class="glass hidden" id="wrap-choose">
+    <div id="screen-choose">
+      <h1>ВЫБОР ЗАВОДА</h1>
+      <div class="subtitle">
+        Вам достался завод.<br>
+        Какой — решать вам.
+      </div>
+      <button class="btn success" id="btn-factory-good">
+        Хороший завод<br>
+        <small style="font-size:15px;opacity:0.7;">крепкое дело, мало денег</small>
+      </button>
+      <button class="btn danger" id="btn-factory-bad">
+        Плохой завод<br>
+        <small style="font-size:15px;opacity:0.7;">всё в упадке, но денег много</small>
+      </button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН 5: ОЖИДАНИЕ ВЫБОРА -->
+  <div class="glass hidden" id="wrap-waiting">
+    <div id="screen-waiting">
+      <h1>ОЖИДАНИЕ</h1>
+      <div class="subtitle">
+        Директор выбирает завод…<br>
+        Приготовьтесь к первой смене.
+      </div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН 6: СМЕНА -->
   <div class="glass hidden" id="wrap-game">
     <div id="screen-game" class="shift">
 
@@ -82,7 +112,7 @@
 
         <div class="status-item">
           <div class="status-header">
-            <span class="status-label">Инвестиции (KPI)</span>
+            <span class="status-label">Инвестиции</span>
             <span class="status-value" id="investments-word">средние</span>
           </div>
           <div class="scale">
@@ -90,24 +120,40 @@
           </div>
         </div>
 
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Бюджет</span>
+            <span class="status-value" id="budget-word">средний</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="budget-fill" style="width:50%"></div>
+          </div>
+        </div>
+
         <div class="pocket hidden" id="pocket-box">В кармане: немного</div>
       </div>
 
       <div class="shift-actions" id="main-actions">
-        <button class="btn" id="btn-invest">Вложить в развитие</button>
+        <button class="btn" id="btn-set-level">Инвестиции в отдел</button>
         <button class="btn secondary" id="btn-take">Забрать себе</button>
         <button class="btn secondary" id="btn-finish">Завершить смену</button>
       </div>
 
-      <!-- Подменю: направления + шкала выбранного -->
-      <div class="submenu hidden" id="submenu-directions">
-        <div class="submenu-title" id="directions-title">Куда вложить</div>
+      <div class="hidden" id="other-role-stub">
+        <div class="subtitle">
+          Вы на смене.<br>
+          Ваша роль скоро откроется.
+        </div>
+      </div>
 
-        <!-- Шкала выбранного направления -->
-        <div class="preview-scale hidden" id="direction-preview">
-          <span class="status-label" id="direction-preview-label">Направление</span>
+      <!-- Подменю: выбор отдела -->
+      <div class="submenu hidden" id="submenu-dirs">
+        <div class="submenu-title">Какой отдел</div>
+
+        <div class="preview-scale hidden" id="dir-preview">
+          <span class="status-label" id="dir-preview-label">Отдел</span>
           <div class="scale">
-            <div class="scale-fill mid" id="direction-preview-fill" style="width:50%"></div>
+            <div class="scale-fill mid" id="dir-preview-fill" style="width:50%"></div>
           </div>
         </div>
 
@@ -116,38 +162,37 @@
         <button class="btn" data-dir="ads">Реклама</button>
         <button class="btn" data-dir="security">Безопасность</button>
         <button class="btn" data-dir="economy">Экономика</button>
-        <button class="btn secondary" id="btn-back-dir">← Назад</button>
+        <button class="btn secondary" id="btn-back-dirs">← Назад</button>
       </div>
 
-      <!-- Подменю: суммы -->
-      <div class="submenu hidden" id="submenu-amounts">
-        <div class="submenu-title" id="amounts-title">Сколько вложить</div>
+      <!-- Подменю: выбор уровня -->
+      <div class="submenu hidden" id="submenu-levels">
+        <div class="submenu-title" id="levels-title">Уровень</div>
 
         <div class="preview-scale">
-          <span class="status-label" id="amounts-preview-label">Направление</span>
+          <span class="status-label" id="levels-preview-label">Отдел</span>
           <div class="scale">
             <div class="scale-fill mid" id="preview-fill" style="width:50%"></div>
-            <div class="scale-preview" id="preview-ghost"></div>
           </div>
         </div>
 
-        <button class="btn btn-amount" data-amt="small">
-          <span class="amt-name">Мало</span>
+        <button class="btn btn-amount" data-lvl="33">
+          <span class="amt-name">Низкий уровень</span>
         </button>
-        <button class="btn btn-amount" data-amt="medium">
-          <span class="amt-name">Средне</span>
+        <button class="btn btn-amount" data-lvl="66">
+          <span class="amt-name">Средний уровень</span>
         </button>
-        <button class="btn btn-amount" data-amt="large">
-          <span class="amt-name">Много</span>
+        <button class="btn btn-amount" data-lvl="100">
+          <span class="amt-name">Высокий уровень</span>
         </button>
 
-        <button class="btn secondary" id="btn-back-amt">← Назад</button>
+        <button class="btn secondary" id="btn-back-levels">← Назад</button>
       </div>
 
     </div>
   </div>
 
-  <!-- ЭКРАН 5: ПАУЗА -->
+  <!-- ЭКРАН 7: ПАУЗА -->
   <div class="glass hidden" id="wrap-pause">
     <div id="screen-pause">
       <h1>ПАУЗА</h1>
@@ -160,7 +205,7 @@
     </div>
   </div>
 
-  <!-- ЭКРАН 6: КОНЕЦ ИГРЫ -->
+  <!-- ЭКРАН 8: КОНЕЦ ИГРЫ -->
   <div class="glass hidden" id="wrap-end">
     <div id="screen-end">
       <h1 id="end-title">ИГРА ОКОНЧЕНА</h1>
@@ -177,18 +222,12 @@
   let myStatus = 'thinking';
   let currentLevel = 0;
 
-  // Полное состояние завода с сервера
   let factory = {
-    budget: 300,
-    reputation: 50,
-    investments: 50,
-    directions: {
-      equipment: 50,
-      people: 50,
-      ads: 50,
-      security: 50,
-      economy: 50
-    },
+    directions: { equipment: 33, people: 33, ads: 33, security: 33, economy: 33 },
+    invested: 165,
+    investments: 33,
+    budgetPercent: 66,
+    reputation: 30,
     bankrupt: false
   };
 
@@ -209,22 +248,18 @@
     economy:   'Экономика'
   };
 
-  const AMOUNT_LABELS = {
-    small:  'Мало',
-    medium: 'Средне',
-    large:  'Много'
-  };
-
-  const AMOUNT_SHIFT = {
-    small:  10,
-    medium: 25,
-    large:  50
+  const LEVEL_LABELS = {
+    33:  'Низкий',
+    66:  'Средний',
+    100: 'Высокий'
   };
 
   const screens = {
     'screen-enter': 'wrap-enter',
     'screen-smoking': 'wrap-smoking',
     'screen-role': 'screen-role',
+    'screen-choose': 'wrap-choose',
+    'screen-waiting': 'wrap-waiting',
     'screen-game': 'wrap-game',
     'screen-pause': 'wrap-pause',
     'screen-end': 'wrap-end'
@@ -269,17 +304,17 @@
   }
 
   function colorClass(value) {
-    if (value < 34) return 'low';
-    if (value < 67) return 'mid';
+    if (value < 50) return 'low';
+    if (value < 83) return 'mid';
     return 'high';
   }
 
   function wordFor(value, type) {
-    const low  = type === 'rep' ? 'плохая'    : 'мало';
-    const mid  = type === 'rep' ? 'средняя'   : 'средние';
-    const high = type === 'rep' ? 'хорошая'   : 'много';
-    if (value < 34) return low;
-    if (value < 67) return mid;
+    const low  = type === 'rep' ? 'плохая'    : type === 'inv' ? 'низкие'    : 'мало';
+    const mid  = type === 'rep' ? 'средняя'   : type === 'inv' ? 'средние'   : 'средний';
+    const high = type === 'rep' ? 'хорошая'   : type === 'inv' ? 'высокие'   : 'много';
+    if (value < 50) return low;
+    if (value < 83) return mid;
     return high;
   }
 
@@ -293,46 +328,57 @@
     invFill.style.width = factory.investments + '%';
     invFill.className = 'scale-fill ' + colorClass(factory.investments);
     document.getElementById('investments-word').textContent = wordFor(factory.investments, 'inv');
+
+    const budFill = document.getElementById('budget-fill');
+    budFill.style.width = factory.budgetPercent + '%';
+    budFill.className = 'scale-fill ' + colorClass(factory.budgetPercent);
+    document.getElementById('budget-word').textContent = wordFor(factory.budgetPercent, 'bud');
   }
 
-  // Превью для выбранного направления (в подменю сумм)
-  function showPreview(dir, shift) {
-    const value = factory.directions[dir] || 0;
+  // ─── Превью уровня: шкала показывает БУДУЩИЙ цвет и заполнение ───
+  function showPreviewLevel(dir, targetLevel) {
+    const value = (factory.directions && factory.directions[dir]) || 0;
+    const fill = document.getElementById('preview-fill');
 
-    const previewFill = document.getElementById('preview-fill');
-    const ghost = document.getElementById('preview-ghost');
+    fill.style.width = targetLevel + '%';
+    fill.className = 'scale-fill ' + colorClass(targetLevel);
 
-    previewFill.style.width = value + '%';
-    previewFill.className = 'scale-fill ' + colorClass(value);
-
-    const start = value;
-    const end = Math.min(100, value + shift);
-    ghost.style.left = start + '%';
-    ghost.style.width = (end - start) + '%';
-    ghost.style.opacity = shift > 0 ? '1' : '0';
-
-    document.getElementById('amounts-preview-label').textContent = DIRECTION_LABELS[dir];
+    document.getElementById('levels-preview-label').textContent =
+      DIRECTION_LABELS[dir] + (targetLevel !== value ? ' → станет ' + LEVEL_LABELS[targetLevel].toLowerCase() + ' уровень' : '');
   }
 
-  function hidePreview() {
-    document.getElementById('preview-ghost').style.opacity = '0';
+  // Сброс превью к текущему состоянию
+  function resetPreviewLevel(dir) {
+    const value = (factory.directions && factory.directions[dir]) || 0;
+    const fill = document.getElementById('preview-fill');
+    fill.style.width = value + '%';
+    fill.className = 'scale-fill ' + colorClass(value);
+    document.getElementById('levels-preview-label').textContent = DIRECTION_LABELS[dir];
   }
 
-  // Показать шкалу направления (в подменю направлений)
-  function showDirectionPreview(dir) {
-    const box = document.getElementById('direction-preview');
-    const value = factory.directions[dir] || 0;
+  // Отметить неактивные кнопки уровней
+  function updateLevelButtons(dir) {
+    const current = (factory.directions && factory.directions[dir]) || 0;
+    document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(b => {
+      const lvl = parseInt(b.dataset.lvl, 10);
+      b.disabled = (lvl === current);
+    });
+  }
 
-    document.getElementById('direction-preview-label').textContent = DIRECTION_LABELS[dir];
-    const fill = document.getElementById('direction-preview-fill');
+  function showDirPreview(dir) {
+    const box = document.getElementById('dir-preview');
+    const value = (factory.directions && factory.directions[dir]) || 0;
+
+    document.getElementById('dir-preview-label').textContent = DIRECTION_LABELS[dir];
+    const fill = document.getElementById('dir-preview-fill');
     fill.style.width = value + '%';
     fill.className = 'scale-fill ' + colorClass(value);
 
     box.classList.remove('hidden');
   }
 
-  function hideDirectionPreview() {
-    document.getElementById('direction-preview').classList.add('hidden');
+  function hideDirPreview() {
+    document.getElementById('dir-preview').classList.add('hidden');
   }
 
   // ── Вход ──
@@ -417,16 +463,40 @@
   });
 
   document.getElementById('btn-start-shift').onclick = () => {
-    showMainActions();
-    show('screen-game');
+    if (myRole === 'director') {
+      show('screen-choose');
+    } else {
+      show('screen-waiting');
+    }
   };
 
-  // ── Состояние завода с сервера ──
+  document.getElementById('btn-factory-good').onclick = () => socket.emit('director_choose_factory', { type: 'good' });
+  document.getElementById('btn-factory-bad').onclick  = () => socket.emit('director_choose_factory', { type: 'bad' });
+
+  socket.on('factory_chosen', ({ factory: f }) => {
+    factory = f;
+    renderScales();
+
+    if (myRole === 'director') {
+      document.getElementById('main-actions').classList.remove('hidden');
+      document.getElementById('other-role-stub').classList.add('hidden');
+      showMainActions();
+    } else {
+      document.getElementById('main-actions').classList.add('hidden');
+      document.getElementById('other-role-stub').classList.remove('hidden');
+    }
+
+    show('screen-game');
+  });
+
   socket.on('factory_update', (data) => {
     factory = data;
     renderScales();
-    // Если открыто подменю направлений — обновим превью
-    if (selectedDir) showDirectionPreview(selectedDir);
+    // Если открыт выбор уровня — обновим превью под текущий отдел
+    if (selectedDir) {
+      resetPreviewLevel(selectedDir);
+      updateLevelButtons(selectedDir);
+    }
   });
 
   socket.on('game_over', ({ reason }) => {
@@ -438,62 +508,86 @@
 
   // ── Подменю ──
   const mainActions = document.getElementById('main-actions');
-  const submenuDirs = document.getElementById('submenu-directions');
-  const submenuAmts = document.getElementById('submenu-amounts');
+  const submenuDirs = document.getElementById('submenu-dirs');
+  const submenuLevels = document.getElementById('submenu-levels');
   let selectedDir = null;
+  let pendingLevel = null;   // уровень, ожидающий подтверждения (тап №2)
 
-  function showMainActions() {
-    mainActions.classList.remove('hidden');
+  function hideAllSubmenus() {
     submenuDirs.classList.add('hidden');
-    submenuAmts.classList.add('hidden');
-    hidePreview();
-    hideDirectionPreview();
+    submenuLevels.classList.add('hidden');
+    hideDirPreview();
     selectedDir = null;
+    pendingLevel = null;
   }
 
-  document.getElementById('btn-invest').onclick = () => {
+  function showMainActions() {
+    hideAllSubmenus();
+    mainActions.classList.remove('hidden');
+  }
+
+  document.getElementById('btn-set-level').onclick = () => {
     mainActions.classList.add('hidden');
     submenuDirs.classList.remove('hidden');
-    submenuAmts.classList.add('hidden');
-    hideDirectionPreview();
+    submenuLevels.classList.add('hidden');
   };
 
-  document.getElementById('btn-back-dir').onclick = () => {
+  document.getElementById('btn-back-dirs').onclick = () => {
     submenuDirs.classList.add('hidden');
-    hideDirectionPreview();
+    hideDirPreview();
     mainActions.classList.remove('hidden');
   };
 
-  document.querySelectorAll('#submenu-directions .btn[data-dir]').forEach(btn => {
+  document.querySelectorAll('#submenu-dirs .btn[data-dir]').forEach(btn => {
     btn.onclick = () => {
       selectedDir = btn.dataset.dir;
+      pendingLevel = null;
       submenuDirs.classList.add('hidden');
-      submenuAmts.classList.remove('hidden');
-      document.getElementById('amounts-title').textContent = 'Сколько вложить';
-      showPreview(selectedDir, 0);
+      submenuLevels.classList.remove('hidden');
+      document.getElementById('levels-title').textContent = DIRECTION_LABELS[selectedDir];
+      resetPreviewLevel(selectedDir);
+      updateLevelButtons(selectedDir);
     };
   });
 
-  document.getElementById('btn-back-amt').onclick = () => {
-    submenuAmts.classList.add('hidden');
+  document.getElementById('btn-back-levels').onclick = () => {
+    submenuLevels.classList.add('hidden');
     submenuDirs.classList.remove('hidden');
-    hidePreview();
-    showDirectionPreview(selectedDir);
+    pendingLevel = null;
+    resetPreviewLevel(selectedDir);
+    showDirPreview(selectedDir);
   };
 
-  document.querySelectorAll('#submenu-amounts .btn[data-amt]').forEach(btn => {
-    const amt = btn.dataset.amt;
-    const shift = AMOUNT_SHIFT[amt];
+  // ── Уровни: тап-превью, второй тап — применить ──
+  document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(btn => {
+    const lvl = parseInt(btn.dataset.lvl, 10);
 
-    btn.addEventListener('touchstart', () => showPreview(selectedDir, shift), { passive: true });
-    btn.addEventListener('mouseenter', () => showPreview(selectedDir, shift));
-    btn.addEventListener('mouseleave', () => showPreview(selectedDir, 0));
+    // Наведение мыши (компьютер) — превью
+    btn.addEventListener('mouseenter', () => {
+      if (!btn.disabled) showPreviewLevel(selectedDir, lvl);
+    });
+    btn.addEventListener('mouseleave', () => {
+      resetPreviewLevel(selectedDir);
+    });
 
-    btn.onclick = () => {
-      socket.emit('director_invest', { direction: selectedDir, amount: amt });
-      toast('Вложено: ' + DIRECTION_LABELS[selectedDir] + ' · ' + AMOUNT_LABELS[amt]);
+    // Клик:
+    // — если это первый тап по этой кнопке (pendingLevel !== lvl) → превью
+    // — если второй тап по той же кнопке → применить
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+
+      if (pendingLevel !== lvl) {
+        // Первый тап — превью
+        pendingLevel = lvl;
+        showPreviewLevel(selectedDir, lvl);
+        return;
+      }
+
+      // Второй тап — применяем
+      socket.emit('director_set_level', { direction: selectedDir, level: lvl });
+      toast(DIRECTION_LABELS[selectedDir] + ': ' + LEVEL_LABELS[lvl].toLowerCase() + ' уровень');
       showMainActions();
-    };
+    });
   });
 
   document.getElementById('btn-take').onclick = () => toast('Забрать себе — скоро');
