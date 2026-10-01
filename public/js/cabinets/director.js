@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════
 
 (function () {
-  const { socket, state, show, toast } = window.App;
+  const { socket, state, show, toast, applyTheme } = window.App;
 
   const DIRECTION_LABELS = {
     equipment: 'Оборудование',
@@ -55,12 +55,11 @@
     document.getElementById('budget-word').textContent = wordFor(f.budgetPercent, 'bud');
   }
 
-  // Экспортируем — пригодится другим кабинетам
   window.renderScales = renderScales;
 
   // ─── Подменю ───
-  const mainActions  = document.getElementById('main-actions');
-  const submenuDirs  = document.getElementById('submenu-dirs');
+  const mainActions   = document.getElementById('main-actions');
+  const submenuDirs   = document.getElementById('submenu-dirs');
   const submenuLevels = document.getElementById('submenu-levels');
   let selectedDir  = null;
   let pendingLevel = null;
@@ -153,7 +152,7 @@
     showDirPreview(selectedDir);
   };
 
-  // ─── Кнопки уровней: наведение + тап-дважды ───
+  // ─── Кнопки уровней ───
   document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(btn => {
     const lvl = parseInt(btn.dataset.lvl, 10);
 
@@ -184,7 +183,8 @@
   document.getElementById('btn-finish').onclick = () => toast('Завершить смену — скоро');
 
   // ─── Пришёл завод ───
-  socket.on('factory_chosen', ({ factory }) => {
+  socket.on('factory_chosen', ({ type, factory }) => {
+    applyTheme(type === 'good' ? 'rich' : 'poor');
     state.factory = factory;
     renderScales();
 

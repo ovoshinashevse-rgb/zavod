@@ -41,7 +41,13 @@ button, .btn, .player, input {
   touch-action: manipulation;
 }
 
-/* ─── Общие псевдо-слои фона ─── */
+/* ─── Нейтральная тема (до выбора завода) ─── */
+body {
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(60, 45, 55, 0.4) 0%, transparent 60%),
+    linear-gradient(180deg, #0a0a14 0%, #151020 50%, #100a14 100%);
+}
+
 body::before {
   content: '';
   position: fixed;
@@ -53,6 +59,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
   transition: background 1.2s ease;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 55%, rgba(200, 180, 190, 0.06) 0%, transparent 70%);
 }
 
 body::after {
@@ -62,9 +70,15 @@ body::after {
   pointer-events: none;
   z-index: 1;
   transition: opacity 1.2s ease, background 1.2s ease;
+  opacity: 0.5;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.012) 1px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,0.012) 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 80px 80px, 120px 120px, 100px 100px;
 }
 
-/* ─── Стеклянная карточка ─── */
+/* ─── Стеклянная карточка (базовая) ─── */
 .glass {
   position: relative;
   z-index: 10;
@@ -92,7 +106,7 @@ h1 {
   letter-spacing: 8px;
   color: #fff;
   opacity: 0.95;
-  background: linear-gradient(180deg, #fff 0%, #ffb073 100%);
+  background: linear-gradient(180deg, #fff 0%, #c8bcc8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -105,7 +119,7 @@ h1 {
   letter-spacing: 0.3px;
 }
 
-/* ─── Кнопки ─── */
+/* ─── Кнопки (базовые, нейтральные) ─── */
 .btn {
   display: block;
   width: 100%;
@@ -120,24 +134,29 @@ h1 {
   font-family: inherit;
   letter-spacing: 0.5px;
   transition: all 0.25s ease;
-  background: linear-gradient(135deg, rgba(255, 140, 60, 0.9), rgba(220, 80, 100, 0.9));
-  box-shadow: 0 8px 24px rgba(255, 120, 60, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .btn:active { transform: scale(0.97); opacity: 0.9; }
+
 .btn.secondary {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: none;
 }
+
 .btn.success {
   background: rgba(78, 205, 196, 0.2);
   border: 1px solid rgba(78, 205, 196, 0.4);
-  box-shadow: none;
 }
+
+.btn.danger {
+  background: rgba(233, 30, 99, 0.18);
+  border: 1px solid rgba(233, 30, 99, 0.4);
+}
+
 .btn.warn {
   background: rgba(255, 200, 50, 0.15);
   border: 1px solid rgba(255, 200, 50, 0.35);
-  box-shadow: none;
 }
 
 /* ─── Поле ввода ─── */

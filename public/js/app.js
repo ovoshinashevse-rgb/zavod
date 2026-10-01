@@ -56,6 +56,12 @@
     }
   }
 
+  // ─── Тема завода: rich / poor ───
+  function applyTheme(theme) {
+    document.body.classList.remove('rich', 'poor');
+    document.body.classList.add(theme === 'poor' ? 'poor' : 'rich');
+  }
+
   // ─── Всплывашка ───
   let toastTimer = null;
   function toast(text) {
@@ -72,7 +78,8 @@
     socket,
     state,
     show,
-    toast
+    toast,
+    applyTheme
   };
 
   console.log('App: каркас готов');
