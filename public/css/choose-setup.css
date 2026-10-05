@@ -1,0 +1,56 @@
+/* ═══════════════════════════════════════════
+   ВЫБОР ПОМЕЩЕНИЯ И ПРОДУКТА
+   ═══════════════════════════════════════════ */
+
+#buildings-list,
+#products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.setup-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 22px 28px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 32px;
+  color: #fff;
+  text-align: left;
+  font-family: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+body.rich .setup-btn {
+  background: linear-gradient(180deg, rgba(200, 160, 90, 0.12) 0%, rgba(200, 160, 90, 0.06) 100%);
+  border-color: rgba(200, 160, 90, 0.3);
+  color: #f0dcb0;
+}
+
+body.poor .setup-btn {
+  background: linear-gradient(180deg, rgba(140, 150, 100, 0.15) 0%, rgba(100, 110, 70, 0.1) 100%);
+  border-color: rgba(160, 170, 110, 0.3);
+  color: #e0e0c8;
+}
+
+.setup-btn:active {
+  transform: scale(0.98);
+}
+
+.setup-btn .setup-title {
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+}
+
+.setup-btn .setup-desc {
+  font-size: 14px;
+  opacity: 0.65;
+  line-height: 1.4;
+}

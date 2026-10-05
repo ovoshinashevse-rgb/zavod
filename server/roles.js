@@ -15,17 +15,29 @@ function shuffle(arr) {
 
 // Сколько ролей выдавать в зависимости от числа игроков
 function pickRolesForCount(count) {
+  // 2 игрока: Директор + случайная
   if (count <= 2) {
     const others = shuffle(ALL_ROLES.filter(r => r !== 'director'));
     return ['director', others[0]];
   }
+
+  // 3 игрока: Директор + Безопасник + Инженер
   if (count === 3) {
-    const others = shuffle(ALL_ROLES.filter(r => r !== 'director' && r !== 'security'));
-    return ['director', 'security', others[0]];
+    return ['director', 'security', 'engineer'];
   }
-  if (count === 4) return ['director', 'security', 'accountant', 'engineer'];
-  if (count === 5) return ['director', 'security', 'accountant', 'engineer', 'hr'];
-  return ['director', 'security', 'accountant', 'engineer', 'hr', 'marketer'];
+
+  // 4 игрока: + Бухгалтер
+  if (count === 4) {
+    return ['director', 'security', 'engineer', 'accountant'];
+  }
+
+  // 5 игроков: + HR
+  if (count === 5) {
+    return ['director', 'security', 'engineer', 'accountant', 'hr'];
+  }
+
+  // 6 игроков: все
+  return ['director', 'security', 'engineer', 'accountant', 'hr', 'marketer'];
 }
 
 // Раздать роли всем в зале
@@ -37,10 +49,14 @@ function assignRoles() {
 
   hall.players.forEach((p, i) => {
     p.role = roles[i];
-    p.decisionsLeft = DECISIONS_PER_SHIFT[p.role] || 0;   // ставим решения сразу
+    p.decisionsLeft = DECISIONS_PER_SHIFT[p.role] || 0;
     p.finished = false;
     p.dossier = [];
     p.suspicions = 0;
+    p.returns = 0;
+    p.kickbacks = 0;
+    p.pocket = 0;
+    p.engineerReport = null;
   });
 
   return hall.players.map(p => ({

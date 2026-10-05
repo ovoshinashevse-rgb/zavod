@@ -15,7 +15,8 @@ const ROLE_LABELS = {
 
 const DECISIONS_PER_SHIFT = {
   director: 3,
-  security: 2
+  security: 2,
+  engineer: 3
 };
 
 const hall = {
@@ -35,25 +36,10 @@ const hall = {
     directorId: null
   },
 
-  // Журнал краж: { shift, amount, type }
-  // type: 'budget' | 'direction'
+  // Журнал краж
   theftsLog: [],
 
   // Активные проверки отчётов
-  // {
-  //   directorId,
-  //   indicator,            // какой отчёт
-  //   requestedShift,       // смена запроса
-  //   checked: false,       // проверен ли (смена N+1)
-  //   isForged: null,       // подделан ли (узнаётся в N+1)
-  //   coverAttempted: false,// попытка прикрытия (смена N+1)
-  //   departmentAgreed: null,// ответ отдела (смена N+2)
-  //   theftAmount: 0,       // сколько откатил отдел
-  //   theftResolved: false, // деньги уже перераспределены?
-  //   answerSent: false,    // Безопасник ответил
-  //   answer: null,         // 'real' | 'forged'
-  //   directorNotified: false// Директор получил ответ (N+4)
-  // }
   reportChecks: []
 };
 
@@ -67,10 +53,12 @@ function addPlayer(socketId, name) {
       role: null,
       finished: false,
       decisionsLeft: 0,
-      dossier: [],        // проверки Безопасника
-      suspicions: 0,      // шкала подозрений
-      returns: 0,         // шкала возврата (для Безопасника)
-      kickbacks: 0        // шкала отката (для Безопасника)
+      dossier: [],
+      suspicions: 0,
+      returns: 0,
+      kickbacks: 0,
+      pocket: 0,       // карман Инженера
+      engineerReport: null  // отчёт Инженера (реальный/подделанный)
     };
     hall.players.push(p);
   } else {

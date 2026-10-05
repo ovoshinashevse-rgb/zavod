@@ -10,13 +10,28 @@ const {
   takeFromDirection,
   submitReport,
   factorySnapshot,
+  calcBudgetPercent,
   DECISION_COST,
   INDICATORS
 } = require('../factory');
 
 const REPORT_CHECK_DECISION_COST = 2;    // стоимость запроса
 const REPORT_CHECK_DELAY = 4;            // через сколько смен придёт ответ
+// ─── Помещения (выбирает Директор) ───
+const BUILDINGS = {
+  old_hangar:  { title: 'Старый ангар',    moneyBonus: 100, qualityMod: -10, spaceMod: 20 },
+  new_shop:    { title: 'Новый цех',        moneyBonus: -50, qualityMod: +15, spaceMod: -10 },
+  basement:    { title: 'Подвал',           moneyBonus: 150, qualityMod: -20, spaceMod: -20 },
+  main_building:{ title: 'Заводской корпус', moneyBonus: 0,  qualityMod: 0,   spaceMod: 0 }
+};
 
+// ─── Продукты (выбирает Директор) ───
+const PRODUCTS = {
+  bread:       { title: 'Хлеб',         needQuality: 40, needStaff: 30, market: 'mass' },
+  furniture:   { title: 'Мебель',       needQuality: 60, needStaff: 50, market: 'premium' },
+  parts:       { title: 'Детали',       needQuality: 70, needStaff: 40, market: 'b2b' },
+  electronics: { title: 'Электроника', needQuality: 90, needStaff: 60, market: 'premium' }
+};
 // Проверить, что Директор может делать действие
 function canAct(p) {
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
@@ -28,13 +43,70 @@ function canAct(p) {
 }
 
 // Создать завод по выбору Директора
-function chooseFactory(socketId, type) {
+function chooseFactory(socketId) {
   const p = getPlayer(socketId);
-  if (!p || p.role !== 'director') return { error: 'Только Директор выбирает завод' };
-  if (hall.phase !== 'roles') return { error: 'Сейчас не время выбирать завод' };
-  if (type !== 'good' && type !== 'bad') return { error: 'Неизвестный тип завода' };
+  if (!p || p.role !== 'director') return { error: 'Только Директор' };
+  if (hall.phase !== 'roles') return { error: 'Сейчас не время' };
 
-  hall.factory = createFactory(type);
+  hall.factory = createFactory('neutral');   // нейтральный старт
+  hall.phase = 'choose_setup';
+  hall.shift = 0;
+
+  return {
+    ok: true,
+    factory: factorySnapshot(hall.factory, true),
+    buildings: BUILDINGS,
+    products: PRODUCTS
+  };
+}
+
+// ─── Директор выбирает помещение ───
+function chooseBuilding(socketId, buildingKey) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'director') return { error: 'Только Директор' };
+  if (hall.phase !== 'choose_setup') return { error: 'Сейчас не время' };
+  if (!BUILDINGS[buildingKey]) return { error: 'Неизвестное помещение' };
+  if (hall.factory.building) return { error: 'Помещение уже выбрано' };
+
+  hall.factory.building = buildingKey;
+
+  // Применяем бонус к деньгам
+  const b = BUILDINGS[buildingKey];
+  hall.factory.money = Math.max(0, hall.factory.money + b.moneyBonus);
+  hall.factory.budgetPercent = calcBudgetPercent(hall.factory.money);
+
+  // Применяем модификатор к качеству
+  hall.factory.indicators.quality = Math.max(0, Math.min(100,
+    hall.factory.indicators.quality + b.qualityMod));
+
+  return {
+    ok: true,
+    building: buildingKey,
+    factory: factorySnapshot(hall.factory, true),
+    products: PRODUCTS
+  };
+}
+
+// ─── Директор выбирает продукт ───
+function chooseProduct(socketId, productKey) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'director') return { error: 'Только Директор' };
+  if (hall.phase !== 'choose_setup') return { error: 'Сейчас не время' };
+  if (!PRODUCTS[productKey]) return { error: 'Неизвестный продукт' };
+  if (hall.factory.product) return { error: 'Продукт уже выбран' };
+
+  hall.factory.product = productKey;
+
+  // Если помещение ещё не выбрано — не запускаем игру
+  if (!hall.factory.building) {
+    return {
+      ok: true,
+      product: productKey,
+      needBuilding: true
+    };
+  }
+
+  // Оба выбраны — стартуем игру
   hall.phase = 'game';
   hall.shift = 1;
 
@@ -45,8 +117,10 @@ function chooseFactory(socketId, type) {
 
   return {
     ok: true,
-    type: type,
-    factory: factorySnapshot(hall.factory, true)
+    product: productKey,
+    factory: factorySnapshot(hall.factory, true),
+    phase: 'game',
+    shift: 1
   };
 }
 
@@ -213,10 +287,14 @@ function requestReportCheck(socketId, indicator) {
 }
 module.exports = {
   chooseFactory,
+  chooseBuilding,
+  chooseProduct,
   setDirectionLevel,
   takeFromBudgetAction,
   takeFromDirectionAction,
   submitReportAction,
   requestReportCheck,
-  finishShift
+  finishShift,
+  BUILDINGS,
+  PRODUCTS
 };

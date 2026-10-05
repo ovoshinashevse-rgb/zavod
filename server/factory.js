@@ -40,6 +40,21 @@ const INVEST_COST = { 33: 10, 66: 25, 100: 50 };
 // Стоимость решений
 const DECISION_COST = { 33: 1, 66: 2, 100: 3 };
 
+// Инженер: распределение инвестиций в оборудование
+const ENGINEER_DISTRIBUTE = {
+  33:  { cost: 1, gain: 8  },   // Низкий — 1 решение, +8 к оборудованию
+  66:  { cost: 2, gain: 18 },   // Средний — 2 решения, +18
+  100: { cost: 3, gain: 30 }    // Высокий — 3 решения, +30
+};
+
+// Спивание: сколько уходит в карман Инженера и сколько теряет качество
+const ENGINEER_DRINK = {
+  pocketGain: 8,
+  qualityLoss: 4
+};
+
+// Работа: прирост к качеству
+const ENGINEER_WORK_GAIN = 3;
 // Прирост / падение показателей за смену
 const INDICATOR_GAIN = {
   100: 2,     // высокий уровень → +2
@@ -79,19 +94,18 @@ function createIndicators(startValue) {
 }
 
 function createFactory(type) {
-  const isGood = type === 'good';
-
-  const startLevel = isGood ? LEVEL.HIGH : LEVEL.LOW;
+  // type больше не используется, но оставляем для совместимости
+  // Стартовые значения — нейтральные, а бонусы придут от помещения
+  const startLevel = LEVEL.MID;   // все отделы — на «среднем»
   const directions = createDirections(startLevel);
   const invested = totalInvested(directions);
-  const money = isGood ? 165 : 330;
+  const money = 250;              // средняя сумма
 
-  const indicators = createIndicators(isGood ? 70 : 30);
+  const indicators = createIndicators(50);   // все показатели по 50
 
   const reportsSubmitted = {};
   INDICATORS.forEach(k => reportsSubmitted[k] = false);
 
-  // Порог продажи — для каждого показателя от 70 до 100
   const saleThreshold = {};
   INDICATORS.forEach(k => saleThreshold[k] = 70 + Math.floor(Math.random() * 31));
 
@@ -106,6 +120,14 @@ function createFactory(type) {
     reportsSubmitted: reportsSubmitted,
     saleThreshold: saleThreshold,
     pocket: 0,
+    equipmentFund: 80,
+
+    building: null,
+    product: null,
+    equipment: null,
+    staff: null,
+    market: null,
+
     bankrupt: false
   };
 }
@@ -124,6 +146,11 @@ function setLevel(factory, direction, level) {
   if (diff > 0) {
     if (factory.money < cost) return { error: 'В кассе недостаточно денег' };
     factory.money -= cost;
+
+    // Если вложили в оборудование — растёт фонд оборудования
+    if (direction === 'equipment') {
+      factory.equipmentFund += cost;
+    }
   } else {
     factory.money += cost;
   }
@@ -294,6 +321,55 @@ function isFactoryReadyForSale(factory) {
     factory.indicators[k] >= factory.saleThreshold[k]
   );
 }
+// ═══════════════════════════════════════════
+// ДЕЙСТВИЯ ИНЖЕНЕРА
+// ═══════════════════════════════════════════
+
+// Распределить инвестиции на оборудование
+function engineerDistribute(factory, level) {
+  if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
+
+  const settings = ENGINEER_DISTRIBUTE[level];
+  if (!settings) return { error: 'Неизвестный уровень' };
+
+  // Если фонд меньше, чем нужно — работаем с тем, что есть
+  const available = Math.min(factory.equipmentFund, settings.gain);
+  if (available <= 0) return { error: 'Фонд оборудования пуст' };
+
+  factory.equipmentFund -= available;
+
+  // Прирост к оборудованию (показатель)
+  factory.indicators.equipment = Math.min(100, factory.indicators.equipment + available);
+
+  return { ok: true, gain: available, factory };
+}
+
+// Спиться: качество падает, карман растёт (из фонда оборудования)
+function engineerDrink(factory, player) {
+  if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
+
+  // Из фонда оборудования — сколько есть
+  const fromFund = Math.min(factory.equipmentFund, ENGINEER_DRINK.pocketGain);
+  factory.equipmentFund -= fromFund;
+
+  // В карман — сколько взяли из фонда
+  player.pocket = (player.pocket || 0) + fromFund;
+
+  // Качество падает
+  factory.indicators.quality = Math.max(0, factory.indicators.quality - ENGINEER_DRINK.qualityLoss);
+
+  return { ok: true, pocketGain: fromFund, factory };
+}
+
+// Работать: качество растёт
+function engineerWork(factory) {
+  if (factory.bankrupt) return { error: 'Завод уже обанкротился' };
+
+  factory.indicators.quality = Math.min(100, factory.indicators.quality + ENGINEER_WORK_GAIN);
+
+  return { ok: true, gain: ENGINEER_WORK_GAIN, factory };
+}
+
 module.exports = {
   createFactory,
   setLevel,
@@ -305,6 +381,9 @@ module.exports = {
   resetReports,
   autoFillReports,
   isFactoryReadyForSale,
+  engineerDistribute,
+  engineerDrink,
+  engineerWork,
   factorySnapshot,
   calcInvestments,
   calcBudgetPercent,
@@ -316,5 +395,8 @@ module.exports = {
   TAKE_AMOUNT,
   INVEST_COST,
   DECISION_COST,
+  ENGINEER_DISTRIBUTE,
+  ENGINEER_DRINK,
+  ENGINEER_WORK_GAIN,
   LOW_THRESHOLD
 };

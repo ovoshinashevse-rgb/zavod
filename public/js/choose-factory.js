@@ -1,19 +1,14 @@
 // ═══════════════════════════════════════════
-// ВЫБОР ЗАВОДА — Директор решает
+// ВЫБОР ЗАВОДА — Директор начинает
 // ═══════════════════════════════════════════
 
 (function () {
   const { socket } = window.App;
 
-  // ─── Хороший завод ───
-  document.getElementById('btn-factory-good').onclick = () => {
-    socket.emit('director_choose_factory', { type: 'good' });
-  };
-
-  // ─── Плохой завод ───
-  document.getElementById('btn-factory-bad').onclick = () => {
-    socket.emit('director_choose_factory', { type: 'bad' });
-  };
+  const btn = document.getElementById('btn-factory-good');
+  if (btn) {
+    btn.onclick = () => socket.emit('director_choose_factory');
+  }
 
   console.log('ChooseFactory: модуль готов');
 })();

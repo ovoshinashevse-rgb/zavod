@@ -9,6 +9,7 @@ const smoking = require('./server/smoking');
 const { assignRoles } = require('./server/roles');
 const director = require('./server/cabinets/director');
 const security = require('./server/cabinets/security');
+const engineer = require('./server/cabinets/engineer');
 const {
   applyIndicatorChanges,
   resetReports,
@@ -58,20 +59,27 @@ io.on('connection', (socket) => {
   // ═══════════════════════════════════════════
   // ДИРЕКТОР
   // ═══════════════════════════════════════════
-  socket.on('director_choose_factory', ({ type }) => {
-    const result = director.chooseFactory(socket.id, type);
+      socket.on('director_choose_factory', () => {
+    const result = director.chooseFactory(socket.id);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
     }
 
     hall.players.forEach(p => {
-      const payload = {
-        type: result.type,
-        factory: (p.role === 'director') ? result.factory : stripPocket(result.factory),
-        decisionsLeft: p.decisionsLeft || 0
-      };
-      io.to(p.id).emit('factory_chosen', payload);
+      if (p.role === 'director') {
+        io.to(p.id).emit('factory_chosen', {
+          factory: result.factory,
+          needSetup: true,
+          buildings: result.buildings,
+          products: result.products
+        });
+      } else {
+        io.to(p.id).emit('factory_chosen', {
+          factory: stripPocket(result.factory),
+          waitingForDirector: true
+        });
+      }
     });
 
     const sec = hall.players.find(x => x.role === 'security');
@@ -79,7 +87,58 @@ io.on('connection', (socket) => {
       io.to(sec.id).emit('security_update', security.securitySnapshot(sec));
     }
 
-    console.log('Директор выбрал завод:', type);
+      console.log('Директор начал настройку завода');
+  });
+  // ─── Директор выбирает помещение ───
+  socket.on('director_choose_building', ({ building }) => {
+    const result = director.chooseBuilding(socket.id, building);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    // Директору — обновление
+    socket.emit('factory_update', {
+      ...result.factory,
+      needProduct: true,
+      products: result.products
+    });
+  });
+
+  // ─── Директор выбирает продукт ───
+  socket.on('director_choose_product', ({ product }) => {
+    const result = director.chooseProduct(socket.id, product);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    // Если помещение ещё не выбрано — Директор должен выбрать его
+    if (result.needBuilding) {
+      socket.emit('need_building');
+      return;
+    }
+
+    // Игра началась — рассылаем всем
+    hall.players.forEach(p => {
+      io.to(p.id).emit('game_started', {
+        factory: (p.role === 'director') ? result.factory : stripPocket(result.factory),
+        decisionsLeft: p.decisionsLeft || 0,
+        shift: 1
+      });
+    });
+
+    // Дополнительные обновления
+    const sec = hall.players.find(x => x.role === 'security');
+    if (sec) {
+      io.to(sec.id).emit('security_update', security.securitySnapshot(sec));
+    }
+    const eng = hall.players.find(x => x.role === 'engineer');
+    if (eng) {
+      io.to(eng.id).emit('engineer_update', engineer.engineerSnapshot(eng));
+    }
+
+    console.log('Игра началась. Продукт:', product);
   });
 
   socket.on('director_set_level', ({ direction, level }) => {
@@ -143,7 +202,58 @@ io.on('connection', (socket) => {
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
+ // ═══════════════════════════════════════════
+  // ИНЖЕНЕР
+  // ═══════════════════════════════════════════
+  socket.on('engineer_work', () => {
+    const result = engineer.workAction(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
 
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    emitEngineerUpdate(socket.id);
+    emitFactory(result.factory);
+  });
+
+  socket.on('engineer_drink', () => {
+    const result = engineer.drinkAction(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    emitEngineerUpdate(socket.id);
+    emitFactory(result.factory);
+
+    io.emit('engineer_drink_happened', {
+      name: getPlayer(socket.id).name
+    });
+  });
+
+  socket.on('engineer_distribute', ({ level }) => {
+    const result = engineer.distributeAction(socket.id, level);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    emitEngineerUpdate(socket.id);
+    emitFactory(result.factory);
+  });
+
+  socket.on('engineer_submit_report', ({ real }) => {
+    const result = engineer.submitEngineerReport(socket.id, real);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    emitEngineerUpdate(socket.id);
+  });
   // ═══════════════════════════════════════════
   // БЕЗОПАСНИК
   // ═══════════════════════════════════════════
@@ -320,6 +430,9 @@ io.on('connection', (socket) => {
             io.to(p.id).emit('security_check_results', { results: checkResults });
           }
         }
+          if (p.role === 'engineer') {
+          io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
+        }
       });
     }
   });
@@ -378,7 +491,12 @@ function emitFactory(snapshotWithPocket) {
     }
   });
 }
-
+// ─── Отправить Инженеру его снимок ───
+function emitEngineerUpdate(socketId) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'engineer') return;
+  io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
+}
 // ═══════════════════════════════════════════
 // БИОГРАФИИ
 // ═══════════════════════════════════════════

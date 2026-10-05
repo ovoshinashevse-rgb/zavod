@@ -25,6 +25,21 @@
     100: 3
   };
 
+    // Человеческие названия для помещений и продуктов
+  const BUILDING_LABELS = {
+    old_hangar:    { title: 'Старый ангар',     desc: 'Дёшево, много места. Оборудование старое.' },
+    new_shop:      { title: 'Новый цех',         desc: 'Всё новое, чисто. Дорого, места мало.' },
+    basement:      { title: 'Подвал',            desc: 'Очень дёшево, скрытно. Темно, сыро.' },
+    main_building: { title: 'Заводской корпус',  desc: 'Средне по цене. Нормально.' }
+  };
+
+  const PRODUCT_LABELS = {
+    bread:       { title: 'Хлеб',        desc: 'Массовый, дешёвый. Нужны пекари.' },
+    furniture:   { title: 'Мебель',      desc: 'Дорогая, требует мастеров.' },
+    parts:       { title: 'Детали',      desc: 'B2B, точность, станки.' },
+    electronics: { title: 'Электроника', desc: 'Премиум, требует всего лучшего.' }
+  };
+
   const INDICATOR_LABELS = {
     quality:    'Качество',
     clients:    'Клиенты',
@@ -181,6 +196,11 @@
     reportBtns.forEach(b => {
       b.disabled = b.disabled || decisionsLeft < 2;
     });
+        // Сообщаем App, сколько решений
+    if (window.App && window.App.setDecisionsLeft) {
+      window.App.setMaxDecisions(3);
+      window.App.setDecisionsLeft(left);
+    }
   }
 
   // ─── Обновить доступность кнопок уровней ───
@@ -472,33 +492,72 @@
   // ═══════════════════════════════════════════
   // СОБЫТИЯ С СЕРВЕРА
   // ═══════════════════════════════════════════
-  socket.on('factory_chosen', ({ type, factory, decisionsLeft: dl }) => {
+socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings, products }) => {
     if (state.myRole !== 'director') return;
 
-    applyTheme(type === 'good' ? 'rich' : 'poor');
     state.factory = factory;
+
+    if (needSetup) {
+      renderBuildings(buildings);
+      show('screen-building');
+      return;
+    }
+
     renderScales();
     renderDecisions(dl || 3);
     showMainActions();
     show('screen-game-director');
   });
 
-  socket.on('factory_update', (data) => {
-    if (state.myRole !== 'director') return;
-    state.factory = data;
-    renderScales();
-    if (document.getElementById('reports-list')) {
-      renderReports();
-    }
-    if (selectedDir) {
-      resetPreviewLevel(selectedDir);
-      updateLevelButtonsAvailability();
-    }
-    if (takeDir) {
-      resetTakePreview(takeDir);
-      updateTakeLevelButtonsAvailability();
-    }
-  });
+  // ─── Отрисовка помещений ───
+  function renderBuildings(buildings) {
+    const box = document.getElementById('buildings-list');
+    if (!box) return;
+    box.innerHTML = '';
+
+    const list = buildings || BUILDING_LABELS;
+
+    Object.keys(list).forEach(key => {
+      const b = BUILDING_LABELS[key] || { title: key, desc: '' };
+
+      const btn = document.createElement('button');
+      btn.className = 'setup-btn';
+      btn.innerHTML =
+        '<span class="setup-title">' + b.title + '</span>' +
+        '<span class="setup-desc">' + b.desc + '</span>';
+
+      btn.onclick = () => {
+        socket.emit('director_choose_building', { building: key });
+      };
+
+      box.appendChild(btn);
+    });
+  }
+
+  // ─── Отрисовка продуктов ───
+  function renderProducts(products) {
+    const box = document.getElementById('products-list');
+    if (!box) return;
+    box.innerHTML = '';
+
+    const list = products || PRODUCT_LABELS;
+
+    Object.keys(list).forEach(key => {
+      const p = PRODUCT_LABELS[key] || { title: key, desc: '' };
+
+      const btn = document.createElement('button');
+      btn.className = 'setup-btn';
+      btn.innerHTML =
+        '<span class="setup-title">' + p.title + '</span>' +
+        '<span class="setup-desc">' + p.desc + '</span>';
+
+      btn.onclick = () => {
+        socket.emit('director_choose_product', { product: key });
+      };
+
+      box.appendChild(btn);
+    });
+  }
 
   socket.on('decisions_update', ({ decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
@@ -574,6 +633,49 @@
     socket.emit('director_decline_deal');
     document.getElementById('deal-modal').classList.add('hidden');
   };
+ // ─── Помещение выбрано ───
+  socket.on('factory_update', (data) => {
+    if (state.myRole !== 'director') return;
 
+    // Если это обновление после выбора помещения — показываем продукты
+    if (data && data.needProduct) {
+      state.factory = data;
+      renderProducts(data.products);
+      show('screen-product');
+      return;
+    }
+
+    // Обычное обновление завода
+    state.factory = data;
+    renderScales();
+    if (document.getElementById('reports-list')) {
+      renderReports();
+    }
+    if (selectedDir) {
+      resetPreviewLevel(selectedDir);
+      updateLevelButtonsAvailability();
+    }
+    if (takeDir) {
+      resetTakePreview(takeDir);
+      updateTakeLevelButtonsAvailability();
+    }
+  });
+
+  // ─── Если продукт выбран раньше помещения ───
+  socket.on('need_building', () => {
+    if (state.myRole !== 'director') return;
+    renderBuildings();
+    show('screen-building');
+  });
+
+  // ─── Игра началась ───
+  socket.on('game_started', ({ factory, decisionsLeft: dl }) => {
+    if (state.myRole !== 'director') return;
+    state.factory = factory;
+    renderScales();
+    renderDecisions(dl || 3);
+    showMainActions();
+    show('screen-game-director');
+  });
   console.log('Cabinet Director: модуль готов');
 })();

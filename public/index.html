@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="/css/badge.css">
 <link rel="stylesheet" href="/css/cabinet-director.css">
 <link rel="stylesheet" href="/css/cabinet-security.css">
+<link rel="stylesheet" href="/css/cabinet-engineer.css">
+<link rel="stylesheet" href="/css/choose-setup.css">
 </head>
 <body>
 
@@ -66,25 +68,51 @@
     <button class="btn" id="btn-start-shift" style="max-width:340px;margin:28px auto 0;">Приступить</button>
   </div>
 
-  <!-- ЭКРАН 4: ВЫБОР ЗАВОДА -->
+    <!-- ЭКРАН 4: НАЧАЛО СМЕНЫ -->
   <div class="glass hidden" id="wrap-choose">
     <div id="screen-choose">
-      <h1>ВЫБОР ЗАВОДА</h1>
+      <h1>НАЧАЛО</h1>
       <div class="subtitle">
-        Вам достался завод.<br>
-        Какой — решать вам.
+        Завод ждёт.<br>
+        Пора начинать.
       </div>
-      <button class="btn success" id="btn-factory-good">
-        Хороший завод<br>
-        <small style="font-size:15px;opacity:0.7;">крепкое дело, мало денег</small>
-      </button>
-      <button class="btn danger" id="btn-factory-bad">
-        Плохой завод<br>
-        <small style="font-size:15px;opacity:0.7;">всё в упадке, но денег много</small>
+      <button class="btn" id="btn-factory-good">
+        Приступить
       </button>
     </div>
   </div>
+<!-- ЭКРАН 4a: ВЫБОР ПОМЕЩЕНИЯ -->
+  <div class="glass hidden" id="wrap-building">
+    <div id="screen-building">
+      <h1>ПОМЕЩЕНИЕ</h1>
+      <div class="subtitle">
+        Где будет работать завод?
+      </div>
+      <div id="buildings-list"></div>
+    </div>
+  </div>
 
+  <!-- ЭКРАН 4b: ВЫБОР ПРОДУКТА -->
+  <div class="glass hidden" id="wrap-product">
+    <div id="screen-product">
+      <h1>ПРОДУКТ</h1>
+      <div class="subtitle">
+        Что будет делать завод?
+      </div>
+      <div id="products-list"></div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН 4c: ОЖИДАНИЕ ВЫБОРА ДИРЕКТОРА -->
+  <div class="glass hidden" id="wrap-setup-wait">
+    <div id="screen-setup-wait">
+      <h1>ОЖИДАНИЕ</h1>
+      <div class="subtitle">
+        Директор выбирает помещение и продукт…<br>
+        Скоро начнётся первая смена.
+      </div>
+    </div>
+  </div>
   <!-- ЭКРАН 5: ОЖИДАНИЕ ВЫБОРА -->
   <div class="glass hidden" id="wrap-waiting">
     <div id="screen-waiting">
@@ -365,7 +393,108 @@
 
     </div>
   </div>
+<!-- ЭКРАН 6c: СМЕНА ИНЖЕНЕРА -->
+  <div class="glass hidden" id="wrap-game-engineer">
+    <div id="screen-game-engineer" class="shift shift-engineer">
 
+      <div class="decisions-bar">
+        <span class="decisions-label">Ваши решения</span>
+        <span class="decisions-dots" id="decisions-dots-engineer"></span>
+      </div>
+
+      <!-- Три шкалы Инженера -->
+      <div class="shift-status">
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Качество</span>
+            <span class="status-value" id="eng-quality-word">среднее</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="eng-quality-fill" style="width:50%"></div>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Оборудование</span>
+            <span class="status-value" id="eng-equipment-word">среднее</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="eng-equipment-fill" style="width:50%"></div>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Фонд оборудования</span>
+            <span class="status-value" id="eng-fund-word">пусто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="eng-fund-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="status-item hidden" id="eng-pocket-box">
+          <div class="status-header">
+            <span class="status-label">В кармане</span>
+            <span class="status-value" id="eng-pocket-word">пусто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="eng-pocket-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Действия -->
+      <div class="shift-actions" id="engineer-actions">
+        <button class="btn" id="btn-eng-work">Работать</button>
+        <button class="btn secondary" id="btn-eng-drink">Спиться</button>
+        <button class="btn secondary" id="btn-eng-distribute">Улучшить оборудование</button>
+        <button class="btn secondary" id="btn-eng-report">Отчёт Директору</button>
+        <button class="btn secondary" id="btn-finish-engineer">Завершить смену</button>
+      </div>
+
+      <div class="hidden" id="shift-done-engineer">
+        <div class="subtitle">
+          Смена завершена.<br>
+          Ожидайте коллег…
+        </div>
+      </div>
+
+      <!-- Подменю: распределить инвестиции -->
+      <div class="submenu hidden" id="submenu-engineer-distribute">
+        <div class="submenu-title">Распределить инвестиции</div>
+
+        <div class="preview-scale">
+          <span class="status-label">Фонд оборудования</span>
+          <div class="scale">
+            <div class="scale-fill mid" id="eng-fund-preview-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-amount" data-eng-lvl="33">
+          <span class="amt-name">Низкий уровень</span>
+        </button>
+        <button class="btn btn-amount" data-eng-lvl="66">
+          <span class="amt-name">Средний уровень</span>
+        </button>
+        <button class="btn btn-amount" data-eng-lvl="100">
+          <span class="amt-name">Высокий уровень</span>
+        </button>
+
+        <button class="btn secondary" id="btn-back-eng-distribute">← Назад</button>
+      </div>
+
+      <!-- Подменю: отчёт Директору -->
+      <div class="submenu hidden" id="submenu-engineer-report">
+        <div class="submenu-title">Что написать в отчёте</div>
+        <button class="btn success" id="btn-eng-report-real">Честно</button>
+        <button class="btn danger" id="btn-eng-report-fake">Подделать</button>
+        <button class="btn secondary" id="btn-back-eng-report">← Назад</button>
+      </div>
+
+    </div>
+  </div>
   <!-- Модальное окно сговора — для Директора -->
   <div class="modal hidden" id="deal-modal">
     <div class="modal-card">
@@ -410,5 +539,6 @@
   <script src="/js/choose-factory.js"></script>
   <script src="/js/cabinets/director.js"></script>
   <script src="/js/cabinets/security.js"></script>
+ <script src="/js/cabinets/engineer.js"></script>
 </body>
 </html>

@@ -311,3 +311,141 @@ body.in-smoking.density-heavy .glass {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50%      { transform: translate(-2%, -3%) scale(1.05); }
 }
+/* ═══════════════════════════════════════════
+   ВРЕМЯ СУТОК
+   Утро → День → Вечер (привязано к решениям)
+   ═══════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════
+   УТРО
+   Холодный розово-голубой свет из окна слева.
+   Воздух чистый. Карточка светлая.
+   ═══════════════════════════════════════════ */
+body.time-morning.rich {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(255, 180, 200, 0.35) 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 120%, rgba(120, 80, 100, 0.4) 0%, transparent 60%),
+    linear-gradient(180deg, #1a1428 0%, #2a2035 50%, #3a2a30 100%);
+}
+body.time-morning.poor {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(180, 200, 220, 0.2) 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 120%, rgba(60, 70, 50, 0.4) 0%, transparent 60%),
+    linear-gradient(180deg, #14181c 0%, #1e2420 50%, #2a2e24 100%);
+}
+body.time-morning .glass {
+  background: rgba(255, 250, 245, 0.08);
+  border-color: rgba(255, 240, 220, 0.15);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  /* Лёгкое покачивание — «дышит» */
+  animation: morning-breathe 5s ease-in-out infinite;
+}
+
+@keyframes morning-breathe {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+/* ═══════════════════════════════════════════
+   ДЕНЬ
+   Нейтральный. Всё работает. Без анимации.
+   ═══════════════════════════════════════════ */
+body.time-day.rich {
+  /* Оставляем базовую .rich */
+}
+body.time-day.poor {
+  /* Оставляем базовую .poor */
+}
+
+/* ═══════════════════════════════════════════
+   ВЕЧЕР
+   Тёплая лампа справа. Карточка чуть дрожит.
+   Пыль осела.
+   ═══════════════════════════════════════════ */
+body.time-evening.rich {
+  background:
+    radial-gradient(ellipse 70% 60% at 85% 30%, rgba(255, 160, 60, 0.4) 0%, transparent 65%),
+    radial-gradient(ellipse at 50% 100%, rgba(120, 60, 30, 0.5) 0%, transparent 60%),
+    linear-gradient(180deg, #100818 0%, #1a1020 50%, #1c0e14 100%);
+}
+body.time-evening.poor {
+  background:
+    radial-gradient(ellipse 70% 60% at 85% 30%, rgba(180, 160, 60, 0.3) 0%, transparent 65%),
+    radial-gradient(ellipse at 50% 100%, rgba(80, 60, 30, 0.5) 0%, transparent 60%),
+    linear-gradient(180deg, #0a0c06 0%, #14140c 50%, #1a180e 100%);
+}
+body.time-evening .glass {
+  background: rgba(40, 25, 15, 0.5);
+  border-color: rgba(200, 140, 60, 0.2);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.65),
+    0 0 80px rgba(180, 100, 30, 0.1),
+    inset 0 1px 0 rgba(220, 160, 80, 0.12);
+  /* Лёгкая дрожь — «устал» */
+  animation: evening-shiver 7s ease-in-out infinite;
+}
+
+@keyframes evening-shiver {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(0.5px) rotate(0.1deg); }
+}
+
+body.time-evening .status-label {
+  color: #d8b080;
+  opacity: 0.75;
+}
+
+/* ═══════════════════════════════════════════
+   Общие настройки
+   ═══════════════════════════════════════════ */
+body.time-morning .scale,
+body.time-evening .scale {
+  transition: all 0.8s ease;
+}
+/* ═══════════════════════════════════════════
+   ВРЕМЯ СУТОК — через CSS-переменные
+   Привязано к решениям. Переход 8 секунд.
+   ═══════════════════════════════════════════ */
+
+:root {
+  /* Прогресс дня: 0 = утро, 100 = вечер */
+  --day-progress: 0;
+
+  /* Солнце — позиция и цвет (утро) */
+  --sun-x: 15%;
+  --sun-y: 20%;
+  --sun-h: 340;    /* розовый */
+  --sun-a: 0.35;
+
+  /* Небо — оттенок и яркость слоёв */
+  --sky-h: 280;    /* фиолетово-синий */
+  --sky-l1: 10%;
+  --sky-l2: 14%;
+  --sky-l3: 18%;
+}
+
+/* ─── RICH: фон с переменными (перебиваем базовый) ─── */
+body.rich {
+  background:
+    radial-gradient(ellipse 80% 60% at var(--sun-x) var(--sun-y),
+      hsla(var(--sun-h), 70%, 65%, var(--sun-a)) 0%, transparent 70%),
+    linear-gradient(180deg,
+      hsl(var(--sky-h), 40%, var(--sky-l1)) 0%,
+      hsl(var(--sky-h), 35%, var(--sky-l2)) 50%,
+      hsl(var(--sky-h), 30%, var(--sky-l3)) 100%);
+  transition: background 8s ease;
+}
+
+/* ─── POOR: фон с переменными ─── */
+body.poor {
+  background:
+    radial-gradient(ellipse 80% 60% at var(--sun-x) var(--sun-y),
+      hsla(var(--sun-h), 40%, 55%, var(--sun-a)) 0%, transparent 70%),
+    linear-gradient(180deg,
+      hsl(var(--sky-h), 15%, var(--sky-l1)) 0%,
+      hsl(var(--sky-h), 12%, var(--sky-l2)) 50%,
+      hsl(var(--sky-h), 10%, var(--sky-l3)) 100%);
+  transition: background 8s ease;
+}
