@@ -41,6 +41,10 @@
     'screen-end':             'wrap-end'
   };
 
+  // Порядок экранов — для определения направления перехода.
+  // Вперёд = индекс растёт, назад = индекс падает.
+  const screensOrder = Object.keys(screens);
+
   // ─── Какие экраны — фасад, какие — курилка ───
   const FACADE_SCREENS = [
     'screen-enter',
@@ -76,28 +80,43 @@
     document.body.classList.remove(...ALL_BG_CLASSES);
   }
 
-  // ─── Показать экран ───
-  function show(id) {
-    Object.values(screens).forEach(x => {
-      const el = document.getElementById(x);
-      if (el) el.classList.add('hidden');
-    });
-    const target = document.getElementById(screens[id]);
-    if (target) target.classList.remove('hidden');
+  // ═══════════════════════════════════════════
+  // HAPTIC — отклик на касание
+  // ═══════════════════════════════════════════
+  function haptic(type) {
+    try {
+      const tg = window.Telegram && window.Telegram.WebApp;
 
-    // ─── Фон сцены ───
-    // Для игровых экранов фон ставит factory_chosen (applyBuilding),
-    // поэтому show() их не трогает — иначе перебьёт выбор помещения.
-    if (!GAME_SCREENS.includes(id)) {
-      clearBgClasses();
-
-      if (FACADE_SCREENS.includes(id)) {
-        document.body.classList.add('bg-facade');
-      } else if (SMOKING_SCREENS.includes(id)) {
-        document.body.classList.add('bg-smoking');
+      if (tg && tg.HapticFeedback) {
+        const h = tg.HapticFeedback;
+        if (type === 'success') { h.notificationOccurred('success'); return; }
+        if (type === 'error')   { h.notificationOccurred('error');   return; }
+        if (type === 'warning') { h.notificationOccurred('warning'); return; }
+        h.impactOccurred(type || 'light');
+        return;
       }
-    }
 
+      if (navigator.vibrate) {
+        const map = { light: 8, medium: 15, heavy: 25 };
+        const ms = map[type];
+        if (ms) navigator.vibrate(ms);
+      }
+    } catch (e) {
+      // тихо
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // ПЕРЕХОДЫ ЭКРАНОВ — плавно, в духе iOS
+  // ═══════════════════════════════════════════
+
+  let currentScreen = null;     // какой экран сейчас виден
+  let isTransitioning = false;  // идёт ли анимация
+
+  const OUT_DURATION  = 180;
+  const IN_DURATION   = 240;
+
+  function applyScreenExtras(id) {
     // ─── Курилка: дымность ───
     if (id === 'screen-smoking') {
       document.body.classList.add('in-smoking');
@@ -112,11 +131,79 @@
     }
 
     // ─── Время суток ───
-    // Вне смены — НЕ трогаем вообще. Переменные остаются как есть.
-    // На смене — время суток работает по решениям.
     if (GAME_SCREENS.includes(id)) {
       applyDayTime();
     }
+  }
+
+  // ─── Показать экран ───
+  function show(id) {
+    // Тот же экран — ничего не делаем
+    if (currentScreen === id) return;
+
+    // Идёт анимация — не мешаем
+    if (isTransitioning) return;
+
+    const target = document.getElementById(screens[id]);
+    if (!target) return;
+
+    const fromId = currentScreen;
+    const from = fromId ? document.getElementById(screens[fromId]) : null;
+
+    // Направление: назад, если новый экран левее в списке
+    const fromIdx = screensOrder.indexOf(fromId);
+    const toIdx   = screensOrder.indexOf(id);
+    const isBack  = fromId && toIdx < fromIdx;
+
+    // ─── Фон сцены ───
+    // Переключаем ДО анимации карточки, чтобы шли одновременно.
+    if (!GAME_SCREENS.includes(id)) {
+      clearBgClasses();
+
+      if (FACADE_SCREENS.includes(id)) {
+        document.body.classList.add('bg-facade');
+      } else if (SMOKING_SCREENS.includes(id)) {
+        document.body.classList.add('bg-smoking');
+      }
+    }
+
+    // ─── Первый показ — без анимации ───
+    if (!from) {
+      // прячем всё на всякий случай
+      Object.values(screens).forEach(x => {
+        const el = document.getElementById(x);
+        if (el) el.classList.add('hidden');
+      });
+      target.classList.remove('hidden');
+      currentScreen = id;
+      applyScreenExtras(id);
+      return;
+    }
+
+    // ─── Анимация ───
+    isTransitioning = true;
+
+    // Старый экран уходит
+    from.classList.remove('screen-in', 'screen-in-back');
+    from.classList.add(isBack ? 'screen-out-back' : 'screen-out');
+
+    setTimeout(() => {
+      // Скрываем старый
+      from.classList.add('hidden');
+      from.classList.remove('screen-out', 'screen-out-back');
+
+      // Показываем новый и даём ему анимацию входа
+      target.classList.remove('hidden');
+      target.classList.add(isBack ? 'screen-in-back' : 'screen-in');
+
+      applyScreenExtras(id);
+      currentScreen = id;
+
+      setTimeout(() => {
+        target.classList.remove('screen-in', 'screen-in-back');
+        isTransitioning = false;
+      }, IN_DURATION);
+    }, OUT_DURATION);
   }
 
   // ─── Тема завода ───
@@ -126,7 +213,6 @@
   }
 
   // ─── Фон помещения ───
-  // key: 'old_hangar' | 'main_building' | 'new_shop'
   const BUILDING_CLASSES = ['building-hangar', 'building-shop', 'building-main'];
   const BUILDING_MAP = {
     old_hangar:    'building-hangar',
@@ -135,14 +221,10 @@
   };
 
   function applyBuilding(key) {
-    // Снимаем только «помещательные» классы (не трогаем facade / smoking)
     document.body.classList.remove(...BUILDING_CLASSES);
-
     if (!key) return;
-
     const cls = BUILDING_MAP[key];
     if (!cls) return;
-
     document.body.classList.add(cls);
   }
 
@@ -191,15 +273,24 @@
     state,
     show,
     toast,
+    haptic,
     applyTheme,
     applyBuilding,
     applyFactoryState
   };
 
   // ═══════════════════════════════════════════
+  // ГЛОБАЛЬНЫЙ HAPTIC
+  // ═══════════════════════════════════════════
+  document.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('.btn, .setup-btn, .player, .badge-card, .decision-dot');
+    if (!el) return;
+    if (el.disabled) return;
+    haptic('light');
+  }, { passive: true });
+
+  // ═══════════════════════════════════════════
   // ВРЕМЯ СУТОК — привязано к решениям
-  // Работает ТОЛЬКО на смене.
-  // Вне смены переменные не трогаются.
   // ═══════════════════════════════════════════
 
   let maxDecisions = 3;
@@ -243,7 +334,6 @@
     root.style.setProperty('--sky-l3', fromTimeline(TIMELINE.skyL3, progress) + '%');
   }
 
-  // Проверяем, активен ли экран смены
   function isGameScreenActive() {
     return GAME_SCREENS.some(id => {
       const wrap = document.getElementById(screens[id]);
@@ -252,7 +342,6 @@
   }
 
   function applyDayTime() {
-    // Крутим время суток ТОЛЬКО на смене
     if (!isGameScreenActive()) return;
 
     if (maxDecisions <= 0) return;
@@ -285,24 +374,19 @@
   socket.on('factory_chosen', (data) => {
     usedDecisions = 0;
 
-    // Время суток крутим только на смене.
     if (isGameScreenActive()) {
       applyDayTime();
     }
 
-    // Включаем фон помещения, если сервер прислал ключ
     if (data && data.factory && data.factory.building) {
       applyBuilding(data.factory.building);
     }
 
-    // Состояние фона пока всегда 'mid'.
-    // Позже, когда захотим — будем вычислять из экономики.
     applyFactoryState('mid');
   });
 
   // ═══════════════════════════════════════════
   // СТАРТ: показать первый экран
-  // Без этого фон фасада не включается до первого клика.
   // ═══════════════════════════════════════════
   show('screen-enter');
 

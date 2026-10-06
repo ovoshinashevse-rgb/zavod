@@ -57,6 +57,13 @@
 
   let decisionsLeft = 3;
 
+  // ─── Знак завода ───
+  function mountSign(factory) {
+    if (!window.FactorySign) return;
+    const product = factory && factory.product;
+    window.FactorySign.mount('factory-sign-director', product);
+  }
+
   function colorClass(value) {
     if (value < 50) return 'low';
     if (value < 83) return 'mid';
@@ -503,6 +510,9 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
       return;
     }
 
+    // Знак завода — если продукт уже известен
+    mountSign(factory);
+
     renderScales();
     renderDecisions(dl || 3);
     showMainActions();
@@ -647,6 +657,10 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
 
     // Обычное обновление завода
     state.factory = data;
+
+    // Знак завода — обновляем (продукт уже известен)
+    mountSign(data);
+
     renderScales();
     if (document.getElementById('reports-list')) {
       renderReports();
@@ -672,6 +686,10 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
   socket.on('game_started', ({ factory, decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
     state.factory = factory;
+
+    // Знак завода
+    mountSign(factory);
+
     renderScales();
     renderDecisions(dl || 3);
     showMainActions();

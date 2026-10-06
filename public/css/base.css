@@ -86,9 +86,82 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════
-   ФОН ПОМЕЩЕНИЯ / СЦЕНЫ — атмосфера завода
-   Ложится под стекло. Стекло его размывает.
-   Появляется по классу на body.
+   ПЕРЕХОДЫ ЭКРАНОВ — плавный вход и выход
+   Работают на .glass и на #screen-role.
+   ═══════════════════════════════════════════ */
+
+/* Базовая позиция: карточка на месте, полностью видна */
+.glass,
+#screen-role {
+  will-change: opacity, transform;
+}
+
+/* Уход вперёд: сдвиг влево + затемнение */
+.screen-out {
+  animation: screen-out-left 180ms cubic-bezier(0.4, 0.0, 1.0, 1.0) forwards;
+}
+
+@keyframes screen-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px) scale(0.985);
+  }
+}
+
+/* Уход назад: сдвиг вправо + затемнение */
+.screen-out-back {
+  animation: screen-out-right 180ms cubic-bezier(0.4, 0.0, 1.0, 1.0) forwards;
+}
+
+@keyframes screen-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(24px) scale(0.985);
+  }
+}
+
+/* Приход вперёд: выезд справа + проявление */
+.screen-in {
+  animation: screen-in-right 240ms cubic-bezier(0.16, 1.0, 0.3, 1.0);
+}
+
+@keyframes screen-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(28px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Приход назад: выезд слева + проявление */
+.screen-in-back {
+  animation: screen-in-left 240ms cubic-bezier(0.16, 1.0, 0.3, 1.0);
+}
+
+@keyframes screen-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-28px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ФОН ПОМЕЩЕНИЯ / СЦЕНЫ
    ═══════════════════════════════════════════ */
 .bg-building {
   position: fixed;
@@ -104,7 +177,6 @@ body::after {
   will-change: opacity, filter;
 }
 
-/* ─── Когда фон проявляется ─── */
 body.bg-facade  .bg-building,
 body.bg-smoking .bg-building,
 body.building-hangar .bg-building,
@@ -113,17 +185,14 @@ body.building-main   .bg-building {
   opacity: 1;
 }
 
-/* ─── Подготовительные экраны: фасад завода ─── */
 body.bg-facade .bg-building {
   background-image: url('/img/backgrounds/facade.jpg');
 }
 
-/* ─── Курилка: уличная, вечер ─── */
 body.bg-smoking .bg-building {
   background-image: url('/img/backgrounds/smoking.jpg');
 }
 
-/* ─── Помещения для смены ─── */
 body.building-hangar .bg-building {
   background-image: url('/img/backgrounds/hangar.jpg');
 }
@@ -136,7 +205,6 @@ body.building-main .bg-building {
   background-image: url('/img/backgrounds/main.jpg');
 }
 
-/* ─── Состояние завода тонирует фон ─── */
 .bg-building.bg-rich {
   filter: brightness(1.05) saturate(1.1) contrast(1.02);
 }
@@ -150,7 +218,32 @@ body.building-main .bg-building {
 }
 
 /* ═══════════════════════════════════════════
-   СТЕКЛЯННАЯ КАРТОЧКА — глубокая, дорогая
+   ЗНАК ЗАВОДА
+   ═══════════════════════════════════════════ */
+.factory-sign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.6s ease, opacity 0.6s ease;
+  min-height: 56px;
+}
+
+.factory-sign svg {
+  width: 56px;
+  height: 56px;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+}
+
+.factory-sign:empty {
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+/* ═══════════════════════════════════════════
+   СТЕКЛЯННАЯ КАРТОЧКА
    ═══════════════════════════════════════════ */
 .glass {
   position: relative;
@@ -169,11 +262,6 @@ body.building-main .bg-building {
   min-width: 320px;
   max-width: 480px;
   width: 100%;
-  transition:
-    box-shadow 0.8s ease,
-    border-color 0.8s ease,
-    background 0.8s ease,
-    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ═══════════════════════════════════════════
@@ -201,7 +289,7 @@ h1 {
 }
 
 /* ═══════════════════════════════════════════
-   КНОПКИ — мягкие, с характером
+   КНОПКИ
    ═══════════════════════════════════════════ */
 .btn {
   display: block;
@@ -217,12 +305,11 @@ h1 {
   letter-spacing: -0.2px;
   cursor: pointer;
   transition:
-    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.25s ease,
     background 0.4s ease,
     box-shadow 0.4s ease;
 
-  /* Базовая кнопка — тёплая терракота */
   background: linear-gradient(180deg, #d97a5a 0%, #b85a3e 100%);
   box-shadow:
     0 4px 16px rgba(180, 80, 50, 0.3),
@@ -231,11 +318,11 @@ h1 {
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.955) translateY(1px);
   box-shadow:
-    0 2px 8px rgba(180, 80, 50, 0.2),
-    0 1px 0 rgba(255, 200, 180, 0.15) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+    0 1px 4px rgba(180, 80, 50, 0.2),
+    0 1px 0 rgba(255, 200, 180, 0.12) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
 }
 
 .btn.secondary {
@@ -248,8 +335,11 @@ h1 {
 }
 
 .btn.secondary:active {
-  background: rgba(255, 255, 255, 0.12);
-  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(0.955) translateY(1px);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .btn.success {
@@ -282,7 +372,7 @@ h1 {
 }
 
 /* ═══════════════════════════════════════════
-   ПОЛЕ ВВОДА — мягкое, глубокое
+   ПОЛЕ ВВОДА
    ═══════════════════════════════════════════ */
 .input {
   width: 100%;

@@ -16,6 +16,13 @@
     reportChecks: []
   };
 
+  // ─── Знак завода ───
+  function mountSign(factory) {
+    if (!window.FactorySign) return;
+    const product = factory && factory.product;
+    window.FactorySign.mount('factory-sign-security', product);
+  }
+
   // ─── Точки решений ───
   function renderDecisions(left) {
     const max = 2;
@@ -413,8 +420,11 @@
     }
   });
 
-  socket.on('factory_chosen', ({ type }) => {
+  socket.on('factory_chosen', ({ factory }) => {
     if (state.myRole !== 'security') return;
+
+    // Знак завода
+    mountSign(factory);
 
     show('screen-game-security');
     renderDecisions(secState.decisionsLeft);

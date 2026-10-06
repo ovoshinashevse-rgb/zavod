@@ -13,6 +13,13 @@
     report: null
   };
 
+  // ─── Знак завода ───
+  function mountSign(factory) {
+    if (!window.FactorySign) return;
+    const product = factory && factory.product;
+    window.FactorySign.mount('factory-sign-engineer', product);
+  }
+
   // ─── Точки решений ───
   function renderDecisions(left) {
     const max = 3;
@@ -271,11 +278,14 @@
     show('screen-setup-wait');
   });
   // ─── ПОКАЗ ЭКРАНА — без проверки myRole ───
-  socket.on('factory_chosen', ({ type }) => {
+  socket.on('factory_chosen', ({ factory }) => {
     // Каждый на своей роли покажет свой экран — но мы покажем свой ТОЛЬКО если мы Инженер
     // ВАЖНО: показываем экран даже если myRole ещё не установлен
     // (проверка ниже — чтобы не перебить чужой экран)
     if (state.myRole && state.myRole !== 'engineer') return;
+
+    // Знак завода
+    mountSign(factory);
 
     show('screen-game-engineer');
     renderDecisions(engState.decisionsLeft);
