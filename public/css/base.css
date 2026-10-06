@@ -129,12 +129,11 @@ body.building-hangar .bg-building {
 }
 
 body.building-shop .bg-building {
-  /* Пока картинки нет — просто тёмный градиент, чтобы не сломать */
-  background-image: linear-gradient(180deg, #0b1218 0%, #101a22 100%);
+  background-image: url('/img/backgrounds/shop.jpg');
 }
 
 body.building-main .bg-building {
-  background-image: linear-gradient(180deg, #140f0c 0%, #1a120e 100%);
+  background-image: url('/img/backgrounds/main.jpg');
 }
 
 /* ─── Состояние завода тонирует фон ─── */
