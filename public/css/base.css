@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════
    БАЗА — общий визуальный язык
-   Стиль: Apple iOS 17 — стекло, глубина, минимализм
+   Стиль: премиум, стекло, глубина, минимализм
    ═══════════════════════════════════════════ */
 
 /* ─── Шрифт ─── */
@@ -41,6 +41,7 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   letter-spacing: -0.2px;
+  background-color: #0a0a14;
 }
 
 button, .btn, .player, input {
@@ -82,6 +83,64 @@ body::after {
     radial-gradient(circle at 70% 60%, rgba(255,255,255,0.015) 1px, transparent 1px),
     radial-gradient(circle at 40% 80%, rgba(255,255,255,0.015) 1px, transparent 1px);
   background-size: 80px 80px, 120px 120px, 100px 100px;
+}
+
+/* ═══════════════════════════════════════════
+   ФОН ПОМЕЩЕНИЯ — атмосфера завода
+   Ложится под стекло. Стекло его размывает.
+   Появляется только после выбора помещения.
+   ═══════════════════════════════════════════ */
+.bg-building {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  opacity: 0;
+  transition: opacity 1.6s ease, filter 1.6s ease, transform 1.6s ease;
+  pointer-events: none;
+  will-change: opacity, filter;
+}
+
+/* Когда помещение выбрано — фон проявляется */
+body.building-hangar  .bg-building,
+body.building-shop    .bg-building,
+body.building-basement .bg-building,
+body.building-main    .bg-building {
+  opacity: 1;
+}
+
+/* ─── Помещения: какая картинка ─── */
+body.building-hangar .bg-building {
+  background-image: url('/img/backgrounds/hangar.jpg');
+}
+
+body.building-shop .bg-building {
+  /* Пока картинки нет — просто тёмный градиент, чтобы не сломать */
+  background-image: linear-gradient(180deg, #0b1218 0%, #101a22 100%);
+}
+
+body.building-basement .bg-building {
+  background-image: linear-gradient(180deg, #0a0808 0%, #120c0a 100%);
+}
+
+body.building-main .bg-building {
+  background-image: linear-gradient(180deg, #140f0c 0%, #1a120e 100%);
+}
+
+/* ─── Состояние завода тонирует фон ─── */
+.bg-building.bg-rich {
+  filter: brightness(1.05) saturate(1.1) contrast(1.02);
+}
+
+.bg-building.bg-mid {
+  filter: brightness(0.9) saturate(0.95) contrast(1.0);
+}
+
+.bg-building.bg-poor {
+  filter: brightness(0.7) saturate(0.7) contrast(1.05);
 }
 
 /* ═══════════════════════════════════════════
