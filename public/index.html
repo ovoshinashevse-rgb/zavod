@@ -18,7 +18,6 @@
 </head>
 <body>
 
-  <!-- Фон помещения -->
   <div class="bg-building" id="bg-building"></div>
 
   <!-- ЭКРАН 1: ВХОД -->
@@ -212,7 +211,6 @@
         </div>
       </div>
 
-      <!-- Подменю: выбор отдела -->
       <div class="submenu hidden" id="submenu-dirs">
         <div class="submenu-title">Какой отдел</div>
 
@@ -231,7 +229,6 @@
         <button class="btn secondary" id="btn-back-dirs">← Назад</button>
       </div>
 
-      <!-- Подменю: выбор уровня -->
       <div class="submenu hidden" id="submenu-levels">
         <div class="submenu-title" id="levels-title">Уровень</div>
 
@@ -255,7 +252,6 @@
         <button class="btn secondary" id="btn-back-levels">← Назад</button>
       </div>
 
-      <!-- Подменю: Забрать себе — откуда -->
       <div class="submenu hidden" id="submenu-take-source">
         <div class="submenu-title">Откуда забрать</div>
         <button class="btn" id="btn-take-budget">Из бюджета</button>
@@ -263,7 +259,6 @@
         <button class="btn secondary" id="btn-back-take-source">← Назад</button>
       </div>
 
-      <!-- Подменю: Забрать из бюджета — сколько -->
       <div class="submenu hidden" id="submenu-take-budget">
         <div class="submenu-title">Сколько забрать</div>
         <button class="btn btn-amount" data-take-lvl="33">
@@ -278,7 +273,6 @@
         <button class="btn secondary" id="btn-back-take-budget">← Назад</button>
       </div>
 
-      <!-- Подменю: Забрать из инвестиций — какой отдел -->
       <div class="submenu hidden" id="submenu-take-dirs">
         <div class="submenu-title">Из какого отдела</div>
         <button class="btn" data-take-dir="equipment">Оборудование</button>
@@ -289,7 +283,6 @@
         <button class="btn secondary" id="btn-back-take-dirs">← Назад</button>
       </div>
 
-      <!-- Подменю: Забрать из инвестиций — сколько -->
       <div class="submenu hidden" id="submenu-take-levels">
         <div class="submenu-title" id="take-levels-title">До какого уровня опустить</div>
 
@@ -313,7 +306,6 @@
         <button class="btn secondary" id="btn-back-take-levels">← Назад</button>
       </div>
 
-      <!-- Подменю: Отчёты -->
       <div class="submenu hidden" id="submenu-reports">
         <div class="submenu-title">Отчёты отделов</div>
         <div class="reports-list" id="reports-list"></div>
@@ -463,12 +455,75 @@
         </div>
       </div>
 
+      <!-- ОСНОВНЫЕ ДЕЙСТВИЯ -->
       <div class="shift-actions" id="engineer-actions">
         <button class="btn" id="btn-eng-work">Работать</button>
-        <button class="btn secondary" id="btn-eng-drink">Спиться</button>
+        <button class="btn secondary" id="btn-eng-drink">Уйти в запой</button>
         <button class="btn secondary" id="btn-eng-distribute">Улучшить оборудование</button>
         <button class="btn secondary" id="btn-eng-report">Отчёт Директору</button>
         <button class="btn secondary" id="btn-finish-engineer">Завершить смену</button>
+      </div>
+
+      <!-- РАЗДЕЛ ЗАПОЯ -->
+      <div class="drink-box hidden" id="engineer-drink">
+
+        <!-- Шаг 1: место -->
+        <div class="drink-step" id="drink-place">
+          <div class="drink-title">Куда пойдёшь?</div>
+          <div class="drink-options">
+            <button class="btn" data-drink-place="home">Дома</button>
+            <button class="btn" data-drink-place="work">На работе</button>
+            <button class="btn" data-drink-place="nature">На природе</button>
+          </div>
+          <button class="btn secondary" data-drink-back>← Назад</button>
+        </div>
+
+        <!-- Шаг 2: компания -->
+        <div class="drink-step hidden" id="drink-company">
+          <div class="drink-title">С кем?</div>
+          <div class="drink-options">
+            <button class="btn" data-drink-company="home_alone"    data-place="home">Один</button>
+            <button class="btn" data-drink-company="home_neighbors" data-place="home">С соседями</button>
+            <button class="btn" data-drink-company="home_family"   data-place="home">С женой (мужем)</button>
+
+            <button class="btn" data-drink-company="work_workers"    data-place="work">В цеху с мужиками</button>
+            <button class="btn" data-drink-company="work_corporate"  data-place="work">На корпорате</button>
+            <button class="btn" data-drink-company="work_boss"       data-place="work">В кабинете с начальством</button>
+
+            <button class="btn" data-drink-company="nature_fishing" data-place="nature">На рыбалке</button>
+            <button class="btn" data-drink-company="nature_garage"  data-place="nature">В гараже с братом</button>
+            <button class="btn" data-drink-company="nature_dacha"   data-place="nature">На даче</button>
+          </div>
+          <button class="btn secondary" data-drink-back>← Назад</button>
+        </div>
+
+        <!-- Шаг 3: напиток -->
+        <div class="drink-step hidden" id="drink-drink">
+          <div class="drink-title">Что пьёшь?</div>
+          <div class="drink-options">
+            <button class="btn" data-drink-drink="beer">Пиво</button>
+            <button class="btn" data-drink-drink="vodka">Водка</button>
+            <button class="btn" data-drink-drink="cognac">Коньяк</button>
+          </div>
+          <button class="btn secondary" data-drink-back>← Назад</button>
+        </div>
+
+        <!-- Шаг 4: количество -->
+        <div class="drink-step hidden" id="drink-amount">
+          <div class="drink-title">Сколько?</div>
+          <div class="drink-options">
+            <button class="btn" data-drink-amount="light">Немного</button>
+            <button class="btn" data-drink-amount="mid">Как следует</button>
+            <button class="btn" data-drink-amount="heavy">До беспамятства</button>
+          </div>
+          <button class="btn secondary" data-drink-back>← Назад</button>
+        </div>
+
+      </div>
+
+      <!-- ВЫЙТИ ИЗ ЗАПОЯ (показывается, если опьянение > 0) -->
+      <div class="drink-exit hidden" id="engineer-drink-exit">
+        <button class="btn warn" id="btn-eng-exit-drink">Закончить</button>
       </div>
 
       <div class="hidden" id="shift-done-engineer">
@@ -478,6 +533,7 @@
         </div>
       </div>
 
+      <!-- ПОДМЕНЮ: распределить инвестиции -->
       <div class="submenu hidden" id="submenu-engineer-distribute">
         <div class="submenu-title">Распределить инвестиции</div>
 
@@ -501,6 +557,7 @@
         <button class="btn secondary" id="btn-back-eng-distribute">← Назад</button>
       </div>
 
+      <!-- ПОДМЕНЮ: отчёт Директору -->
       <div class="submenu hidden" id="submenu-engineer-report">
         <div class="submenu-title">Что написать в отчёте</div>
         <button class="btn success" id="btn-eng-report-real">Честно</button>

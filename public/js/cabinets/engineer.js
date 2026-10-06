@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// КАБИНЕТ ИНЖЕНЕРА — работа, спивание, отчёт
+// КАБИНЕТ ИНЖЕНЕРА — работа, запой, отчёт
 // ═══════════════════════════════════════════
 
 (function () {
@@ -9,6 +9,9 @@
     decisionsLeft: 3,
     pocket: 0,
     equipmentFund: 0,
+    intoxication: 0,
+    blackout: 0,
+    drunkState: null,
     indicators: { quality: 0, equipment: 0, employees: 0 },
     report: null
   };
@@ -35,7 +38,7 @@
       box.appendChild(dot);
     }
     engState.decisionsLeft = left;
-        if (window.App && window.App.setDecisionsLeft) {
+    if (window.App && window.App.setDecisionsLeft) {
       window.App.setMaxDecisions(3);
       window.App.setDecisionsLeft(left);
     }
@@ -101,6 +104,106 @@
     }
   }
 
+  // ─── Плывущий интерфейс по опьянению ───
+  function applyDrunkClass() {
+    const card = document.getElementById('screen-game-engineer');
+    if (!card) return;
+
+    for (let i = 1; i <= 4; i++) {
+      card.classList.remove('drunk-' + i);
+    }
+
+    const lvl = engState.intoxication || 0;
+    let cls = null;
+    if (lvl >= 7)      cls = 'drunk-4';
+    else if (lvl >= 5) cls = 'drunk-3';
+    else if (lvl >= 3) cls = 'drunk-2';
+    else if (lvl >= 1) cls = 'drunk-1';
+
+    if (cls) card.classList.add(cls);
+  }
+
+  // ─── Кнопка «Закончить» видна, если опьянение > 0 ───
+  function applyDrinkExit() {
+    const box = document.getElementById('engineer-drink-exit');
+    if (!box) return;
+    if ((engState.intoxication || 0) > 0) {
+      box.classList.remove('hidden');
+    } else {
+      box.classList.add('hidden');
+    }
+  }
+
+  // ─── Показ главного экрана или экрана запоя ───
+  const actionsBox   = document.getElementById('engineer-actions');
+  const drinkBox     = document.getElementById('engineer-drink');
+  const submenuDistribute = document.getElementById('submenu-engineer-distribute');
+  const submenuReport = document.getElementById('submenu-engineer-report');
+  const shiftDone    = document.getElementById('shift-done-engineer');
+
+  function hideAllSubmenus() {
+    submenuDistribute.classList.add('hidden');
+    submenuReport.classList.add('hidden');
+  }
+
+  function hideAllDrinkSteps() {
+    ['drink-place', 'drink-company', 'drink-drink', 'drink-amount'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+  }
+
+  function showActions() {
+    hideAllSubmenus();
+    hideAllDrinkSteps();
+    if (drinkBox) drinkBox.classList.add('hidden');
+    actionsBox.classList.remove('hidden');
+    shiftDone.classList.add('hidden');
+    applyDrinkExit();
+  }
+
+  // Фильтрация компаний по выбранному месту
+  function filterCompanies(place) {
+    document.querySelectorAll('[data-drink-company]').forEach(btn => {
+      if (btn.dataset.place === place) {
+        btn.classList.remove('hidden');
+      } else {
+        btn.classList.add('hidden');
+      }
+    });
+  }
+
+  // Показ конкретного шага запоя
+  function showDrinkStep(step) {
+    actionsBox.classList.add('hidden');
+    hideAllSubmenus();
+    hideAllDrinkSteps();
+
+    if (drinkBox) drinkBox.classList.remove('hidden');
+    if (shiftDone) shiftDone.classList.add('hidden');
+
+    // Перед показом шага «компания» — фильтруем кнопки
+    if (step === 'company' && engState.drunkState && engState.drunkState.place) {
+      filterCompanies(engState.drunkState.place);
+    }
+
+    const stepId = 'drink-' + step;
+    const stepEl = document.getElementById(stepId);
+    if (stepEl) stepEl.classList.remove('hidden');
+
+    applyDrinkExit();
+  }
+
+  function applyDrunkState() {
+    if (engState.drunkState && engState.drunkState.step) {
+      showDrinkStep(engState.drunkState.step);
+    } else if (drinkBox && !drinkBox.classList.contains('hidden')) {
+      // Сессия запоя закончилась — вернуться на главный
+      showActions();
+    }
+  }
+
+  // ─── Обновление снимка Инженера ───
   function applySnapshot(data) {
     if (typeof data.decisionsLeft !== 'undefined') {
       engState.decisionsLeft = data.decisionsLeft;
@@ -112,39 +215,35 @@
     if (typeof data.equipmentFund !== 'undefined') {
       engState.equipmentFund = data.equipmentFund;
     }
+    if (typeof data.intoxication !== 'undefined') {
+      engState.intoxication = data.intoxication;
+    }
+    if (typeof data.blackout !== 'undefined') {
+      engState.blackout = data.blackout;
+    }
+    if (typeof data.drunkState !== 'undefined') {
+      engState.drunkState = data.drunkState;
+    }
     if (data.indicators) {
       engState.indicators = data.indicators;
     }
     if (data.report) {
       engState.report = data.report;
     }
+
     renderScales();
+    applyDrunkClass();
+    applyDrinkExit();
+    applyDrunkState();
   }
 
-  // ─── Подменю ───
-  const actionsBox = document.getElementById('engineer-actions');
-  const submenuDistribute = document.getElementById('submenu-engineer-distribute');
-  const submenuReport = document.getElementById('submenu-engineer-report');
-  const shiftDone = document.getElementById('shift-done-engineer');
-
-  function hideAllSubmenus() {
-    submenuDistribute.classList.add('hidden');
-    submenuReport.classList.add('hidden');
-  }
-
-  function showActions() {
-    hideAllSubmenus();
-    actionsBox.classList.remove('hidden');
-    shiftDone.classList.add('hidden');
-  }
-
-  // ─── Кнопки ───
+  // ─── Кнопки главного экрана ───
   document.getElementById('btn-eng-work').onclick = () => {
     socket.emit('engineer_work');
   };
 
   document.getElementById('btn-eng-drink').onclick = () => {
-    socket.emit('engineer_drink');
+    socket.emit('engineer_start_drink');
   };
 
   document.getElementById('btn-eng-distribute').onclick = () => {
@@ -199,6 +298,51 @@
     socket.emit('player_finish_shift');
   };
 
+  // ─── Кнопки запоя ───
+
+  // Шаг 1: место
+  document.querySelectorAll('[data-drink-place]').forEach(btn => {
+    btn.onclick = () => {
+      socket.emit('engineer_drink_place', { place: btn.dataset.drinkPlace });
+    };
+  });
+
+  // Шаг 2: компания
+  document.querySelectorAll('[data-drink-company]').forEach(btn => {
+    btn.onclick = () => {
+      socket.emit('engineer_drink_company', { company: btn.dataset.drinkCompany });
+    };
+  });
+
+  // Шаг 3: напиток
+  document.querySelectorAll('[data-drink-drink]').forEach(btn => {
+    btn.onclick = () => {
+      socket.emit('engineer_drink_drink', { drink: btn.dataset.drinkDrink });
+    };
+  });
+
+  // Шаг 4: количество
+  document.querySelectorAll('[data-drink-amount]').forEach(btn => {
+    btn.onclick = () => {
+      socket.emit('engineer_drink_amount', { amount: btn.dataset.drinkAmount });
+    };
+  });
+
+  // Выход из запоя
+  const btnExitDrink = document.getElementById('btn-eng-exit-drink');
+  if (btnExitDrink) {
+    btnExitDrink.onclick = () => {
+      socket.emit('engineer_exit_drink');
+    };
+  }
+
+  // Кнопки «Назад» из запоя
+  document.querySelectorAll('[data-drink-back]').forEach(btn => {
+    btn.onclick = () => {
+      showActions();
+    };
+  });
+
   // ─── События с сервера ───
   socket.on('engineer_update', (data) => {
     applySnapshot(data);
@@ -220,6 +364,10 @@
     actionsBox.classList.remove('hidden');
     renderDecisions(decisionsLeft || 3);
     hideAllSubmenus();
+    hideAllDrinkSteps();
+    if (drinkBox) drinkBox.classList.add('hidden');
+    applyDrunkClass();
+    applyDrinkExit();
   });
 
   socket.on('shift_progress', ({ finished }) => {
@@ -237,26 +385,22 @@
     if (state.myRole !== 'engineer') return;
     if (!equipmentList) return;
 
-    // Названия продуктов
     const PRODUCT_TITLES = {
       bread:       'Хлеб',
       furniture:   'Мебель',
       electronics: 'Электроника'
     };
 
-    // Подзаголовок: «Завод делает Хлеб. Что ставим в цеху?»
     const subtitle = document.getElementById('equipment-subtitle');
     if (subtitle) {
       const productTitle = PRODUCT_TITLES[product] || product;
       subtitle.textContent = 'Завод делает ' + productTitle + '. Что ставим в цеху?';
     }
 
-    // SVG-символ продукта — общий для всех трёх кнопок
     const productSvg = (window.FactorySign && window.FactorySign.render)
       ? window.FactorySign.render(product)
       : '';
 
-    // Отрисовка кнопок
     const box = document.getElementById('equipment-list');
     if (!box) return;
     box.innerHTML = '';
@@ -283,7 +427,6 @@
     show('screen-equipment');
   });
 
-  // ─── Ожидание выбора оборудования ───
   socket.on('waiting_for_engineer', () => {
     if (state.myRole === 'engineer') return;
     show('screen-setup-wait');
@@ -298,6 +441,8 @@
     show('screen-game-engineer');
     renderDecisions(engState.decisionsLeft);
     renderScales();
+    applyDrunkClass();
+    applyDrinkExit();
     showActions();
   });
 

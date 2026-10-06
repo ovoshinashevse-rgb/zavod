@@ -10,7 +10,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   ДОСЬЕ (задел на будущее — если понадобится)
+   ДОСЬЕ (задел)
    ═══════════════════════════════════════════ */
 .shift-engineer .dossier-box {
   padding: 20px 24px;
@@ -21,14 +21,14 @@
 }
 
 /* ═══════════════════════════════════════════
-   КАРМАН — акцент на Инженере
+   КАРМАН — акцент
    ═══════════════════════════════════════════ */
 #eng-pocket-fill {
   background: linear-gradient(90deg, #d9a93a 0%, #e8c050 100%);
 }
 
 /* ═══════════════════════════════════════════
-   КНОПКА «СПИТЬСЯ» — акцентная опасность
+   КНОПКА «УЙТИ В ЗАПОЙ» — акцентная опасность
    ═══════════════════════════════════════════ */
 #btn-eng-drink {
   background: rgba(217, 74, 58, 0.12);
@@ -75,4 +75,171 @@
    ═══════════════════════════════════════════ */
 #eng-fund-preview-fill {
   background: linear-gradient(90deg, #d9a93a 0%, #e8c050 100%);
+}
+
+/* ═══════════════════════════════════════════
+   РАЗДЕЛ ЗАПОЯ
+   ═══════════════════════════════════════════ */
+.drink-box {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 8px 0;
+}
+
+.drink-step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: drink-fade-in 0.4s ease;
+}
+
+@keyframes drink-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.drink-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 4px;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.drink-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Кнопки внутри запоя — с лёгкой тёплой подсветкой */
+.drink-options .btn {
+  margin-top: 0;
+  background: rgba(217, 122, 90, 0.10);
+  border: 1px solid rgba(217, 122, 90, 0.25);
+  color: rgba(255, 230, 220, 0.95);
+  font-weight: 500;
+}
+
+.drink-options .btn:hover {
+  background: rgba(217, 122, 90, 0.18);
+  border-color: rgba(217, 122, 90, 0.45);
+}
+
+.drink-options .btn:active {
+  background: rgba(217, 122, 90, 0.28);
+}
+
+/* Кнопка «Назад» — серая, спокойная */
+.drink-step .btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКА «ЗАКОНЧИТЬ» (выход из запоя)
+   ═══════════════════════════════════════════ */
+.drink-exit {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+#btn-eng-exit-drink {
+  background: rgba(184, 152, 72, 0.15);
+  border: 1px solid rgba(184, 152, 72, 0.45);
+  color: #e8d0a0;
+  font-weight: 600;
+}
+
+#btn-eng-exit-drink:hover {
+  background: rgba(184, 152, 72, 0.25);
+  border-color: rgba(184, 152, 72, 0.65);
+}
+
+/* ═══════════════════════════════════════════
+   ПЛЫВУЩИЙ ИНТЕРФЕЙС — по уровню опьянения
+   ═══════════════════════════════════════════ */
+
+/* Опьянение 1–2: лёгкое покачивание */
+.drunk-1 {
+  animation: drunk-sway-1 4.2s ease-in-out infinite;
+}
+
+@keyframes drunk-sway-1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25%      { transform: translate(-2px, 1px) rotate(-0.2deg); }
+  50%      { transform: translate(1px, -1px) rotate(0.2deg); }
+  75%      { transform: translate(2px, 0) rotate(0deg); }
+}
+
+/* Опьянение 3–4: заметное покачивание + лёгкая дрожь */
+.drunk-2 {
+  animation: drunk-sway-2 3.4s ease-in-out infinite;
+}
+
+@keyframes drunk-sway-2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20%      { transform: translate(-4px, 2px) rotate(-0.5deg); }
+  40%      { transform: translate(3px, -1px) rotate(0.4deg); }
+  60%      { transform: translate(-3px, 3px) rotate(-0.3deg); }
+  80%      { transform: translate(4px, -2px) rotate(0.5deg); }
+}
+
+/* Опьянение 5–6: сильное покачивание + дрожь */
+.drunk-3 {
+  animation: drunk-sway-3 2.6s ease-in-out infinite;
+}
+
+@keyframes drunk-sway-3 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  15%      { transform: translate(-6px, 3px) rotate(-0.8deg); }
+  30%      { transform: translate(5px, -3px) rotate(0.7deg); }
+  45%      { transform: translate(-4px, 4px) rotate(-0.6deg); }
+  60%      { transform: translate(6px, -2px) rotate(0.9deg); }
+  75%      { transform: translate(-5px, 2px) rotate(-0.5deg); }
+}
+
+/* Опьянение 7+: очень сильное, "плывёт" сильно */
+.drunk-4 {
+  animation: drunk-sway-4 2.0s ease-in-out infinite;
+}
+
+@keyframes drunk-sway-4 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%      { transform: translate(-9px, 4px) rotate(-1.2deg); }
+  25%      { transform: translate(8px, -4px) rotate(1.1deg); }
+  40%      { transform: translate(-7px, 6px) rotate(-1deg); }
+  55%      { transform: translate(9px, -3px) rotate(1.3deg); }
+  70%      { transform: translate(-8px, 4px) rotate(-0.9deg); }
+  85%      { transform: translate(6px, -5px) rotate(1.1deg); }
+}
+
+/* Дополнительное покачивание самих кнопок внутри запоя
+   на высоком опьянении — каждая кнопка чуть смещается */
+.drunk-3 .btn,
+.drunk-4 .btn {
+  animation: btn-wobble 3s ease-in-out infinite;
+}
+
+.drunk-3 .btn:nth-child(odd),
+.drunk-4 .btn:nth-child(odd) {
+  animation-delay: 0.7s;
+}
+
+.drunk-3 .btn:nth-child(even),
+.drunk-4 .btn:nth-child(even) {
+  animation-delay: 1.3s;
+}
+
+@keyframes btn-wobble {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-1px, 1px); }
+  50%      { transform: translate(1px, -1px); }
+  75%      { transform: translate(-1px, -1px); }
 }

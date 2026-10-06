@@ -33,7 +33,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 io.on('connection', (socket) => {
   console.log('Подключился:', socket.id);
 
-  // ─── Вход в курилку ───
+  // ─── Курилка ───
   socket.on('enter_smoking', ({ name }) => {
     addPlayer(socket.id, name);
     hall.phase = 'smoking';
@@ -43,7 +43,6 @@ io.on('connection', (socket) => {
   socket.on('smoke_action', ({ type }) => {
     const state = smoking.smokeAction(socket.id, type);
     if (!state) return;
-
     io.emit('smoking_update', state);
   });
 
@@ -235,8 +234,8 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
   });
 
-  socket.on('engineer_drink', () => {
-    const result = engineer.drinkAction(socket.id);
+  socket.on('engineer_start_drink', () => {
+    const result = engineer.startDrink(socket.id);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
@@ -244,11 +243,55 @@ io.on('connection', (socket) => {
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitEngineerUpdate(socket.id);
-    emitFactory(result.factory);
+  });
 
-    io.emit('engineer_drink_happened', {
-      name: getPlayer(socket.id).name
-    });
+  socket.on('engineer_drink_place', ({ place }) => {
+    const result = engineer.chooseDrinkPlace(socket.id, place);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+    emitEngineerUpdate(socket.id);
+  });
+
+  socket.on('engineer_drink_company', ({ company }) => {
+    const result = engineer.chooseDrinkCompany(socket.id, company);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+    emitEngineerUpdate(socket.id);
+  });
+
+  socket.on('engineer_drink_drink', ({ drink }) => {
+    const result = engineer.chooseDrinkDrink(socket.id, drink);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+    emitEngineerUpdate(socket.id);
+  });
+
+  socket.on('engineer_drink_amount', ({ amount }) => {
+    const result = engineer.chooseDrinkAmount(socket.id, amount);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    emitEngineerUpdate(socket.id);
+    emitFactory(result.factory);
+  });
+
+  socket.on('engineer_exit_drink', () => {
+    const result = engineer.exitDrink(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    emitEngineerUpdate(socket.id);
+    emitFactory(result.factory);
   });
 
   socket.on('engineer_distribute', ({ level }) => {
@@ -577,21 +620,21 @@ function emitFactory(snapshotWithPocket) {
   });
 }
 
-// ─── Отправить Инженеру его снимок ───
+// ─── Снимок Инженера ───
 function emitEngineerUpdate(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'engineer') return;
   io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
 }
 
-// ─── Отправить HR его снимок ───
+// ─── Снимок HR ───
 function emitHrUpdate(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'hr') return;
   io.to(p.id).emit('hr_update', hr.hrSnapshot(p));
 }
 
-// ─── Старт игры после настройки ───
+// ─── Старт игры ───
 function startGameAfterSetup() {
   hall.phase = 'game';
   hall.shift = 1;
@@ -707,18 +750,36 @@ function buildSecurityBio(p) {
   return line;
 }
 
+// ─── Биография Инженера — из записей о запоях ───
 function buildEngineerBio(p) {
   const pocket = p.pocket || 0;
+  const log = p.drinkLog || [];
   const quality = (hall.factory && hall.factory.indicators && hall.factory.indicators.quality) || 0;
 
   let line = 'Вы — Инженер. ';
 
-  if (quality >= 80 && pocket < 20) {
-    line += 'Вы работали честно, держали качество на высоте. ';
-  } else if (pocket > 50) {
-    line += 'Вы больше пили и брали, чем работали. ';
+  if (log.length === 0) {
+    if (quality >= 70) {
+      line += 'Вы ни разу не пили и держали качество на высоте. Золотые руки. ';
+    } else {
+      line += 'Вы ни разу не пили. ';
+    }
+  } else if (log.length < 3) {
+    line += 'Вы пару раз прикладывались к бутылке. ';
+  } else if (log.length < 7) {
+    line += 'Вы частенько уходили в запой. ';
   } else {
-    line += 'Вы работали как все. ';
+    line += 'Вы почти не просыхали. ';
+  }
+
+  if (pocket > 60) {
+    line += 'Денег с этого поимели немало. ';
+  }
+
+  if (quality < 30) {
+    line += 'Завод из-за вас почти развалился. ';
+  } else if (quality >= 70) {
+    line += 'Но качество держали. ';
   }
 
   line += 'Завод продан инвесторам.';

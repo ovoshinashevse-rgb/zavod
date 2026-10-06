@@ -63,7 +63,13 @@ function addPlayer(socketId, name) {
       engineerReport: null,
       hrReport: null,
       marketerReport: null,
-      accountantReport: null
+      accountantReport: null,
+
+      // ─── Запой Инженера ───
+      intoxication: 0,     // уровень опьянения (0..7+)
+      blackout: 0,         // сколько смен в обмороке
+      drunkState: null,    // текущий шаг выбора запоя
+      drinkLog: []         // записи о запоях
     };
     hall.players.push(p);
   } else {
@@ -84,19 +90,34 @@ function removePlayer(socketId) {
 }
 
 function allDecided() {
-  // Минимум 1 игрок — можно играть в одиночку
   return hall.players.length >= 1 && hall.players.every(x => x.ready === true);
 }
 
 function allFinishedShift() {
-  // Достаточно 1 игрока — можно закончить смену одному
   return hall.players.length >= 1 && hall.players.every(x => x.finished);
 }
 
+// ─── Обновление между сменами ───
+// Опьянение −1, сброс ломки, обморок
 function resetFinished() {
   hall.players.forEach(p => {
     p.finished = false;
     p.decisionsLeft = DECISIONS_PER_SHIFT[p.role] || 0;
+
+    // Инженер — обновление опьянения
+    if (p.role === 'engineer') {
+      // Обморок — если был, то спим
+      if (p.blackout && p.blackout > 0) {
+        p.blackout -= 1;
+        // Пока в обмороке — опьянение не падает, но и не растёт
+      } else if (p.intoxication && p.intoxication > 0) {
+        // Естественное протрезвление −1 в смену
+        p.intoxication = Math.max(0, p.intoxication - 1);
+      }
+
+      // Если начался новый выбор — сбрасываем незавершённое
+      p.drunkState = null;
+    }
   });
   hall.shift += 1;
 }
