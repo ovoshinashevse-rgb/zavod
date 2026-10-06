@@ -41,6 +41,42 @@
     'screen-end':             'wrap-end'
   };
 
+  // ─── Какие экраны — фасад, какие — курилка ───
+  const FACADE_SCREENS = [
+    'screen-enter',
+    'screen-role',
+    'screen-choose',
+    'screen-building',
+    'screen-product',
+    'screen-equipment',
+    'screen-setup-wait',
+    'screen-waiting',
+    'screen-pause',
+    'screen-end'
+  ];
+
+  const SMOKING_SCREENS = ['screen-smoking'];
+
+  const GAME_SCREENS = [
+    'screen-game-director',
+    'screen-game-security',
+    'screen-game-engineer'
+  ];
+
+  // ─── Снять все фоновые классы с body ───
+  const ALL_BG_CLASSES = [
+    'bg-facade',
+    'bg-smoking',
+    'building-hangar',
+    'building-shop',
+    'building-basement',
+    'building-main'
+  ];
+
+  function clearBgClasses() {
+    document.body.classList.remove(...ALL_BG_CLASSES);
+  }
+
   // ─── Показать экран ───
   function show(id) {
     Object.values(screens).forEach(x => {
@@ -50,6 +86,20 @@
     const target = document.getElementById(screens[id]);
     if (target) target.classList.remove('hidden');
 
+    // ─── Фон сцены ───
+    // Для игровых экранов фон ставит factory_chosen (applyBuilding),
+    // поэтому show() их не трогает — иначе перебьёт выбор помещения.
+    if (!GAME_SCREENS.includes(id)) {
+      clearBgClasses();
+
+      if (FACADE_SCREENS.includes(id)) {
+        document.body.classList.add('bg-facade');
+      } else if (SMOKING_SCREENS.includes(id)) {
+        document.body.classList.add('bg-smoking');
+      }
+    }
+
+    // ─── Курилка: дымность ───
     if (id === 'screen-smoking') {
       document.body.classList.add('in-smoking');
       if (typeof window.applyDensity === 'function') {
@@ -61,6 +111,13 @@
         'density-off', 'density-light', 'density-medium', 'density-heavy'
       );
     }
+
+    // ─── Время суток ───
+    // Вне смены — НЕ трогаем вообще. Переменные остаются как есть.
+    // На смене — время суток работает по решениям.
+    if (GAME_SCREENS.includes(id)) {
+      applyDayTime();
+    }
   }
 
   // ─── Тема завода ───
@@ -71,7 +128,6 @@
 
   // ─── Фон помещения ───
   // key: 'old_hangar' | 'new_shop' | 'basement' | 'main_building'
-  // Можно передавать как ключ, так и undefined / null — тогда фон скрыт.
   const BUILDING_CLASSES = ['building-hangar', 'building-shop', 'building-basement', 'building-main'];
   const BUILDING_MAP = {
     old_hangar:    'building-hangar',
@@ -81,10 +137,9 @@
   };
 
   function applyBuilding(key) {
-    // Снимаем все возможные классы помещения
+    // Снимаем только «помещательные» классы (не трогаем facade / smoking)
     document.body.classList.remove(...BUILDING_CLASSES);
 
-    // Если ключ неизвестен — просто остаёмся без фона
     if (!key) return;
 
     const cls = BUILDING_MAP[key];
@@ -94,8 +149,6 @@
   }
 
   // ─── Состояние фона (rich / mid / poor) ───
-  // Пока не привязано к экономике — по умолчанию mid.
-  // Когда захотим — передадим 'rich' / 'poor' из реального состояния завода.
   const BG_STATE_CLASSES = ['bg-rich', 'bg-mid', 'bg-poor'];
 
   function applyFactoryState(level) {
@@ -147,6 +200,8 @@
 
   // ═══════════════════════════════════════════
   // ВРЕМЯ СУТОК — привязано к решениям
+  // Работает ТОЛЬКО на смене.
+  // Вне смены переменные не трогаются.
   // ═══════════════════════════════════════════
 
   let maxDecisions = 3;
@@ -190,7 +245,18 @@
     root.style.setProperty('--sky-l3', fromTimeline(TIMELINE.skyL3, progress) + '%');
   }
 
+  // Проверяем, активен ли экран смены
+  function isGameScreenActive() {
+    return GAME_SCREENS.some(id => {
+      const wrap = document.getElementById(screens[id]);
+      return wrap && !wrap.classList.contains('hidden');
+    });
+  }
+
   function applyDayTime() {
+    // Крутим время суток ТОЛЬКО на смене
+    if (!isGameScreenActive()) return;
+
     if (maxDecisions <= 0) return;
     let progress = usedDecisions / maxDecisions;
     progress = Math.pow(progress, 0.8);
@@ -220,7 +286,11 @@
 
   socket.on('factory_chosen', (data) => {
     usedDecisions = 0;
-    applyDayTime();
+
+    // Время суток крутим только на смене.
+    if (isGameScreenActive()) {
+      applyDayTime();
+    }
 
     // Включаем фон помещения, если сервер прислал ключ
     if (data && data.factory && data.factory.building) {
@@ -231,6 +301,12 @@
     // Позже, когда захотим — будем вычислять из экономики.
     applyFactoryState('mid');
   });
+
+  // ═══════════════════════════════════════════
+  // СТАРТ: показать первый экран
+  // Без этого фон фасада не включается до первого клика.
+  // ═══════════════════════════════════════════
+  show('screen-enter');
 
   console.log('App: каркас готов');
 })();

@@ -86,9 +86,9 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════
-   ФОН ПОМЕЩЕНИЯ — атмосфера завода
+   ФОН ПОМЕЩЕНИЯ / СЦЕНЫ — атмосфера завода
    Ложится под стекло. Стекло его размывает.
-   Появляется только после выбора помещения.
+   Появляется по классу на body.
    ═══════════════════════════════════════════ */
 .bg-building {
   position: fixed;
@@ -104,7 +104,9 @@ body::after {
   will-change: opacity, filter;
 }
 
-/* Когда помещение выбрано — фон проявляется */
+/* ─── Когда фон проявляется ─── */
+body.bg-facade  .bg-building,
+body.bg-smoking .bg-building,
 body.building-hangar  .bg-building,
 body.building-shop    .bg-building,
 body.building-basement .bg-building,
@@ -112,7 +114,17 @@ body.building-main    .bg-building {
   opacity: 1;
 }
 
-/* ─── Помещения: какая картинка ─── */
+/* ─── Подготовительные экраны: фасад завода ─── */
+body.bg-facade .bg-building {
+  background-image: url('/img/backgrounds/facade.jpg');
+}
+
+/* ─── Курилка: уличная, вечер ─── */
+body.bg-smoking .bg-building {
+  background-image: url('/img/backgrounds/smoking.jpg');
+}
+
+/* ─── Помещения для смены ─── */
 body.building-hangar .bg-building {
   background-image: url('/img/backgrounds/hangar.jpg');
 }
