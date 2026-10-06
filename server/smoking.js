@@ -36,13 +36,23 @@ function getSmokingState() {
     players: hall.players.map(x => ({
       id: x.id,
       name: x.name,
-      status: x.status
+      status: x.status,
+      ready: x.ready || false       // ← НОВОЕ: передаём готовность
     })),
     smokeLevel: hall.smokeLevel
   };
 }
+// ─── Игрок готов (нажал «Пройти на смену») ───
+function markReady(socketId) {
+  const p = hall.players.find(x => x.id === socketId);
+  if (!p) return null;
 
+  p.ready = true;
+
+  return getSmokingState();
+}
 module.exports = {
   smokeAction,
+  markReady,
   getSmokingState
 };

@@ -17,6 +17,7 @@ const {
 
 const REPORT_CHECK_DECISION_COST = 2;    // стоимость запроса
 const REPORT_CHECK_DELAY = 4;            // через сколько смен придёт ответ
+
 // ─── Помещения (выбирает Директор) ───
 const BUILDINGS = {
   old_hangar:  { title: 'Старый ангар',    moneyBonus: 100, qualityMod: -10, spaceMod: 20 },
@@ -32,6 +33,7 @@ const PRODUCTS = {
   parts:       { title: 'Детали',       needQuality: 70, needStaff: 40, market: 'b2b' },
   electronics: { title: 'Электроника', needQuality: 90, needStaff: 60, market: 'premium' }
 };
+
 // Проверить, что Директор может делать действие
 function canAct(p) {
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
@@ -97,30 +99,15 @@ function chooseProduct(socketId, productKey) {
 
   hall.factory.product = productKey;
 
-  // Если помещение ещё не выбрано — не запускаем игру
   if (!hall.factory.building) {
-    return {
-      ok: true,
-      product: productKey,
-      needBuilding: true
-    };
+    return { ok: true, product: productKey, needBuilding: true };
   }
 
-  // Оба выбраны — стартуем игру
-  hall.phase = 'game';
-  hall.shift = 1;
-
-  hall.players.forEach(x => {
-    x.finished = false;
-    x.decisionsLeft = DECISIONS_PER_SHIFT[x.role] || 0;
-  });
-
+  // Фазу НЕ меняем — этим займётся server.js
   return {
     ok: true,
     product: productKey,
-    factory: factorySnapshot(hall.factory, true),
-    phase: 'game',
-    shift: 1
+    factory: factorySnapshot(hall.factory, true)
   };
 }
 
@@ -215,6 +202,7 @@ function finishShift(socketId) {
 
   return { ok: true, newShift: false };
 }
+
 // Сдать отчёт по показателю
 function submitReportAction(socketId, indicatorKey) {
   const p = getPlayer(socketId);
@@ -239,6 +227,7 @@ function submitReportAction(socketId, indicatorKey) {
     factory: factorySnapshot(hall.factory, { forDirector: true })
   };
 }
+
 // Запросить проверку отчёта
 function requestReportCheck(socketId, indicator) {
   const p = getPlayer(socketId);
@@ -285,6 +274,7 @@ function requestReportCheck(socketId, indicator) {
     indicator: indicator
   };
 }
+
 module.exports = {
   chooseFactory,
   chooseBuilding,

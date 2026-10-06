@@ -449,3 +449,110 @@ body.poor {
       hsl(var(--sky-h), 10%, var(--sky-l3)) 100%);
   transition: background 8s ease;
 }
+/* ═══════════════════════════════════════════
+   КУРИЛКА — три кнопки, разные по ощущению
+   ═══════════════════════════════════════════ */
+
+/* ─── Сделать затяжку — тёплая, дымная ─── */
+#btn-smoke {
+  background: linear-gradient(180deg, #c06a4a 0%, #9a4a32 100%);
+  box-shadow:
+    0 4px 16px rgba(180, 90, 60, 0.35),
+    0 0 40px rgba(217, 122, 90, 0.15),
+    0 1px 0 rgba(255, 200, 180, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
+
+#btn-smoke:active {
+  box-shadow:
+    0 2px 8px rgba(180, 90, 60, 0.25),
+    0 0 20px rgba(217, 122, 90, 0.1),
+    0 1px 0 rgba(255, 200, 180, 0.15) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
+
+#btn-smoke.success {
+  background: linear-gradient(180deg, #d97a5a 0%, #b85a3e 100%);
+  box-shadow:
+    0 4px 20px rgba(217, 122, 90, 0.5),
+    0 0 50px rgba(217, 122, 90, 0.25),
+    0 1px 0 rgba(255, 200, 180, 0.3) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
+}
+
+/* ─── Отмахнуть дым — холодная, свежая ─── */
+#btn-wave {
+  background: linear-gradient(180deg, #4a8a98 0%, #326878 100%);
+  box-shadow:
+    0 4px 16px rgba(60, 130, 150, 0.35),
+    0 0 40px rgba(78, 205, 196, 0.12),
+    0 1px 0 rgba(180, 230, 240, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+  color: #fff;
+}
+
+#btn-wave:active {
+  box-shadow:
+    0 2px 8px rgba(60, 130, 150, 0.25),
+    0 0 20px rgba(78, 205, 196, 0.1),
+    0 1px 0 rgba(180, 230, 240, 0.15) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
+
+#btn-wave.success {
+  background: linear-gradient(180deg, #4ecdc4 0%, #2a9a92 100%);
+  box-shadow:
+    0 4px 20px rgba(78, 205, 196, 0.5),
+    0 0 50px rgba(78, 205, 196, 0.25),
+    0 1px 0 rgba(200, 255, 250, 0.3) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
+}
+
+/* ─── Пройти на смену — тёмная, решительная ─── */
+#btn-ready {
+  background: linear-gradient(180deg, #3a4a5a 0%, #25303c 100%);
+  box-shadow:
+    0 4px 16px rgba(30, 40, 55, 0.4),
+    0 1px 0 rgba(180, 200, 220, 0.15) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
+  color: #e0e8f0;
+}
+
+#btn-ready:active {
+  box-shadow:
+    0 2px 8px rgba(30, 40, 55, 0.3),
+    0 1px 0 rgba(180, 200, 220, 0.1) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
+}
+
+/* ─── Список игроков в курилке ─── */
+#smoking-players .player {
+  padding: 18px 24px;
+  font-size: 18px;
+  border-radius: 24px;
+}
+
+#smoking-players .player .status {
+  font-size: 24px;
+}
+
+#smoking-players .player.smoke {
+  background: linear-gradient(90deg,
+    rgba(217, 122, 90, 0.2) 0%,
+    rgba(217, 122, 90, 0.08) 100%);
+  border-color: rgba(217, 122, 90, 0.3);
+}
+
+#smoking-players .player.wave {
+  background: linear-gradient(90deg,
+    rgba(78, 205, 196, 0.15) 0%,
+    rgba(78, 205, 196, 0.06) 100%);
+  border-color: rgba(78, 205, 196, 0.25);
+}
+
+#smoking-players .player.ready {
+  background: linear-gradient(90deg,
+    rgba(74, 168, 118, 0.18) 0%,
+    rgba(74, 168, 118, 0.08) 100%);
+  border-color: rgba(74, 168, 118, 0.3);
+}

@@ -44,10 +44,7 @@ io.on('connection', (socket) => {
     if (!state) return;
 
     io.emit('smoking_update', state);
-
-    if (allDecided() && hall.phase === 'smoking') {
-      startRoles();
-    }
+    // Больше НЕ стартуем игру здесь — ждём «Пройти на смену»
   });
 
   socket.on('hurry', () => {
@@ -55,7 +52,18 @@ io.on('connection', (socket) => {
       io.to(p.id).emit('hurried');
     });
   });
+  // ─── Игрок готов (нажал «Пройти на смену») ───
+  socket.on('player_ready', () => {
+    const state = smoking.markReady(socket.id);
+    if (!state) return;
 
+    io.emit('smoking_update', state);
+
+    // Если все готовы — стартуем игру
+    if (allDecided() && hall.phase === 'smoking') {
+      startRoles();
+    }
+  });
   // ═══════════════════════════════════════════
   // ДИРЕКТОР
   // ═══════════════════════════════════════════
@@ -106,39 +114,54 @@ io.on('connection', (socket) => {
   });
 
   // ─── Директор выбирает продукт ───
-  socket.on('director_choose_product', ({ product }) => {
+   socket.on('director_choose_product', ({ product }) => {
     const result = director.chooseProduct(socket.id, product);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
     }
 
-    // Если помещение ещё не выбрано — Директор должен выбрать его
     if (result.needBuilding) {
       socket.emit('need_building');
       return;
     }
 
-    // Игра началась — рассылаем всем
-    hall.players.forEach(p => {
-      io.to(p.id).emit('game_started', {
-        factory: (p.role === 'director') ? result.factory : stripPocket(result.factory),
-        decisionsLeft: p.decisionsLeft || 0,
-        shift: 1
-      });
+    // Ставим фазу выбора оборудования — ЖЁСТКО
+    hall.phase = 'choose_equipment';
+    hall.shift = 0;
+
+    const eng = hall.players.find(x => x.role === 'engineer');
+    if (!eng) {
+      startGameAfterSetup();
+      return;
+    }
+
+    const equipmentList = engineer.getEquipmentList(product);
+    io.to(eng.id).emit('choose_equipment', {
+      product: product,
+      equipmentList: equipmentList
     });
 
-    // Дополнительные обновления
-    const sec = hall.players.find(x => x.role === 'security');
-    if (sec) {
-      io.to(sec.id).emit('security_update', security.securitySnapshot(sec));
-    }
-    const eng = hall.players.find(x => x.role === 'engineer');
-    if (eng) {
-      io.to(eng.id).emit('engineer_update', engineer.engineerSnapshot(eng));
+    // ВСЕМ остальным — ждать
+    hall.players.forEach(p => {
+      if (p.role === 'engineer') return;
+      io.to(p.id).emit('waiting_for_engineer');
+    });
+
+    console.log('Ожидание выбора оборудования. Фаза:', hall.phase);
+  });
+  // ─── Инженер выбирает оборудование ───
+  socket.on('engineer_choose_equipment', ({ equipment }) => {
+    const result = engineer.chooseEquipment(socket.id, equipment);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
     }
 
-    console.log('Игра началась. Продукт:', product);
+    console.log('Инженер выбрал оборудование:', equipment);
+
+    // Игра стартует
+    startGameAfterSetup();
   });
 
   socket.on('director_set_level', ({ direction, level }) => {
@@ -496,6 +519,46 @@ function emitEngineerUpdate(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'engineer') return;
   io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
+}
+// ─── Старт игры после настройки (помещение, продукт, оборудование) ───
+function startGameAfterSetup() {
+  hall.phase = 'game';
+  hall.shift = 1;
+
+  hall.players.forEach(p => {
+    p.finished = false;
+    p.decisionsLeft = 3;   // у всех по 3 для начала (роль поправит ниже)
+  });
+
+  // Правильные решения по ролям
+  const DECISIONS = { director: 3, security: 2, engineer: 3 };
+  hall.players.forEach(p => {
+    p.decisionsLeft = DECISIONS[p.role] || 0;
+  });
+
+  // Рассылаем всем «игра началась»
+  // ВАЖНО: используем factory_chosen — его слушают все три клиента,
+  // и на него показывают свой экран смены (director.js, security.js, engineer.js).
+  hall.players.forEach(p => {
+    const snapshot = (p.role === 'director')
+      ? factorySnapshot(hall.factory, { forDirector: true })
+      : stripPocket(factorySnapshot(hall.factory));
+
+    io.to(p.id).emit('factory_chosen', { factory: snapshot });
+
+    // Точечные обновления, чтобы шкалы и точки решений отрисовались сразу
+    if (p.role === 'engineer') {
+      io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
+      io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
+    } else if (p.role === 'security') {
+      io.to(p.id).emit('security_update', security.securitySnapshot(p));
+      io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
+    } else if (p.role === 'director') {
+      io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
+    }
+  });
+
+  console.log('Игра началась');
 }
 // ═══════════════════════════════════════════
 // БИОГРАФИИ

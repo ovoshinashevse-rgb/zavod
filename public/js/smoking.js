@@ -41,6 +41,13 @@
     socket.emit('smoke_action', { type: 'wave' });
   };
 
+    // ─── Пройти на смену ───
+  document.getElementById('btn-ready').onclick = () => {
+    socket.emit('player_ready');
+    document.getElementById('btn-ready').disabled = true;
+    document.getElementById('btn-ready').textContent = 'Ждём остальных…';
+  };
+
   // ─── Обновление статуса кнопок ───
   function updateStatusButtons() {
     const smoke = document.getElementById('btn-smoke');
@@ -83,12 +90,15 @@
       let cls = 'player';
       if (p.status === 'smoke') cls += ' smoke';
       if (p.status === 'wave')  cls += ' wave';
+      if (p.ready) cls += ' ready';
       row.className = cls;
 
       const icon = p.status === 'smoke' ? '🚬' :
                    p.status === 'wave'  ? '💨' : '⏳';
 
-      row.innerHTML = '<span>' + p.name + (p.id === socket.id ? ' (вы)' : '') + '</span>' +
+      const readyMark = p.ready ? ' <span style="color:#4ecdc4;">✓</span>' : '';
+
+      row.innerHTML = '<span>' + p.name + (p.id === socket.id ? ' (вы)' : '') + readyMark + '</span>' +
                       '<span class="status">' + icon + '</span>';
       box.appendChild(row);
     });

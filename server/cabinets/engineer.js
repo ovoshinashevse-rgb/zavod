@@ -7,7 +7,9 @@ const {
   engineerDistribute,
   engineerDrink,
   engineerWork,
+  engineerChooseEquipment,
   ENGINEER_DISTRIBUTE,
+  EQUIPMENT_BY_PRODUCT,
   factorySnapshot,
   INDICATORS
 } = require('../factory');
@@ -144,12 +146,39 @@ function engineerSnapshot(p) {
     report: p.engineerReport
   };
 }
+// ─── Выбор оборудования (после выбора продукта) ───
+function chooseEquipment(socketId, equipmentKey) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'engineer') return { error: 'Только Инженер' };
+  if (hall.phase !== 'choose_equipment') return { error: 'Сейчас не время' };
+  if (!hall.factory) return { error: 'Завод не создан' };
+
+  const result = engineerChooseEquipment(hall.factory, equipmentKey);
+  if (result.error) return result;
+
+  // Фазу НЕ меняем — этим займётся server.js
+  // Просто возвращаем результат
+
+  return {
+    ok: true,
+    factory: factorySnapshot(hall.factory, { forDirector: true }),
+    option: result.option
+  };
+}
+
+// ─── Получить список оборудования для продукта ───
+function getEquipmentList(productKey) {
+  if (!productKey) return null;
+  return EQUIPMENT_BY_PRODUCT[productKey] || null;
+}
 
 module.exports = {
   workAction,
   drinkAction,
   distributeAction,
   submitEngineerReport,
+  chooseEquipment,
+  getEquipmentList,
   engineerSnapshot,
   ROLE_TITLES
 };

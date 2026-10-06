@@ -15,10 +15,20 @@ function shuffle(arr) {
 
 // Сколько ролей выдавать в зависимости от числа игроков
 function pickRolesForCount(count) {
+  // 1 игрок: только Директор
+  if (count === 1) {
+    return ['director'];
+  }
+
   // 2 игрока: Директор + случайная
-  if (count <= 2) {
+  if (count === 2) {
     const others = shuffle(ALL_ROLES.filter(r => r !== 'director'));
     return ['director', others[0]];
+  }
+
+  // 3 игрока: Директор + Безопасник + Инженер
+  if (count === 3) {
+    return ['director', 'security', 'engineer'];
   }
 
   // 3 игрока: Директор + Безопасник + Инженер

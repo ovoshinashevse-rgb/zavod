@@ -9,7 +9,30 @@ const LEVEL = {
   MID:    66,
   HIGH:   100
 };
-
+// ─── Оборудование для каждого продукта ───
+// Каждый вариант: title, desc, equipment (стартовое), qualityMod (к качеству), cost (деньги)
+const EQUIPMENT_BY_PRODUCT = {
+  bread: {
+    old_ovens:  { title: 'Старые печи',        desc: 'Дёшево, качество страдает',        equipment: 30, qualityMod: -10, cost: 20 },
+    gas_ovens:  { title: 'Газовые печи',       desc: 'Средне по цене, стабильно',        equipment: 55, qualityMod: 0,   cost: 60 },
+    auto_ovens: { title: 'Автоматические печи', desc: 'Дорого, идеальный хлеб',           equipment: 80, qualityMod: 15,  cost: 120 }
+  },
+  furniture: {
+    hand_tools: { title: 'Ручные инструменты', desc: 'Дёшево, медленно',                 equipment: 25, qualityMod: -15, cost: 15 },
+    electric:   { title: 'Электроинструменты', desc: 'Средне, удобно',                   equipment: 55, qualityMod: 0,   cost: 60 },
+    cnc:        { title: 'Станки с ЧПУ',       desc: 'Дорого, точная работа',            equipment: 85, qualityMod: 20,  cost: 150 }
+  },
+  parts: {
+    lathe:      { title: 'Токарные станки',    desc: 'Дёшево, базовая точность',         equipment: 35, qualityMod: -5,  cost: 30 },
+    milling:    { title: 'Фрезерные станки',   desc: 'Средне, точность выше',            equipment: 60, qualityMod: 5,   cost: 70 },
+    precision:  { title: 'Прецизионные',       desc: 'Дорого, идеальная точность',       equipment: 90, qualityMod: 20,  cost: 140 }
+  },
+  electronics: {
+    manual:     { title: 'Ручная линия',       desc: 'Дёшево, медленно и с браком',      equipment: 20, qualityMod: -20, cost: 25 },
+    semi_auto:  { title: 'Полуавтомат',        desc: 'Средне, стабильно',                equipment: 55, qualityMod: 0,   cost: 80 },
+    robotics:   { title: 'Роботизированная',   desc: 'Дорого, топ-качество',             equipment: 95, qualityMod: 25,  cost: 180 }
+  }
+};
 const DIRECTIONS = ['equipment', 'people', 'ads', 'security', 'economy'];
 
 // Показатели завода
@@ -369,7 +392,41 @@ function engineerWork(factory) {
 
   return { ok: true, gain: ENGINEER_WORK_GAIN, factory };
 }
+// ─── Инженер выбирает оборудование ───
+function engineerChooseEquipment(factory, equipmentKey) {
+  if (!factory) return { error: 'Завод не создан' };
+  if (!factory.product) return { error: 'Продукт не выбран' };
+  if (factory.equipment) return { error: 'Оборудование уже выбрано' };
 
+  const productEquipment = EQUIPMENT_BY_PRODUCT[factory.product];
+  if (!productEquipment) return { error: 'Нет оборудования для этого продукта' };
+
+  const option = productEquipment[equipmentKey];
+  if (!option) return { error: 'Неизвестное оборудование' };
+
+  // Запоминаем выбор
+  factory.equipment = equipmentKey;
+
+  // Устанавливаем стартовое оборудование
+  factory.indicators.equipment = Math.max(0, Math.min(100, option.equipment));
+
+  // Модифицируем качество
+  factory.indicators.quality = Math.max(0, Math.min(100,
+    (factory.indicators.quality || 50) + option.qualityMod));
+
+  // Списываем деньги (может уйти в минус — это ок, банкротство наступит позже)
+  factory.money -= option.cost;
+  factory.budgetPercent = calcBudgetPercent(factory.money);
+
+  // Обновляем фонд оборудования (то, что не потрачено на стартовое)
+  factory.equipmentFund = Math.max(0, factory.equipmentFund - option.cost);
+
+  return {
+    ok: true,
+    factory: factory,
+    option: option
+  };
+}
 module.exports = {
   createFactory,
   setLevel,
@@ -384,6 +441,7 @@ module.exports = {
   engineerDistribute,
   engineerDrink,
   engineerWork,
+  engineerChooseEquipment,
   factorySnapshot,
   calcInvestments,
   calcBudgetPercent,
@@ -398,5 +456,6 @@ module.exports = {
   ENGINEER_DISTRIBUTE,
   ENGINEER_DRINK,
   ENGINEER_WORK_GAIN,
+  EQUIPMENT_BY_PRODUCT,
   LOW_THRESHOLD
 };

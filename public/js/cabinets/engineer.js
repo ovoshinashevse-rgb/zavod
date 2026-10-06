@@ -221,7 +221,55 @@
       shiftDone.classList.remove('hidden');
     }
   });
+   // ─── Выбор оборудования ───
+  socket.on('choose_equipment', ({ product, equipmentList }) => {
+    if (state.myRole !== 'engineer') return;
+    if (!equipmentList) return;
 
+    // Названия продуктов
+    const PRODUCT_TITLES = {
+      bread:       'Хлеб',
+      furniture:   'Мебель',
+      parts:       'Детали',
+      electronics: 'Электроника'
+    };
+
+    // Подзаголовок: «Завод делает Хлеб. Что ставим в цеху?»
+    const subtitle = document.getElementById('equipment-subtitle');
+    if (subtitle) {
+      const productTitle = PRODUCT_TITLES[product] || product;
+      subtitle.textContent = 'Завод делает ' + productTitle + '. Что ставим в цеху?';
+    }
+
+    // Отрисовка кнопок
+    const box = document.getElementById('equipment-list');
+    if (!box) return;
+    box.innerHTML = '';
+
+    Object.keys(equipmentList).forEach(key => {
+      const option = equipmentList[key];
+
+      const btn = document.createElement('button');
+      btn.className = 'setup-btn';
+      btn.innerHTML =
+        '<span class="setup-title">' + option.title + '</span>' +
+        '<span class="setup-desc">' + option.desc + '</span>';
+
+      btn.onclick = () => {
+        socket.emit('engineer_choose_equipment', { equipment: key });
+      };
+
+      box.appendChild(btn);
+    });
+
+    show('screen-equipment');
+  });
+
+  // ─── Ожидание выбора оборудования ───
+  socket.on('waiting_for_engineer', () => {
+    if (state.myRole === 'engineer') return;
+    show('screen-setup-wait');
+  });
   // ─── ПОКАЗ ЭКРАНА — без проверки myRole ───
   socket.on('factory_chosen', ({ type }) => {
     // Каждый на своей роли покажет свой экран — но мы покажем свой ТОЛЬКО если мы Инженер

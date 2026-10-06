@@ -107,3 +107,76 @@
   font-size: 13px;
   letter-spacing: 0.8px;
 }
+/* ═══════════════════════════════════════════
+   ПОЯВЛЕНИЕ БЕЙДЖИКА — вау-момент
+   ═══════════════════════════════════════════ */
+
+.badge {
+  animation: badge-drop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes badge-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-3deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(8px) rotate(1deg);
+  }
+  80% {
+    transform: translateY(-3px) rotate(-0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+}
+
+/* ─── Роль подсвечивается при появлении ─── */
+.badge-role {
+  animation: role-glow 1.5s ease 0.8s;
+}
+
+@keyframes role-glow {
+  0% {
+    text-shadow: 0 0 0 rgba(176, 69, 48, 0);
+  }
+  40% {
+    text-shadow: 0 0 24px rgba(217, 122, 90, 0.8),
+                 0 0 60px rgba(217, 122, 90, 0.4);
+  }
+  100% {
+    text-shadow: 0 0 0 rgba(176, 69, 48, 0);
+  }
+}
+
+/* ─── Тень под бейджиком — он висит ─── */
+.badge-card {
+  position: relative;
+}
+
+.badge-card::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 16px;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.4) 0%, transparent 70%);
+  filter: blur(8px);
+  z-index: -1;
+  animation: shadow-appear 1s ease 0.4s backwards;
+}
+
+@keyframes shadow-appear {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}

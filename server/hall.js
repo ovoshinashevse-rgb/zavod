@@ -50,6 +50,7 @@ function addPlayer(socketId, name) {
       id: socketId,
       name: name || 'Сотрудник',
       status: 'thinking',
+      ready: false,             // ← НОВОЕ: готовность
       role: null,
       finished: false,
       decisionsLeft: 0,
@@ -57,13 +58,14 @@ function addPlayer(socketId, name) {
       suspicions: 0,
       returns: 0,
       kickbacks: 0,
-      pocket: 0,       // карман Инженера
-      engineerReport: null  // отчёт Инженера (реальный/подделанный)
+      pocket: 0,
+      engineerReport: null
     };
     hall.players.push(p);
   } else {
     p.name = name || p.name;
     p.status = 'thinking';
+    p.ready = false;
     p.finished = false;
   }
   return p;
@@ -78,11 +80,12 @@ function removePlayer(socketId) {
 }
 
 function allDecided() {
-  return hall.players.length >= 2 && hall.players.every(x => x.status !== 'thinking');
+  // Минимум 1 игрок — можно играть в одиночку
+  return hall.players.length >= 1 && hall.players.every(x => x.ready === true);
 }
-
 function allFinishedShift() {
-  return hall.players.length >= 2 && hall.players.every(x => x.finished);
+  // Достаточно 1 игрока — можно закончить смену одному
+  return hall.players.length >= 1 && hall.players.every(x => x.finished);
 }
 
 function resetFinished() {

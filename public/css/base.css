@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════
-   БАЗА — общие стили для всего приложения
+   БАЗА — общий визуальный язык
+   Стиль: Apple iOS 17 — стекло, глубина, минимализм
    ═══════════════════════════════════════════ */
+
+/* ─── Шрифт ─── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 * {
   margin: 0;
@@ -23,18 +27,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
   color: #fff;
   padding: 20px;
   padding-top: calc(30px + env(safe-area-inset-top, 0px));
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   position: relative;
   transition: background 1.2s ease;
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1.5;
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  letter-spacing: -0.2px;
 }
 
 button, .btn, .player, input {
@@ -72,38 +78,47 @@ body::after {
   transition: opacity 1.2s ease, background 1.2s ease;
   opacity: 0.5;
   background-image:
-    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.012) 1px, transparent 1px),
-    radial-gradient(circle at 70% 60%, rgba(255,255,255,0.012) 1px, transparent 1px),
-    radial-gradient(circle at 40% 80%, rgba(255,255,255,0.012) 1px, transparent 1px);
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.015) 1px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,0.015) 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(255,255,255,0.015) 1px, transparent 1px);
   background-size: 80px 80px, 120px 120px, 100px 100px;
 }
 
-/* ─── Стеклянная карточка (базовая) ─── */
+/* ═══════════════════════════════════════════
+   СТЕКЛЯННАЯ КАРТОЧКА — глубокая, дорогая
+   ═══════════════════════════════════════════ */
 .glass {
   position: relative;
   z-index: 10;
   background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(30px) saturate(140%);
-  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  backdrop-filter: blur(50px) saturate(180%);
+  -webkit-backdrop-filter: blur(50px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 40px;
+  border-radius: 44px;
   padding: 52px 40px;
   text-align: center;
   box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 40px 100px rgba(0, 0, 0, 0.5),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08) inset,
+    0 1px 0 0 rgba(255, 255, 255, 0.15) inset;
   min-width: 320px;
   max-width: 480px;
   width: 100%;
-  transition: box-shadow 0.8s ease, border-color 0.8s ease, background 0.8s ease;
+  transition:
+    box-shadow 0.8s ease,
+    border-color 0.8s ease,
+    background 0.8s ease,
+    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ─── Заголовки ─── */
+/* ═══════════════════════════════════════════
+   ЗАГОЛОВКИ
+   ═══════════════════════════════════════════ */
 h1 {
   margin-bottom: 28px;
-  font-size: 40px;
-  font-weight: 600;
-  letter-spacing: 8px;
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -1px;
   color: #fff;
   opacity: 0.95;
   background: linear-gradient(180deg, #fff 0%, #c8bcc8 100%);
@@ -112,114 +127,197 @@ h1 {
 }
 
 .subtitle {
-  font-size: 20px;
-  opacity: 0.8;
+  font-size: 17px;
+  font-weight: 400;
+  opacity: 0.65;
   margin-bottom: 32px;
   line-height: 1.55;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.1px;
 }
 
-/* ─── Кнопки (базовые, нейтральные) ─── */
+/* ═══════════════════════════════════════════
+   КНОПКИ — мягкие, с характером
+   ═══════════════════════════════════════════ */
 .btn {
   display: block;
   width: 100%;
-  margin-top: 16px;
-  padding: 22px 28px;
+  margin-top: 12px;
+  padding: 20px 28px;
   border: none;
-  border-radius: 100px;
+  border-radius: 28px;
   color: #fff;
-  font-size: 20px;
-  font-weight: 500;
-  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
   font-family: inherit;
-  letter-spacing: 0.5px;
-  transition: all 0.25s ease;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease,
+    background 0.4s ease,
+    box-shadow 0.4s ease;
+
+  /* Базовая кнопка — тёплая терракота */
+  background: linear-gradient(180deg, #d97a5a 0%, #b85a3e 100%);
+  box-shadow:
+    0 4px 16px rgba(180, 80, 50, 0.3),
+    0 1px 0 rgba(255, 200, 180, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
 }
-.btn:active { transform: scale(0.97); opacity: 0.9; }
+
+.btn:active {
+  transform: scale(0.97);
+  box-shadow:
+    0 2px 8px rgba(180, 80, 50, 0.2),
+    0 1px 0 rgba(255, 200, 180, 0.15) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
 
 .btn.secondary {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.btn.secondary:active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.97);
 }
 
 .btn.success {
-  background: rgba(78, 205, 196, 0.2);
-  border: 1px solid rgba(78, 205, 196, 0.4);
+  background: linear-gradient(180deg, #4aa876 0%, #2e7a52 100%);
+  box-shadow:
+    0 4px 16px rgba(50, 150, 100, 0.3),
+    0 1px 0 rgba(180, 240, 200, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
 }
 
 .btn.danger {
-  background: rgba(233, 30, 99, 0.18);
-  border: 1px solid rgba(233, 30, 99, 0.4);
+  background: linear-gradient(180deg, #b85060 0%, #883040 100%);
+  box-shadow:
+    0 4px 16px rgba(150, 50, 60, 0.3),
+    0 1px 0 rgba(255, 180, 200, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
 }
 
 .btn.warn {
-  background: rgba(255, 200, 50, 0.15);
-  border: 1px solid rgba(255, 200, 50, 0.35);
+  background: linear-gradient(180deg, #b89848 0%, #887030 100%);
+  box-shadow:
+    0 4px 16px rgba(150, 120, 50, 0.3),
+    0 1px 0 rgba(255, 230, 180, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
 }
 
-/* ─── Поле ввода ─── */
+.btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   ПОЛЕ ВВОДА — мягкое, глубокое
+   ═══════════════════════════════════════════ */
 .input {
   width: 100%;
-  margin-top: 16px;
-  padding: 22px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 100px;
+  margin-top: 14px;
+  padding: 20px 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
   color: #fff;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 500;
   font-family: inherit;
   outline: none;
   text-align: center;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.2px;
   transition: all 0.25s ease;
   -webkit-user-select: text;
   user-select: text;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2) inset,
+    0 1px 0 rgba(255, 255, 255, 0.05);
 }
-.input:focus {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.input::placeholder { color: rgba(255, 255, 255, 0.35); }
 
-/* ─── Список игроков ─── */
+.input:focus {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.3) inset,
+    0 0 0 4px rgba(217, 122, 90, 0.15);
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 400;
+}
+
+/* ═══════════════════════════════════════════
+   СПИСОК ИГРОКОВ
+   ═══════════════════════════════════════════ */
 .players {
   margin-top: 20px;
   text-align: left;
 }
+
 .player {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 24px;
-  margin-top: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 16px 22px;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 100px;
-  font-size: 20px;
+  border-radius: 22px;
+  font-size: 17px;
+  font-weight: 500;
   transition: all 0.3s ease;
-}
-.player.smoke {
-  background: rgba(255, 140, 60, 0.1);
-  border-color: rgba(255, 140, 60, 0.2);
-}
-.player.wave {
-  background: rgba(78, 205, 196, 0.08);
-  border-color: rgba(78, 205, 196, 0.18);
-}
-.player .status { font-size: 26px; opacity: 0.9; }
-.player.hurried { animation: pulse 0.5s ease 3; }
-@keyframes pulse {
-  0%, 100% { background: rgba(255, 200, 50, 0.08); }
-  50%      { background: rgba(255, 200, 50, 0.3); }
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
-/* ─── Утилиты ─── */
-.hidden { display: none !important; }
+.player.smoke {
+  background: rgba(217, 122, 90, 0.15);
+  border-color: rgba(217, 122, 90, 0.25);
+}
+
+.player.wave {
+  background: rgba(78, 205, 196, 0.12);
+  border-color: rgba(78, 205, 196, 0.22);
+}
+
+.player.ready {
+  background: rgba(74, 168, 118, 0.12);
+  border-color: rgba(74, 168, 118, 0.25);
+}
+
+.player .status {
+  font-size: 22px;
+  opacity: 0.9;
+}
+
+.player.hurried {
+  animation: pulse 0.5s ease 3;
+}
+
+@keyframes pulse {
+  0%, 100% { background: rgba(184, 152, 72, 0.08); }
+  50%      { background: rgba(184, 152, 72, 0.3); }
+}
+
+/* ═══════════════════════════════════════════
+   УТИЛИТЫ
+   ═══════════════════════════════════════════ */
+.hidden {
+  display: none !important;
+}
 
 .row {
   display: flex;
   gap: 12px;
 }
-.row .btn { margin-top: 0; }
+
+.row .btn {
+  margin-top: 0;
+}

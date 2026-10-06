@@ -31,6 +31,7 @@
     'screen-choose':          'wrap-choose',
     'screen-building':        'wrap-building',
     'screen-product':         'wrap-product',
+    'screen-equipment':       'wrap-equipment',
     'screen-setup-wait':      'wrap-setup-wait',
     'screen-waiting':         'wrap-waiting',
     'screen-game-director':   'wrap-game-director',
