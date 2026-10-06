@@ -11,6 +11,7 @@ const LEVEL = {
 };
 // ─── Оборудование для каждого продукта ───
 // Каждый вариант: title, desc, equipment (стартовое), qualityMod (к качеству), cost (деньги)
+// Три продукта: хлеб (массовый), мебель (средний), электроника (премиум)
 const EQUIPMENT_BY_PRODUCT = {
   bread: {
     old_ovens:  { title: 'Старые печи',        desc: 'Дёшево, качество страдает',        equipment: 30, qualityMod: -10, cost: 20 },
@@ -21,11 +22,6 @@ const EQUIPMENT_BY_PRODUCT = {
     hand_tools: { title: 'Ручные инструменты', desc: 'Дёшево, медленно',                 equipment: 25, qualityMod: -15, cost: 15 },
     electric:   { title: 'Электроинструменты', desc: 'Средне, удобно',                   equipment: 55, qualityMod: 0,   cost: 60 },
     cnc:        { title: 'Станки с ЧПУ',       desc: 'Дорого, точная работа',            equipment: 85, qualityMod: 20,  cost: 150 }
-  },
-  parts: {
-    lathe:      { title: 'Токарные станки',    desc: 'Дёшево, базовая точность',         equipment: 35, qualityMod: -5,  cost: 30 },
-    milling:    { title: 'Фрезерные станки',   desc: 'Средне, точность выше',            equipment: 60, qualityMod: 5,   cost: 70 },
-    precision:  { title: 'Прецизионные',       desc: 'Дорого, идеальная точность',       equipment: 90, qualityMod: 20,  cost: 140 }
   },
   electronics: {
     manual:     { title: 'Ручная линия',       desc: 'Дёшево, медленно и с браком',      equipment: 20, qualityMod: -20, cost: 25 },

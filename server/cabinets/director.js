@@ -19,18 +19,18 @@ const REPORT_CHECK_DECISION_COST = 2;    // стоимость запроса
 const REPORT_CHECK_DELAY = 4;            // через сколько смен придёт ответ
 
 // ─── Помещения (выбирает Директор) ───
+// Три варианта по оси «дёшево / баланс / дорого»
 const BUILDINGS = {
-  old_hangar:  { title: 'Старый ангар',    moneyBonus: 100, qualityMod: -10, spaceMod: 20 },
-  new_shop:    { title: 'Новый цех',        moneyBonus: -50, qualityMod: +15, spaceMod: -10 },
-  basement:    { title: 'Подвал',           moneyBonus: 150, qualityMod: -20, spaceMod: -20 },
-  main_building:{ title: 'Заводской корпус', moneyBonus: 0,  qualityMod: 0,   spaceMod: 0 }
+  old_hangar:   { title: 'Старый ангар',     moneyBonus: 100,  qualityMod: -10, spaceMod:  20 },
+  main_building:{ title: 'Заводской корпус', moneyBonus: 0,    qualityMod:   0, spaceMod:   0 },
+  new_shop:     { title: 'Новый цех',        moneyBonus: -50,  qualityMod: +15, spaceMod: -10 }
 };
 
 // ─── Продукты (выбирает Директор) ───
+// Три варианта по оси «массовый / средний / премиум»
 const PRODUCTS = {
-  bread:       { title: 'Хлеб',         needQuality: 40, needStaff: 30, market: 'mass' },
-  furniture:   { title: 'Мебель',       needQuality: 60, needStaff: 50, market: 'premium' },
-  parts:       { title: 'Детали',       needQuality: 70, needStaff: 40, market: 'b2b' },
+  bread:       { title: 'Хлеб',       needQuality: 40, needStaff: 30, market: 'mass' },
+  furniture:   { title: 'Мебель',     needQuality: 60, needStaff: 50, market: 'premium' },
   electronics: { title: 'Электроника', needQuality: 90, needStaff: 60, market: 'premium' }
 };
 

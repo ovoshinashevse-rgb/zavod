@@ -69,7 +69,6 @@
     'bg-smoking',
     'building-hangar',
     'building-shop',
-    'building-basement',
     'building-main'
   ];
 
@@ -127,13 +126,12 @@
   }
 
   // ─── Фон помещения ───
-  // key: 'old_hangar' | 'new_shop' | 'basement' | 'main_building'
-  const BUILDING_CLASSES = ['building-hangar', 'building-shop', 'building-basement', 'building-main'];
+  // key: 'old_hangar' | 'main_building' | 'new_shop'
+  const BUILDING_CLASSES = ['building-hangar', 'building-shop', 'building-main'];
   const BUILDING_MAP = {
     old_hangar:    'building-hangar',
-    new_shop:      'building-shop',
-    basement:      'building-basement',
-    main_building: 'building-main'
+    main_building: 'building-main',
+    new_shop:      'building-shop'
   };
 
   function applyBuilding(key) {

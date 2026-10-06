@@ -107,10 +107,9 @@ body::after {
 /* ─── Когда фон проявляется ─── */
 body.bg-facade  .bg-building,
 body.bg-smoking .bg-building,
-body.building-hangar  .bg-building,
-body.building-shop    .bg-building,
-body.building-basement .bg-building,
-body.building-main    .bg-building {
+body.building-hangar .bg-building,
+body.building-shop   .bg-building,
+body.building-main   .bg-building {
   opacity: 1;
 }
 
@@ -132,10 +131,6 @@ body.building-hangar .bg-building {
 body.building-shop .bg-building {
   /* Пока картинки нет — просто тёмный градиент, чтобы не сломать */
   background-image: linear-gradient(180deg, #0b1218 0%, #101a22 100%);
-}
-
-body.building-basement .bg-building {
-  background-image: linear-gradient(180deg, #0a0808 0%, #120c0a 100%);
 }
 
 body.building-main .bg-building {
