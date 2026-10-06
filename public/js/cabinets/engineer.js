@@ -16,8 +16,11 @@
   // ─── Знак завода ───
   function mountSign(factory) {
     if (!window.FactorySign) return;
-    const product = factory && factory.product;
-    window.FactorySign.mount('factory-sign-engineer', product);
+    const product   = factory && factory.product;
+    const building  = factory && factory.building;
+    const st        = (factory && factory.state) || 'mid';
+    const equipment = factory && factory.equipment;
+    window.FactorySign.mount('factory-sign-engineer', product, building, st, equipment);
   }
 
   // ─── Точки решений ───
@@ -228,7 +231,8 @@
       shiftDone.classList.remove('hidden');
     }
   });
-   // ─── Выбор оборудования ───
+
+  // ─── Выбор оборудования ───
   socket.on('choose_equipment', ({ product, equipmentList }) => {
     if (state.myRole !== 'engineer') return;
     if (!equipmentList) return;
@@ -237,7 +241,6 @@
     const PRODUCT_TITLES = {
       bread:       'Хлеб',
       furniture:   'Мебель',
-      parts:       'Детали',
       electronics: 'Электроника'
     };
 
@@ -247,6 +250,11 @@
       const productTitle = PRODUCT_TITLES[product] || product;
       subtitle.textContent = 'Завод делает ' + productTitle + '. Что ставим в цеху?';
     }
+
+    // SVG-символ продукта — общий для всех трёх кнопок
+    const productSvg = (window.FactorySign && window.FactorySign.render)
+      ? window.FactorySign.render(product)
+      : '';
 
     // Отрисовка кнопок
     const box = document.getElementById('equipment-list');
@@ -259,8 +267,11 @@
       const btn = document.createElement('button');
       btn.className = 'setup-btn';
       btn.innerHTML =
-        '<span class="setup-title">' + option.title + '</span>' +
-        '<span class="setup-desc">' + option.desc + '</span>';
+        '<div class="setup-thumb">' + productSvg + '</div>' +
+        '<div class="setup-body">' +
+          '<span class="setup-title">' + option.title + '</span>' +
+          '<span class="setup-desc">' + option.desc + '</span>' +
+        '</div>';
 
       btn.onclick = () => {
         socket.emit('engineer_choose_equipment', { equipment: key });
@@ -277,14 +288,11 @@
     if (state.myRole === 'engineer') return;
     show('screen-setup-wait');
   });
-  // ─── ПОКАЗ ЭКРАНА — без проверки myRole ───
+
+  // ─── Показ экрана смены ───
   socket.on('factory_chosen', ({ factory }) => {
-    // Каждый на своей роли покажет свой экран — но мы покажем свой ТОЛЬКО если мы Инженер
-    // ВАЖНО: показываем экран даже если myRole ещё не установлен
-    // (проверка ниже — чтобы не перебить чужой экран)
     if (state.myRole && state.myRole !== 'engineer') return;
 
-    // Знак завода
     mountSign(factory);
 
     show('screen-game-engineer');

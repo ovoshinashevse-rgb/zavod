@@ -100,6 +100,21 @@ function calcBudgetPercent(money) {
   return Math.max(0, Math.min(100, percent));
 }
 
+// ─── Состояние завода (для знака и фона) ───
+// rich  — процветание: высокие инвестиции И хороший бюджет
+// poor  — упадок: низкие инвестиции ИЛИ проваленный бюджет
+// mid   — всё остальное
+function calcFactoryState(factory) {
+  if (!factory) return 'mid';
+
+  const inv  = factory.investments || 0;
+  const bud  = factory.budgetPercent || 0;
+
+  if (inv >= 66 && bud >= 50) return 'rich';
+  if (inv <  40 || bud <  30) return 'poor';
+  return 'mid';
+}
+
 function createDirections(level) {
   const dirs = {};
   DIRECTIONS.forEach(d => dirs[d] = level);
@@ -319,7 +334,10 @@ function factorySnapshot(factory, opts = {}) {
     // ─── Что за завод: помещение, продукт, оборудование ───
     building: factory.building || null,
     product: factory.product || null,
-    equipment: factory.equipment || null
+    equipment: factory.equipment || null,
+
+    // ─── Состояние завода (для знака и фона) ───
+    state: calcFactoryState(factory)
   };
 
   if (opts.forDirector) {
@@ -446,6 +464,7 @@ module.exports = {
   factorySnapshot,
   calcInvestments,
   calcBudgetPercent,
+  calcFactoryState,
   qualitative,
   LEVEL,
   DIRECTIONS,

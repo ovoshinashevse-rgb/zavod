@@ -16,7 +16,8 @@ const ROLE_LABELS = {
 const DECISIONS_PER_SHIFT = {
   director: 3,
   security: 2,
-  engineer: 3
+  engineer: 3,
+  hr: 3
 };
 
 const hall = {
@@ -50,7 +51,7 @@ function addPlayer(socketId, name) {
       id: socketId,
       name: name || 'Сотрудник',
       status: 'thinking',
-      ready: false,             // ← НОВОЕ: готовность
+      ready: false,
       role: null,
       finished: false,
       decisionsLeft: 0,
@@ -59,7 +60,10 @@ function addPlayer(socketId, name) {
       returns: 0,
       kickbacks: 0,
       pocket: 0,
-      engineerReport: null
+      engineerReport: null,
+      hrReport: null,
+      marketerReport: null,
+      accountantReport: null
     };
     hall.players.push(p);
   } else {
@@ -83,6 +87,7 @@ function allDecided() {
   // Минимум 1 игрок — можно играть в одиночку
   return hall.players.length >= 1 && hall.players.every(x => x.ready === true);
 }
+
 function allFinishedShift() {
   // Достаточно 1 игрока — можно закончить смену одному
   return hall.players.length >= 1 && hall.players.every(x => x.finished);

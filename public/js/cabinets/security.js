@@ -19,8 +19,11 @@
   // ─── Знак завода ───
   function mountSign(factory) {
     if (!window.FactorySign) return;
-    const product = factory && factory.product;
-    window.FactorySign.mount('factory-sign-security', product);
+    const product   = factory && factory.product;
+    const building  = factory && factory.building;
+    const st        = (factory && factory.state) || 'mid';
+    const equipment = factory && factory.equipment;
+    window.FactorySign.mount('factory-sign-security', product, building, st, equipment);
   }
 
   // ─── Точки решений ───
@@ -284,7 +287,7 @@
     const target = state.players && state.players.find(p => p.role === 'director');
     if (!target) { toast('Некого проверять'); return; }
 
-    securityActions.classList.add('hidden');     // ← СКРЫВАЕМ ГЛАВНЫЕ КНОПКИ
+    securityActions.classList.add('hidden');
     hideAllSubmenus();
     const submenu = document.getElementById('submenu-security-check');
     const listBtn = document.getElementById('btn-check-list');
@@ -294,14 +297,14 @@
   };
 
   document.getElementById('btn-security-check-reports').onclick = () => {
-    securityActions.classList.add('hidden');     // ← СКРЫВАЕМ ГЛАВНЫЕ КНОПКИ
+    securityActions.classList.add('hidden');
     hideAllSubmenus();
     document.getElementById('submenu-security-check-reports').classList.remove('hidden');
     renderCheckReports(secState.dossier);
   };
 
   document.getElementById('btn-security-request-reports').onclick = () => {
-    securityActions.classList.add('hidden');     // ← СКРЫВАЕМ ГЛАВНЫЕ КНОПКИ
+    securityActions.classList.add('hidden');
     hideAllSubmenus();
     document.getElementById('submenu-security-request-reports').classList.remove('hidden');
     renderRequestReports();

@@ -37,12 +37,11 @@
     'screen-game-director':   'wrap-game-director',
     'screen-game-security':   'wrap-game-security',
     'screen-game-engineer':   'wrap-game-engineer',
+    'screen-game-hr':         'wrap-game-hr',
     'screen-pause':           'wrap-pause',
     'screen-end':             'wrap-end'
   };
 
-  // Порядок экранов — для определения направления перехода.
-  // Вперёд = индекс растёт, назад = индекс падает.
   const screensOrder = Object.keys(screens);
 
   // ─── Какие экраны — фасад, какие — курилка ───
@@ -64,7 +63,8 @@
   const GAME_SCREENS = [
     'screen-game-director',
     'screen-game-security',
-    'screen-game-engineer'
+    'screen-game-engineer',
+    'screen-game-hr'
   ];
 
   // ─── Снять все фоновые классы с body ───
@@ -81,7 +81,7 @@
   }
 
   // ═══════════════════════════════════════════
-  // HAPTIC — отклик на касание
+  // HAPTIC
   // ═══════════════════════════════════════════
   function haptic(type) {
     try {
@@ -107,17 +107,16 @@
   }
 
   // ═══════════════════════════════════════════
-  // ПЕРЕХОДЫ ЭКРАНОВ — плавно, в духе iOS
+  // ПЕРЕХОДЫ ЭКРАНОВ
   // ═══════════════════════════════════════════
 
-  let currentScreen = null;     // какой экран сейчас виден
-  let isTransitioning = false;  // идёт ли анимация
+  let currentScreen = null;
+  let isTransitioning = false;
 
   const OUT_DURATION  = 180;
   const IN_DURATION   = 240;
 
   function applyScreenExtras(id) {
-    // ─── Курилка: дымность ───
     if (id === 'screen-smoking') {
       document.body.classList.add('in-smoking');
       if (typeof window.applyDensity === 'function') {
@@ -130,18 +129,13 @@
       );
     }
 
-    // ─── Время суток ───
     if (GAME_SCREENS.includes(id)) {
       applyDayTime();
     }
   }
 
-  // ─── Показать экран ───
   function show(id) {
-    // Тот же экран — ничего не делаем
     if (currentScreen === id) return;
-
-    // Идёт анимация — не мешаем
     if (isTransitioning) return;
 
     const target = document.getElementById(screens[id]);
@@ -150,13 +144,10 @@
     const fromId = currentScreen;
     const from = fromId ? document.getElementById(screens[fromId]) : null;
 
-    // Направление: назад, если новый экран левее в списке
     const fromIdx = screensOrder.indexOf(fromId);
     const toIdx   = screensOrder.indexOf(id);
     const isBack  = fromId && toIdx < fromIdx;
 
-    // ─── Фон сцены ───
-    // Переключаем ДО анимации карточки, чтобы шли одновременно.
     if (!GAME_SCREENS.includes(id)) {
       clearBgClasses();
 
@@ -167,9 +158,7 @@
       }
     }
 
-    // ─── Первый показ — без анимации ───
     if (!from) {
-      // прячем всё на всякий случай
       Object.values(screens).forEach(x => {
         const el = document.getElementById(x);
         if (el) el.classList.add('hidden');
@@ -180,19 +169,15 @@
       return;
     }
 
-    // ─── Анимация ───
     isTransitioning = true;
 
-    // Старый экран уходит
     from.classList.remove('screen-in', 'screen-in-back');
     from.classList.add(isBack ? 'screen-out-back' : 'screen-out');
 
     setTimeout(() => {
-      // Скрываем старый
       from.classList.add('hidden');
       from.classList.remove('screen-out', 'screen-out-back');
 
-      // Показываем новый и даём ему анимацию входа
       target.classList.remove('hidden');
       target.classList.add(isBack ? 'screen-in-back' : 'screen-in');
 
@@ -279,9 +264,7 @@
     applyFactoryState
   };
 
-  // ═══════════════════════════════════════════
-  // ГЛОБАЛЬНЫЙ HAPTIC
-  // ═══════════════════════════════════════════
+  // ─── Глобальный haptic ───
   document.addEventListener('pointerdown', (e) => {
     const el = e.target.closest('.btn, .setup-btn, .player, .badge-card, .decision-dot');
     if (!el) return;
@@ -290,7 +273,7 @@
   }, { passive: true });
 
   // ═══════════════════════════════════════════
-  // ВРЕМЯ СУТОК — привязано к решениям
+  // ВРЕМЯ СУТОК
   // ═══════════════════════════════════════════
 
   let maxDecisions = 3;
@@ -378,15 +361,18 @@
       applyDayTime();
     }
 
-    if (data && data.factory && data.factory.building) {
-      applyBuilding(data.factory.building);
+    if (data && data.factory) {
+      if (data.factory.building) {
+        applyBuilding(data.factory.building);
+      }
+      applyFactoryState(data.factory.state || 'mid');
+    } else {
+      applyFactoryState('mid');
     }
-
-    applyFactoryState('mid');
   });
 
   // ═══════════════════════════════════════════
-  // СТАРТ: показать первый экран
+  // СТАРТ
   // ═══════════════════════════════════════════
   show('screen-enter');
 

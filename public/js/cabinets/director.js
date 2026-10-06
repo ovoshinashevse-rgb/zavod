@@ -25,18 +25,23 @@
     100: 3
   };
 
-    // Человеческие названия для помещений и продуктов
+  // Человеческие названия для помещений
   const BUILDING_LABELS = {
     old_hangar:    { title: 'Старый ангар',     desc: 'Дёшево, много места. Оборудование старое.' },
     new_shop:      { title: 'Новый цех',         desc: 'Всё новое, чисто. Дорого, места мало.' },
-    basement:      { title: 'Подвал',            desc: 'Очень дёшево, скрытно. Темно, сыро.' },
     main_building: { title: 'Заводской корпус',  desc: 'Средне по цене. Нормально.' }
+  };
+
+  // Картинка помещения — для превью
+  const BUILDING_THUMBS = {
+    old_hangar:    '/img/backgrounds/hangar.jpg',
+    new_shop:      '/img/backgrounds/shop.jpg',
+    main_building: '/img/backgrounds/main.jpg'
   };
 
   const PRODUCT_LABELS = {
     bread:       { title: 'Хлеб',        desc: 'Массовый, дешёвый. Нужны пекари.' },
     furniture:   { title: 'Мебель',      desc: 'Дорогая, требует мастеров.' },
-    parts:       { title: 'Детали',      desc: 'B2B, точность, станки.' },
     electronics: { title: 'Электроника', desc: 'Премиум, требует всего лучшего.' }
   };
 
@@ -60,8 +65,11 @@
   // ─── Знак завода ───
   function mountSign(factory) {
     if (!window.FactorySign) return;
-    const product = factory && factory.product;
-    window.FactorySign.mount('factory-sign-director', product);
+    const product   = factory && factory.product;
+    const building  = factory && factory.building;
+    const st        = (factory && factory.state) || 'mid';
+    const equipment = factory && factory.equipment;
+    window.FactorySign.mount('factory-sign-director', product, building, st, equipment);
   }
 
   function colorClass(value) {
@@ -144,7 +152,6 @@
 
     const indicators = ['quality', 'clients', 'employees', 'equipment', 'reputation'];
 
-    // Есть ли активный запрос
     const hasActiveCheck = f.activeCheck && !f.activeCheck.directorNotified;
 
     indicators.forEach(key => {
@@ -198,12 +205,11 @@
     document.getElementById('btn-set-level').disabled = noDecisions;
     document.getElementById('btn-take').disabled = noDecisions;
 
-    // Проверка отчёта — 2 решения
     const reportBtns = document.querySelectorAll('.report-check-btn');
     reportBtns.forEach(b => {
       b.disabled = b.disabled || decisionsLeft < 2;
     });
-        // Сообщаем App, сколько решений
+
     if (window.App && window.App.setDecisionsLeft) {
       window.App.setMaxDecisions(3);
       window.App.setDecisionsLeft(left);
@@ -478,7 +484,6 @@
     socket.emit('player_finish_shift');
   };
 
-  // ─── Кнопка «Отчёты» ───
   document.getElementById('btn-reports').onclick = () => {
     mainActions.classList.add('hidden');
     submenuReports.classList.remove('hidden');
@@ -510,7 +515,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
       return;
     }
 
-    // Знак завода — если продукт уже известен
     mountSign(factory);
 
     renderScales();
@@ -519,7 +523,7 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     show('screen-game-director');
   });
 
-  // ─── Отрисовка помещений ───
+  // ─── Отрисовка помещений — с превью ───
   function renderBuildings(buildings) {
     const box = document.getElementById('buildings-list');
     if (!box) return;
@@ -529,12 +533,16 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
 
     Object.keys(list).forEach(key => {
       const b = BUILDING_LABELS[key] || { title: key, desc: '' };
+      const thumbUrl = BUILDING_THUMBS[key] || '';
 
       const btn = document.createElement('button');
       btn.className = 'setup-btn';
       btn.innerHTML =
-        '<span class="setup-title">' + b.title + '</span>' +
-        '<span class="setup-desc">' + b.desc + '</span>';
+        '<div class="setup-thumb" style="background-image:url(' + thumbUrl + ')"></div>' +
+        '<div class="setup-body">' +
+          '<span class="setup-title">' + b.title + '</span>' +
+          '<span class="setup-desc">' + b.desc + '</span>' +
+        '</div>';
 
       btn.onclick = () => {
         socket.emit('director_choose_building', { building: key });
@@ -544,7 +552,7 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     });
   }
 
-  // ─── Отрисовка продуктов ───
+  // ─── Отрисовка продуктов — с SVG-превью ───
   function renderProducts(products) {
     const box = document.getElementById('products-list');
     if (!box) return;
@@ -555,11 +563,19 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     Object.keys(list).forEach(key => {
       const p = PRODUCT_LABELS[key] || { title: key, desc: '' };
 
+      // SVG-символ продукта из знака завода
+      const svg = (window.FactorySign && window.FactorySign.render)
+        ? window.FactorySign.render(key)
+        : '';
+
       const btn = document.createElement('button');
       btn.className = 'setup-btn';
       btn.innerHTML =
-        '<span class="setup-title">' + p.title + '</span>' +
-        '<span class="setup-desc">' + p.desc + '</span>';
+        '<div class="setup-thumb">' + svg + '</div>' +
+        '<div class="setup-body">' +
+          '<span class="setup-title">' + p.title + '</span>' +
+          '<span class="setup-desc">' + p.desc + '</span>' +
+        '</div>';
 
       btn.onclick = () => {
         socket.emit('director_choose_product', { product: key });
@@ -602,7 +618,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
 
     document.getElementById('end-reason').textContent = reason;
 
-    // Если продажа — показать биографию
     if (type === 'sale' && biographies && biographies[socket.id]) {
       const bioBox = document.getElementById('end-biography');
       bioBox.textContent = biographies[socket.id];
@@ -615,7 +630,7 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
   socket.on('error_msg', (msg) => toast(msg));
 
   // ═══════════════════════════════════════════
-  // СГОВОР — модальное окно для Директора
+  // СГОВОР
   // ═══════════════════════════════════════════
   socket.on('deal_offered', () => {
     if (state.myRole !== 'director') return;
@@ -643,11 +658,11 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     socket.emit('director_decline_deal');
     document.getElementById('deal-modal').classList.add('hidden');
   };
- // ─── Помещение выбрано ───
+
+  // ─── Помещение выбрано ───
   socket.on('factory_update', (data) => {
     if (state.myRole !== 'director') return;
 
-    // Если это обновление после выбора помещения — показываем продукты
     if (data && data.needProduct) {
       state.factory = data;
       renderProducts(data.products);
@@ -655,10 +670,8 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
       return;
     }
 
-    // Обычное обновление завода
     state.factory = data;
 
-    // Знак завода — обновляем (продукт уже известен)
     mountSign(data);
 
     renderScales();
@@ -687,7 +700,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     if (state.myRole !== 'director') return;
     state.factory = factory;
 
-    // Знак завода
     mountSign(factory);
 
     renderScales();

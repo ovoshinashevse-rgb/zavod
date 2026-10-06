@@ -1,0 +1,92 @@
+/* ═══════════════════════════════════════════
+   КАБИНЕТ HR — стили
+   ═══════════════════════════════════════════ */
+
+.shift-hr {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   КАРМАН — акцент на HR
+   ═══════════════════════════════════════════ */
+#hr-pocket-fill {
+  background: linear-gradient(90deg, #d9a93a 0%, #e8c050 100%);
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКА «ПОДДЕЛАТЬ ШТАТ» — акцентная опасность
+   Это воровство. Кнопка должна ощущаться как
+   «переступить черту».
+   ═══════════════════════════════════════════ */
+#btn-hr-fake {
+  background: rgba(217, 74, 58, 0.12);
+  border: 1px solid rgba(217, 74, 58, 0.35);
+  color: #f0b0a0;
+}
+
+#btn-hr-fake:hover {
+  background: rgba(217, 74, 58, 0.2);
+  border-color: rgba(217, 74, 58, 0.55);
+}
+
+#btn-hr-fake:active {
+  background: rgba(217, 74, 58, 0.28);
+  border-color: rgba(217, 74, 58, 0.7);
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКА «ОТЧЁТ» — акцентная честность
+   ═══════════════════════════════════════════ */
+#btn-hr-report {
+  background: rgba(78, 205, 196, 0.08);
+  border: 1px solid rgba(78, 205, 196, 0.25);
+  color: #a0e0d8;
+}
+
+#btn-hr-report:hover {
+  background: rgba(78, 205, 196, 0.15);
+  border-color: rgba(78, 205, 196, 0.45);
+}
+
+/* ═══════════════════════════════════════════
+   ПОДМЕНЮ «ОТЧЁТ» — две большие кнопки
+   ═══════════════════════════════════════════ */
+#btn-hr-report-real {
+  background: rgba(78, 205, 196, 0.15);
+  border: 1px solid rgba(78, 205, 196, 0.4);
+  color: #4ecdc4;
+}
+
+#btn-hr-report-fake {
+  background: rgba(217, 74, 58, 0.15);
+  border: 1px solid rgba(217, 74, 58, 0.4);
+  color: #d94a3a;
+}
+
+/* ═══════════════════════════════════════════
+   ПОДМЕНЮ «НАНЯТЬ» — обычный найм / обучение
+   ═══════════════════════════════════════════ */
+#btn-hr-hire-normal {
+  background: rgba(74, 168, 118, 0.12);
+  border: 1px solid rgba(74, 168, 118, 0.35);
+  color: #b0e0c8;
+}
+
+#btn-hr-hire-normal:hover {
+  background: rgba(74, 168, 118, 0.2);
+  border-color: rgba(74, 168, 118, 0.55);
+}
+
+#btn-hr-hire-train {
+  background: rgba(184, 152, 72, 0.12);
+  border: 1px solid rgba(184, 152, 72, 0.35);
+  color: #e8d0a0;
+}
+
+#btn-hr-hire-train:hover {
+  background: rgba(184, 152, 72, 0.2);
+  border-color: rgba(184, 152, 72, 0.55);
+}

@@ -13,11 +13,12 @@
 <link rel="stylesheet" href="/css/cabinet-director.css">
 <link rel="stylesheet" href="/css/cabinet-security.css">
 <link rel="stylesheet" href="/css/cabinet-engineer.css">
+<link rel="stylesheet" href="/css/cabinet-hr.css">
 <link rel="stylesheet" href="/css/choose-setup.css">
 </head>
 <body>
 
-  <!-- Фон помещения — появляется после выбора завода -->
+  <!-- Фон помещения -->
   <div class="bg-building" id="bg-building"></div>
 
   <!-- ЭКРАН 1: ВХОД -->
@@ -75,7 +76,7 @@
     <button class="btn" id="btn-start-shift" style="max-width:340px;margin:28px auto 0;">Приступить</button>
   </div>
 
-    <!-- ЭКРАН 4: НАЧАЛО СМЕНЫ -->
+  <!-- ЭКРАН 4: НАЧАЛО СМЕНЫ -->
   <div class="glass hidden" id="wrap-choose">
     <div id="screen-choose">
       <h1>НАЧАЛО</h1>
@@ -88,7 +89,8 @@
       </button>
     </div>
   </div>
-<!-- ЭКРАН 4a: ВЫБОР ПОМЕЩЕНИЯ -->
+
+  <!-- ЭКРАН 4a: ВЫБОР ПОМЕЩЕНИЯ -->
   <div class="glass hidden" id="wrap-building">
     <div id="screen-building">
       <h1>ПОМЕЩЕНИЕ</h1>
@@ -110,7 +112,7 @@
     </div>
   </div>
 
-  <!-- ЭКРАН 4c: ОЖИДАНИЕ ВЫБОРА ДИРЕКТОРА -->
+  <!-- ЭКРАН 4c: ОЖИДАНИЕ -->
   <div class="glass hidden" id="wrap-setup-wait">
     <div id="screen-setup-wait">
       <h1>ОЖИДАНИЕ</h1>
@@ -120,7 +122,8 @@
       </div>
     </div>
   </div>
-    <!-- ЭКРАН 4d: ВЫБОР ОБОРУДОВАНИЯ (Инженер) -->
+
+  <!-- ЭКРАН 4d: ВЫБОР ОБОРУДОВАНИЯ -->
   <div class="glass hidden" id="wrap-equipment">
     <div id="screen-equipment">
       <h1>ОБОРУДОВАНИЕ</h1>
@@ -130,7 +133,8 @@
       <div id="equipment-list"></div>
     </div>
   </div>
-  <!-- ЭКРАН 5: ОЖИДАНИЕ ВЫБОРА -->
+
+  <!-- ЭКРАН 5: ОЖИДАНИЕ -->
   <div class="glass hidden" id="wrap-waiting">
     <div id="screen-waiting">
       <h1>ОЖИДАНИЕ</h1>
@@ -145,7 +149,6 @@
   <div class="glass hidden" id="wrap-game-director">
     <div id="screen-game-director" class="shift">
 
-      <!-- Знак завода -->
       <div class="factory-sign" id="factory-sign-director"></div>
 
       <div class="decisions-bar">
@@ -163,7 +166,6 @@
             <div class="scale-fill mid" id="reputation-fill" style="width:50%"></div>
           </div>
         </div>
-
 
         <div class="status-item">
           <div class="status-header">
@@ -287,7 +289,7 @@
         <button class="btn secondary" id="btn-back-take-dirs">← Назад</button>
       </div>
 
-     <!-- Подменю: Забрать из инвестиций — сколько -->
+      <!-- Подменю: Забрать из инвестиций — сколько -->
       <div class="submenu hidden" id="submenu-take-levels">
         <div class="submenu-title" id="take-levels-title">До какого уровня опустить</div>
 
@@ -322,10 +324,9 @@
   </div>
 
   <!-- ЭКРАН 6b: СМЕНА БЕЗОПАСНИКА -->
- <div class="glass hidden" id="wrap-game-security">
+  <div class="glass hidden" id="wrap-game-security">
     <div id="screen-game-security" class="shift shift-security">
 
-      <!-- Знак завода -->
       <div class="factory-sign" id="factory-sign-security"></div>
 
       <div class="decisions-bar">
@@ -333,7 +334,6 @@
         <span class="decisions-dots" id="decisions-dots-security"></span>
       </div>
 
-      <!-- Три шкалы Безопасника -->
       <div class="shift-status">
         <div class="status-item">
           <div class="status-header">
@@ -366,7 +366,6 @@
         </div>
       </div>
 
-      <!-- Досье -->
       <div class="dossier-box" id="dossier-box">
         <div class="dossier-title">Досье</div>
         <div class="dossier-list" id="dossier-list">
@@ -374,10 +373,8 @@
         </div>
       </div>
 
-      <!-- Сговор — статус -->
       <div class="deal-status hidden" id="deal-status"></div>
 
-      <!-- Действия -->
       <div class="shift-actions" id="security-actions">
         <button class="btn" id="btn-security-check">Проверка</button>
         <button class="btn secondary" id="btn-security-check-reports">Отчёты по проверкам</button>
@@ -392,22 +389,18 @@
         </div>
       </div>
 
-      <!-- Подменю: кого проверить -->
-      <!-- Подменю: Проверка — кого проверить -->
       <div class="submenu hidden" id="submenu-security-check">
         <div class="submenu-title">Кого проверить</div>
         <button class="btn" data-check-target="" id="btn-check-list"></button>
         <button class="btn secondary" id="btn-back-security-check">← Назад</button>
       </div>
 
-      <!-- Подменю: Отчёты по проверкам -->
       <div class="submenu hidden" id="submenu-security-check-reports">
         <div class="submenu-title">Отчёты по проверкам</div>
         <div class="dossier-list" id="check-reports-list"></div>
         <button class="btn secondary" id="btn-back-security-check-reports">← Назад</button>
       </div>
 
-      <!-- Подменю: Отчёты по запросам -->
       <div class="submenu hidden" id="submenu-security-request-reports">
         <div class="submenu-title">Отчёты по запросам</div>
         <div class="dossier-list" id="request-reports-list"></div>
@@ -416,11 +409,11 @@
 
     </div>
   </div>
-<!-- ЭКРАН 6c: СМЕНА ИНЖЕНЕРА -->
+
+  <!-- ЭКРАН 6c: СМЕНА ИНЖЕНЕРА -->
   <div class="glass hidden" id="wrap-game-engineer">
     <div id="screen-game-engineer" class="shift shift-engineer">
 
-      <!-- Знак завода -->
       <div class="factory-sign" id="factory-sign-engineer"></div>
 
       <div class="decisions-bar">
@@ -428,7 +421,6 @@
         <span class="decisions-dots" id="decisions-dots-engineer"></span>
       </div>
 
-      <!-- Три шкалы Инженера -->
       <div class="shift-status">
         <div class="status-item">
           <div class="status-header">
@@ -471,7 +463,6 @@
         </div>
       </div>
 
-      <!-- Действия -->
       <div class="shift-actions" id="engineer-actions">
         <button class="btn" id="btn-eng-work">Работать</button>
         <button class="btn secondary" id="btn-eng-drink">Спиться</button>
@@ -487,7 +478,6 @@
         </div>
       </div>
 
-      <!-- Подменю: распределить инвестиции -->
       <div class="submenu hidden" id="submenu-engineer-distribute">
         <div class="submenu-title">Распределить инвестиции</div>
 
@@ -511,7 +501,6 @@
         <button class="btn secondary" id="btn-back-eng-distribute">← Назад</button>
       </div>
 
-      <!-- Подменю: отчёт Директору -->
       <div class="submenu hidden" id="submenu-engineer-report">
         <div class="submenu-title">Что написать в отчёте</div>
         <button class="btn success" id="btn-eng-report-real">Честно</button>
@@ -521,7 +510,83 @@
 
     </div>
   </div>
-  <!-- Модальное окно сговора — для Директора -->
+
+  <!-- ЭКРАН 6d: СМЕНА HR -->
+  <div class="glass hidden" id="wrap-game-hr">
+    <div id="screen-game-hr" class="shift shift-hr">
+
+      <div class="factory-sign" id="factory-sign-hr"></div>
+
+      <div class="decisions-bar">
+        <span class="decisions-label">Ваши решения</span>
+        <span class="decisions-dots" id="decisions-dots-hr"></span>
+      </div>
+
+      <div class="shift-status">
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Люди</span>
+            <span class="status-value" id="hr-people-word">средне</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="hr-people-fill" style="width:50%"></div>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-header">
+            <span class="status-label">Фонд зарплат</span>
+            <span class="status-value" id="hr-fund-word">пусто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="hr-fund-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="status-item hidden" id="hr-pocket-box">
+          <div class="status-header">
+            <span class="status-label">В кармане</span>
+            <span class="status-value" id="hr-pocket-word">пусто</span>
+          </div>
+          <div class="scale">
+            <div class="scale-fill mid" id="hr-pocket-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shift-actions" id="hr-actions">
+        <button class="btn" id="btn-hr-hire">Нанять</button>
+        <button class="btn secondary" id="btn-hr-fire">Уволить</button>
+        <button class="btn danger" id="btn-hr-fake">Подделать штат</button>
+        <button class="btn secondary" id="btn-hr-report">Отчёт Директору</button>
+        <button class="btn secondary" id="btn-finish-hr">Завершить смену</button>
+      </div>
+
+      <div class="hidden" id="shift-done-hr">
+        <div class="subtitle">
+          Смена завершена.<br>
+          Ожидайте коллег…
+        </div>
+      </div>
+
+      <div class="submenu hidden" id="submenu-hr-hire">
+        <div class="submenu-title">Как нанимать</div>
+        <button class="btn" id="btn-hr-hire-normal">Обычный найм</button>
+        <button class="btn" id="btn-hr-hire-train">Обучить (дешевле)</button>
+        <button class="btn secondary" id="btn-back-hr-hire">← Назад</button>
+      </div>
+
+      <div class="submenu hidden" id="submenu-hr-report">
+        <div class="submenu-title">Что написать в отчёте</div>
+        <button class="btn success" id="btn-hr-report-real">Честно</button>
+        <button class="btn danger" id="btn-hr-report-fake">Подделать</button>
+        <button class="btn secondary" id="btn-back-hr-report">← Назад</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Модальное окно сговора -->
   <div class="modal hidden" id="deal-modal">
     <div class="modal-card">
       <div class="modal-title">Сговор</div>
@@ -566,6 +631,7 @@
   <script src="/js/choose-factory.js"></script>
   <script src="/js/cabinets/director.js"></script>
   <script src="/js/cabinets/security.js"></script>
- <script src="/js/cabinets/engineer.js"></script>
+  <script src="/js/cabinets/engineer.js"></script>
+  <script src="/js/cabinets/hr.js"></script>
 </body>
 </html>
