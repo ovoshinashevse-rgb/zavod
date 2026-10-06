@@ -498,7 +498,12 @@ function stripPocket(snapshot) {
     investments: snapshot.investments,
     budgetPercent: snapshot.budgetPercent,
     reputation: snapshot.reputation,
-    bankrupt: snapshot.bankrupt
+    bankrupt: snapshot.bankrupt,
+
+    // ─── Что за завод: помещение, продукт, оборудование ───
+    building: snapshot.building || null,
+    product: snapshot.product || null,
+    equipment: snapshot.equipment || null
   };
 }
 

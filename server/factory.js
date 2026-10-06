@@ -318,7 +318,12 @@ function factorySnapshot(factory, opts = {}) {
     investments: factory.investments,
     money: factory.money,
     budgetPercent: factory.budgetPercent,
-    bankrupt: factory.bankrupt
+    bankrupt: factory.bankrupt,
+
+    // ─── Что за завод: помещение, продукт, оборудование ───
+    building: factory.building || null,
+    product: factory.product || null,
+    equipment: factory.equipment || null
   };
 
   if (opts.forDirector) {

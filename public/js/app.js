@@ -69,6 +69,46 @@
     document.body.classList.add(theme === 'poor' ? 'poor' : 'rich');
   }
 
+  // ─── Фон помещения ───
+  // key: 'old_hangar' | 'new_shop' | 'basement' | 'main_building'
+  // Можно передавать как ключ, так и undefined / null — тогда фон скрыт.
+  const BUILDING_CLASSES = ['building-hangar', 'building-shop', 'building-basement', 'building-main'];
+  const BUILDING_MAP = {
+    old_hangar:    'building-hangar',
+    new_shop:      'building-shop',
+    basement:      'building-basement',
+    main_building: 'building-main'
+  };
+
+  function applyBuilding(key) {
+    // Снимаем все возможные классы помещения
+    document.body.classList.remove(...BUILDING_CLASSES);
+
+    // Если ключ неизвестен — просто остаёмся без фона
+    if (!key) return;
+
+    const cls = BUILDING_MAP[key];
+    if (!cls) return;
+
+    document.body.classList.add(cls);
+  }
+
+  // ─── Состояние фона (rich / mid / poor) ───
+  // Пока не привязано к экономике — по умолчанию mid.
+  // Когда захотим — передадим 'rich' / 'poor' из реального состояния завода.
+  const BG_STATE_CLASSES = ['bg-rich', 'bg-mid', 'bg-poor'];
+
+  function applyFactoryState(level) {
+    const bg = document.getElementById('bg-building');
+    if (!bg) return;
+
+    bg.classList.remove(...BG_STATE_CLASSES);
+
+    if (level === 'rich')      bg.classList.add('bg-rich');
+    else if (level === 'poor') bg.classList.add('bg-poor');
+    else                       bg.classList.add('bg-mid');
+  }
+
   // ─── Всплывашка ───
   let toastTimer = null;
   function toast(text) {
@@ -100,7 +140,9 @@
     state,
     show,
     toast,
-    applyTheme
+    applyTheme,
+    applyBuilding,
+    applyFactoryState
   };
 
   // ═══════════════════════════════════════════
@@ -176,9 +218,18 @@
     applyDayTime();
   });
 
-  socket.on('factory_chosen', () => {
+  socket.on('factory_chosen', (data) => {
     usedDecisions = 0;
     applyDayTime();
+
+    // Включаем фон помещения, если сервер прислал ключ
+    if (data && data.factory && data.factory.building) {
+      applyBuilding(data.factory.building);
+    }
+
+    // Состояние фона пока всегда 'mid'.
+    // Позже, когда захотим — будем вычислять из экономики.
+    applyFactoryState('mid');
   });
 
   console.log('App: каркас готов');
