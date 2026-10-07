@@ -31,7 +31,8 @@
   // ─── Кнопка «Приступить» ───
   document.getElementById('btn-start-shift').onclick = () => {
     if (state.myRole === 'director') {
-      show('screen-choose');
+      // Директор сразу начинает настройку завода
+      socket.emit('director_choose_factory');
     } else {
       show('screen-waiting');
     }

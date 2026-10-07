@@ -19,7 +19,6 @@
     report: null
   };
 
-  // Выбор при пристройке родни
   const adoptChoice = {
     kind: null,
     place: null
@@ -74,7 +73,6 @@
   }
 
   function renderScales() {
-    // Люди
     const peopleFill = document.getElementById('hr-people-fill');
     if (peopleFill) {
       peopleFill.style.width = hrState.effectivePeople + '%';
@@ -82,7 +80,6 @@
       document.getElementById('hr-people-word').textContent = peopleWord(hrState.effectivePeople);
     }
 
-    // Кумовство — одна шкала, показывается только если есть
     const nepBox = document.getElementById('hr-nepotism-box');
     if (nepBox) {
       if (hrState.nepotism > 0) {
@@ -97,42 +94,21 @@
     }
   }
 
-  // ─── Снимок ───
   function applySnapshot(data) {
     if (typeof data.decisionsLeft !== 'undefined') {
       hrState.decisionsLeft = data.decisionsLeft;
       renderDecisions(data.decisionsLeft);
     }
-    if (typeof data.pocket !== 'undefined') {
-      hrState.pocket = data.pocket;
-    }
-    if (typeof data.people !== 'undefined') {
-      hrState.people = data.people;
-    }
-    if (typeof data.effectivePeople !== 'undefined') {
-      hrState.effectivePeople = data.effectivePeople;
-    }
-    if (typeof data.nepotism !== 'undefined') {
-      hrState.nepotism = data.nepotism;
-    }
-    if (typeof data.familyCount !== 'undefined') {
-      hrState.familyCount = data.familyCount;
-    }
-    if (data.family) {
-      hrState.family = data.family;
-    }
-    if (typeof data.money !== 'undefined') {
-      hrState.money = data.money;
-    }
-    if (typeof data.budgetPercent !== 'undefined') {
-      hrState.budgetPercent = data.budgetPercent;
-    }
-    if (data.hiring) {
-      hrState.hiring = data.hiring;
-    }
-    if (data.report) {
-      hrState.report = data.report;
-    }
+    if (typeof data.pocket !== 'undefined') hrState.pocket = data.pocket;
+    if (typeof data.people !== 'undefined') hrState.people = data.people;
+    if (typeof data.effectivePeople !== 'undefined') hrState.effectivePeople = data.effectivePeople;
+    if (typeof data.nepotism !== 'undefined') hrState.nepotism = data.nepotism;
+    if (typeof data.familyCount !== 'undefined') hrState.familyCount = data.familyCount;
+    if (data.family) hrState.family = data.family;
+    if (typeof data.money !== 'undefined') hrState.money = data.money;
+    if (typeof data.budgetPercent !== 'undefined') hrState.budgetPercent = data.budgetPercent;
+    if (data.hiring) hrState.hiring = data.hiring;
+    if (data.report) hrState.report = data.report;
     renderScales();
   }
 
@@ -163,10 +139,8 @@
   }
 
   // ═══════════════════════════════════════════
-  // НАЙМ — динамические шаги
+  // НАЙМ
   // ═══════════════════════════════════════════
-
-  // Опции шагов и их названия
   const STEP_TITLES = {
     where:     'Где искать?',
     wait:      'Сколько ждать?',
@@ -245,7 +219,6 @@
     });
   }
 
-  // Кнопки главного экрана
   document.getElementById('btn-hr-hire').onclick = () => {
     actionsBox.classList.add('hidden');
     hideAllSubmenus();
@@ -263,26 +236,21 @@
   });
 
   document.getElementById('btn-back-hr-hire-step').onclick = () => {
-    // Прерываем найм
     hrState.hiring = null;
     hideAllSubmenus();
     submenuHire.classList.remove('hidden');
   };
 
-  // ─── Событие hr_hiring_update ───
   socket.on('hr_hiring_update', (hiring) => {
     if (state.myRole !== 'hr') return;
 
     if (!hiring || hiring.done) {
-      // Найм завершён — возвращаемся на главный
       hrState.hiring = null;
       showActions();
       return;
     }
 
     hrState.hiring = hiring;
-
-    // Открываем подменю шага
     actionsBox.classList.add('hidden');
     hideAllSubmenus();
     submenuHireStep.classList.remove('hidden');
@@ -350,7 +318,6 @@
     submenuNepotism.classList.remove('hidden');
   };
 
-  // Шаг 1: кто
   document.querySelectorAll('[data-hr-kind]').forEach(btn => {
     btn.onclick = () => {
       adoptChoice.kind = btn.dataset.hrKind;
@@ -359,7 +326,6 @@
     };
   });
 
-  // Шаг 2: куда
   document.querySelectorAll('[data-hr-place]').forEach(btn => {
     btn.onclick = () => {
       adoptChoice.place = btn.dataset.hrPlace;
@@ -368,7 +334,6 @@
     };
   });
 
-  // Шаг 3: должность — отправляем
   document.querySelectorAll('[data-hr-position]').forEach(btn => {
     btn.onclick = () => {
       const position = btn.dataset.hrPosition;
@@ -381,12 +346,10 @@
     };
   });
 
-  // Прикрыть родню
   document.getElementById('btn-hr-cover').onclick = () => {
     socket.emit('hr_cover_family');
   };
 
-  // Уволить одного
   document.getElementById('btn-hr-fire-relative').onclick = () => {
     submenuNepotism.classList.add('hidden');
     renderFamilyList();
@@ -482,6 +445,18 @@
   socket.on('need_report', () => {
     if (state.myRole !== 'hr') return;
     openReport();
+  });
+
+  // ─── HR сдал отчёт — на экран ожидания ───
+  socket.on('hr_report_submitted', () => {
+    if (state.myRole !== 'hr') return;
+
+    hideAllSubmenus();
+    if (actionsBox) actionsBox.classList.add('hidden');
+    if (shiftDone) shiftDone.classList.remove('hidden');
+
+    // Переключаемся на экран смены (если ушли на экран отчёта)
+    show('screen-game-hr');
   });
 
   socket.on('new_shift', ({ decisionsLeft }) => {

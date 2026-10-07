@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// КАБИНЕТ БЕЗОПАСНИКА — проверки, сговор, запросы
+// КАБИНЕТ БЕЗОПАСНИКА — проверки, сговор, запросы, обнал
 // ═══════════════════════════════════════════
 
 (function () {
@@ -13,10 +13,12 @@
     decisionsLeft: 2,
     currentShift: 1,
     deal: { pending: false, active: false, iAmSecurity: false, iAmDirector: false },
-    reportChecks: []
+    reportChecks: [],
+    luxuryTargets: []
   };
 
-  // ─── Знак завода ───
+  let luxuryTarget = null;
+
   function mountSign(factory) {
     if (!window.FactorySign) return;
     const product   = factory && factory.product;
@@ -26,7 +28,6 @@
     window.FactorySign.mount('factory-sign-security', product, building, st, equipment);
   }
 
-  // ─── Точки решений ───
   function renderDecisions(left) {
     const max = 2;
     const box = document.getElementById('decisions-dots-security');
@@ -40,7 +41,6 @@
     secState.decisionsLeft = left;
   }
 
-  // ─── Подозрения ───
   function renderSuspicions(value) {
     const fill = document.getElementById('suspicions-fill');
     const word = document.getElementById('suspicions-word');
@@ -88,7 +88,7 @@
     word.textContent = qualitativeWord(value);
   }
 
-  // ─── Досье (главный экран) ───
+  // ─── Досье ───
   function renderDossier(dossier) {
     const box = document.getElementById('dossier-list');
     if (!box) return;
@@ -105,16 +105,38 @@
       row.className = 'dossier-row';
 
       let label = '—';
-      if (d.result === 'pending') label = 'Ждёт ответа';
+      if (d.result === 'pending') label = 'Идет проверка';
       if (d.result === 'clean')   label = 'Чисто';
       if (d.result === 'little')  label = 'Откат был';
       if (d.result === 'much')    label = 'Откат серьёзный';
+      if (d.luxuryFound)          label = 'Найден обнал';
 
       row.innerHTML =
         '<span class="shift-num">Смена ' + d.shift + '</span>' +
         '<span class="target-name">' + (d.targetTitle || '—') + '</span>' +
         '<span class="result ' + d.result + '">' + label + '</span>';
 
+      box.appendChild(row);
+    });
+  }
+
+  // ─── Список обнала ───
+  function renderLuxuryList(target) {
+    const box = document.getElementById('luxury-list');
+    if (!box) return;
+    box.innerHTML = '';
+
+    if (!target || !target.list || target.list.length === 0) {
+      box.innerHTML = '<div class="luxury-empty">Ничего не найдено.</div>';
+      return;
+    }
+
+    target.list.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'luxury-item';
+      row.innerHTML =
+        '<span class="luxury-item-name">' + item.title + '</span>' +
+        '<span class="luxury-item-price">' + item.price + '</span>';
       box.appendChild(row);
     });
   }
@@ -140,16 +162,32 @@
       row.style.gap = '8px';
 
       let label = '—';
-      if (d.result === 'pending') label = 'Проверка в процессе…';
+      if (d.result === 'pending') label = 'Идет проверка';
       if (d.result === 'clean')   label = 'Чисто';
       if (d.result === 'little')  label = 'Откат был';
       if (d.result === 'much')    label = 'Откат серьёзный';
+      if (d.luxuryFound)          label = 'Найден обнал';
 
       row.innerHTML =
         '<div style="display:flex;justify-content:space-between;width:100%;">' +
           '<span class="shift-num">Смена ' + d.shift + '</span>' +
           '<span class="result ' + d.result + '">' + label + '</span>' +
         '</div>';
+
+      if (d.luxuryFound) {
+        const btnOpen = document.createElement('button');
+        btnOpen.className = 'btn btn-small';
+        btnOpen.textContent = 'Открыть обнал';
+        btnOpen.onclick = () => {
+          openLuxuryTarget({
+            targetId: d.targetId,
+            targetTitle: d.targetTitle,
+            list: d.luxuryList || [],
+            total: d.luxuryTotal || 0
+          });
+        };
+        row.appendChild(btnOpen);
+      }
 
       if (d.result === 'little' || d.result === 'much') {
         const btnRow = document.createElement('div');
@@ -247,7 +285,6 @@
     });
   }
 
-  // ─── Сговор ───
   function renderDeal(deal) {
     const box = document.getElementById('deal-status');
     if (!box) return;
@@ -265,13 +302,14 @@
     }
   }
 
-  // ─── Управление подменю ───
   const securityActions = document.getElementById('security-actions');
 
   function hideAllSubmenus() {
     document.getElementById('submenu-security-check').classList.add('hidden');
     document.getElementById('submenu-security-check-reports').classList.add('hidden');
     document.getElementById('submenu-security-request-reports').classList.add('hidden');
+    const luxuryEl = document.getElementById('submenu-security-luxury');
+    if (luxuryEl) luxuryEl.classList.add('hidden');
   }
 
   function showActions() {
@@ -280,9 +318,18 @@
     document.getElementById('shift-done-security').classList.add('hidden');
   }
 
-  // ═══════════════════════════════════════════
-  // КНОПКИ ГЛАВНОГО ЭКРАНА
-  // ═══════════════════════════════════════════
+  function openLuxuryTarget(target) {
+    luxuryTarget = target;
+
+    securityActions.classList.add('hidden');
+    hideAllSubmenus();
+
+    renderLuxuryList(target);
+
+    const luxuryEl = document.getElementById('submenu-security-luxury');
+    if (luxuryEl) luxuryEl.classList.remove('hidden');
+  }
+
   document.getElementById('btn-security-check').onclick = () => {
     const target = state.players && state.players.find(p => p.role === 'director');
     if (!target) { toast('Некого проверять'); return; }
@@ -310,7 +357,6 @@
     renderRequestReports();
   };
 
-  // ─── Кнопки «Назад» ───
   document.getElementById('btn-back-security-check').onclick = () => {
     showActions();
   };
@@ -323,6 +369,31 @@
     showActions();
   };
 
+  const btnBackLuxury = document.getElementById('btn-back-security-luxury');
+  if (btnBackLuxury) {
+    btnBackLuxury.onclick = () => {
+      showActions();
+    };
+  }
+
+  const btnConfiscate = document.getElementById('btn-confiscate-luxury');
+  if (btnConfiscate) {
+    btnConfiscate.onclick = () => {
+      if (!luxuryTarget) return;
+      socket.emit('security_confiscate_luxury', { targetId: luxuryTarget.targetId });
+      showActions();
+    };
+  }
+
+  const btnRumor = document.getElementById('btn-spread-rumor');
+  if (btnRumor) {
+    btnRumor.onclick = () => {
+      if (!luxuryTarget) return;
+      socket.emit('security_spread_rumor', { targetId: luxuryTarget.targetId });
+      showActions();
+    };
+  }
+
   document.getElementById('btn-check-list').onclick = (e) => {
     const targetId = e.currentTarget.dataset.checkTarget;
     if (!targetId) return;
@@ -334,7 +405,7 @@
   };
 
   // ═══════════════════════════════════════════
-  // СОБЫТИЯ С СЕРВЕРА
+  // СОБЫТИЯ
   // ═══════════════════════════════════════════
   socket.on('security_update', (data) => {
     if (typeof data.suspicions !== 'undefined') {
@@ -364,10 +435,21 @@
     if (data.reportChecks) {
       secState.reportChecks = data.reportChecks;
     }
+    if (data.luxuryTargets) {
+      secState.luxuryTargets = data.luxuryTargets;
+    }
   });
 
-  socket.on('security_check_pending', () => {
-    toast('Проверка принята. Результат — в следующую смену.');
+  socket.on('security_check_pending', ({ targetTitle, luxuryFound }) => {
+    if (luxuryFound) {
+      toast('У ' + targetTitle + ' найден обнал');
+      setTimeout(() => {
+        const sec = secState.luxuryTargets && secState.luxuryTargets[0];
+        if (sec) openLuxuryTarget(sec);
+      }, 200);
+    } else {
+      toast('Проверка принята. Результат — в следующую смену.');
+    }
     showActions();
   });
 
@@ -379,6 +461,14 @@
     if (r.result === 'much')   label = 'Откат серьёзный';
 
     toast('Проверка: ' + label);
+  });
+
+  socket.on('luxury_confiscated', ({ total, targetRole }) => {
+    toast('Обнал конфискован: ' + (total || 0));
+  });
+
+  socket.on('rumor_spread', ({ targetRole }) => {
+    toast('Слух про ' + targetRole + ' разошёлся');
   });
 
   socket.on('deal_activated', () => {
@@ -426,7 +516,6 @@
   socket.on('factory_chosen', ({ factory }) => {
     if (state.myRole !== 'security') return;
 
-    // Знак завода
     mountSign(factory);
 
     show('screen-game-security');
@@ -438,6 +527,7 @@
     renderDeal(secState.deal);
     showActions();
   });
+
   socket.on('game_over', ({ reason, type, biographies }) => {
     if (state.myRole !== 'security') return;
 
@@ -451,5 +541,6 @@
 
     show('screen-end');
   });
+
   console.log('Cabinet Security: модуль готов');
 })();

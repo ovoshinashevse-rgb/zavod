@@ -95,8 +95,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   БУМАЖНЫЙ ОТЧЁТ (для Директора)
-   Как настоящий лист бумаги
+   БУМАЖНЫЙ ОТЧЁТ
    ═══════════════════════════════════════════ */
 .report-single {
   display: flex;
@@ -129,7 +128,6 @@
   to   { opacity: 1; transform: rotate(-0.4deg) translateY(0) scale(1); }
 }
 
-/* Лёгкая текстура бумаги — крапинки */
 .paper::before {
   content: '';
   position: absolute;
@@ -201,44 +199,86 @@
   text-align: right;
 }
 
-/* ─── Подпись ─── */
-.paper-signature {
-  margin-top: 28px;
-  padding-top: 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+/* ═══════════════════════════════════════════
+   ПЕЧАТЬ «СОГЛАСОВАНО»
+   Появляется как настоящая печать:
+   сначала едва видна → быстро проявляется
+   → слегка прижимается → остаётся.
+   Лёгкий наклон, как у настоящей печати.
+   ═══════════════════════════════════════════ */
+.paper-approval {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  pointer-events: none;
+  z-index: 5;
 }
 
-.paper-signature.hidden {
+.paper-approval.hidden {
   display: none;
 }
 
-.signature-line {
-  width: 60%;
-  height: 1.5px;
-  background: #2a2018;
-  transform-origin: right center;
-  transform: scaleX(0);
-  animation: sign-line 0.6s ease-out 0.2s forwards;
-}
-
-@keyframes sign-line {
-  to { transform: scaleX(1); }
-}
-
-.signature-text {
-  font-family: 'Georgia', serif;
-  font-style: italic;
-  font-size: 16px;
-  color: #2a2018;
+.approval-stamp {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-12deg) scale(0);
   opacity: 0;
-  animation: sign-text 0.5s ease-out 1s forwards;
+  animation: stamp-press 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-@keyframes sign-text {
-  to { opacity: 1; }
+@keyframes stamp-press {
+  0% {
+    opacity: 0;
+    transform: rotate(-12deg) scale(0) translateY(-40px);
+  }
+  40% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(1.15) translateY(0);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(0.95) translateY(2px);
+  }
+  80% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 0.92;
+    transform: rotate(-12deg) scale(1) translateY(0);
+  }
+}
+
+.stamp-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4px double #2a6a3a;
+  background: rgba(42, 106, 58, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow:
+    0 0 0 2px rgba(42, 106, 58, 0.35) inset,
+    0 0 0 6px rgba(42, 106, 58, 0.15) inset;
+}
+
+.stamp-text {
+  font-family: 'Georgia', serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #2a6a3a;
+  text-align: center;
+  line-height: 1.2;
+  padding: 0 12px;
+  text-transform: uppercase;
+  opacity: 0.85;
+  transform: rotate(2deg);
 }
 
 /* ═══════════════════════════════════════════
@@ -265,7 +305,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   СПИСОК ОТЧЁТОВ У ДИРЕКТОРА
+   СПИСОК ОТЧЁТОВ
    ═══════════════════════════════════════════ */
 .reports-list {
   display: flex;
@@ -289,6 +329,12 @@
 .report-item.missing {
   background: rgba(217, 74, 58, 0.08);
   border-color: rgba(217, 74, 58, 0.25);
+}
+
+.report-item.in-shift {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
+  opacity: 0.55;
 }
 
 .report-item-info {
@@ -347,4 +393,15 @@
   opacity: 0.5;
   font-style: italic;
   color: #fff;
+}
+.report-waiting {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(184, 152, 72, 0.10);
+  border: 1px solid rgba(184, 152, 72, 0.30);
+  border-radius: 16px;
+  color: #e8d0a0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
 }

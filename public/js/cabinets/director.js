@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// КАБИНЕТ ДИРЕКТОРА — шкалы, решения, откаты, отчёты
+// КАБИНЕТ ДИРЕКТОРА — шкалы, решения, обнал, отчёты
 // ═══════════════════════════════════════════
 
 (function () {
@@ -58,12 +58,18 @@
   };
 
   let reportsList = [];
+  let stillInShift = [];
   let reportsReviewed = false;
   let currentReport = null;
 
+  let shopData = null;
+  let currentCategory = null;
+  let currentItem = null;
+
   let decisionsLeft = 3;
 
-  // ─── Знак завода ───
+  const MAX_POCKET = 800;
+
   function mountSign(factory) {
     if (!window.FactorySign) return;
     const product   = factory && factory.product;
@@ -89,19 +95,18 @@
   }
 
   function pocketColorClass(value) {
-    if (value <= 0) return 'mid';
-    if (value < 50) return 'mid';
+    if (value <= 0) return 'low';
+    if (value < 100) return 'mid';
     return 'high';
   }
 
   function pocketWord(value) {
     if (!value || value <= 0) return 'пусто';
-    if (value < 30) return 'немного';
-    if (value < 70) return 'нормально';
+    if (value < 50) return 'немного';
+    if (value < 200) return 'нормально';
     return 'много';
   }
 
-  // ─── Шкалы ───
   function renderScales() {
     const repFill = document.getElementById('reputation-fill');
     if (!repFill) return;
@@ -123,7 +128,7 @@
 
     const pocketBox = document.getElementById('pocket-box');
     if (typeof f.pocket !== 'undefined') {
-      const pocketPercent = Math.min(100, f.pocket);
+      const pocketPercent = Math.min(100, (f.pocket / MAX_POCKET) * 100);
       const pocketFill = document.getElementById('pocket-fill');
 
       pocketFill.style.width = pocketPercent + '%';
@@ -140,14 +145,24 @@
     }
   }
 
-  // ─── Список отчётов (только роли) ───
   function renderReportsList() {
     const box = document.getElementById('reports-list');
     if (!box) return;
     box.innerHTML = '';
 
+    if (stillInShift && stillInShift.length > 0) {
+      const waitingBox = document.createElement('div');
+      waitingBox.className = 'report-waiting';
+      const roles = stillInShift.map(r => ROLE_LABELS[r] || r).join(', ');
+      waitingBox.textContent = 'Ожидаем: ' + roles;
+      box.appendChild(waitingBox);
+    }
+
     if (!reportsList || reportsList.length === 0) {
-      box.innerHTML = '<div class="report-empty">Отчётов пока нет.</div>';
+      if (!stillInShift || stillInShift.length === 0) {
+        box.innerHTML = '<div class="report-empty">Пока никто не сдал.</div>';
+      }
+      renderReportsFinishButton();
       return;
     }
 
@@ -203,9 +218,26 @@
       item.appendChild(actions);
       box.appendChild(item);
     });
+
+    renderReportsFinishButton();
   }
 
-  // ─── Открытие бумажного отчёта ───
+  function renderReportsFinishButton() {
+    const btn = document.getElementById('btn-reports-finish');
+    if (!btn) return;
+
+    const canFinish = (!stillInShift || stillInShift.length === 0);
+
+    if (canFinish) {
+      btn.textContent = 'Завершить смену';
+      btn.disabled = false;
+    } else {
+      const roles = stillInShift.map(r => ROLE_LABELS[r] || r).join(', ');
+      btn.textContent = 'Ждём: ' + roles;
+      btn.disabled = true;
+    }
+  }
+
   function openReport(reportData) {
     currentReport = reportData;
 
@@ -221,8 +253,8 @@
     const explain = document.getElementById('paper-explain');
     if (explain) explain.textContent = EXPLAIN_LABELS[reportData.howToExplain] || '—';
 
-    const sig = document.getElementById('paper-signature');
-    if (sig) sig.classList.add('hidden');
+    const approval = document.getElementById('paper-approval');
+    if (approval) approval.classList.add('hidden');
 
     const actions = document.getElementById('paper-actions');
     if (actions) actions.classList.remove('hidden');
@@ -230,29 +262,35 @@
     show('screen-report-single');
   }
 
-  // ─── Подпись с анимацией ───
-  function showSignature() {
-    const sig = document.getElementById('paper-signature');
-    if (sig) sig.classList.remove('hidden');
+  // ─── Возврат к списку отчётов ───
+  function returnToReports() {
+    show('screen-game-director');
+    mainActions.classList.add('hidden');
+    hideAllSubmenus();
+    submenuReports.classList.remove('hidden');
+    socket.emit('director_get_reports');
+  }
+
+  function showApproval() {
+    const approval = document.getElementById('paper-approval');
+    if (approval) approval.classList.remove('hidden');
 
     const actions = document.getElementById('paper-actions');
     if (actions) actions.classList.add('hidden');
 
-    // Возврат к списку отчётов через 2.2 сек
+    // Возвращаемся на экран смены и открываем список отчётов
     setTimeout(() => {
-      hideAllSubmenus();
-      submenuReports.classList.remove('hidden');
-    }, 2200);
+      returnToReports();
+    }, 2400);
   }
 
-  // ─── Кнопки бумажного отчёта ───
   document.getElementById('btn-paper-approve').onclick = () => {
     if (!currentReport) return;
     socket.emit('director_process_report', {
       playerId: currentReport.playerId,
       action: 'approve'
     });
-    showSignature();
+    showApproval();
   };
 
   document.getElementById('btn-paper-check').onclick = () => {
@@ -261,11 +299,173 @@
       playerId: currentReport.playerId,
       action: 'check'
     });
-    hideAllSubmenus();
-    submenuReports.classList.remove('hidden');
+    // Сразу возвращаемся на экран смены
+    returnToReports();
   };
 
-  // ─── Точки решений ───
+  // ═══════════════════════════════════════════
+  // МАГАЗИН
+  // ═══════════════════════════════════════════
+  function renderShopPocket() {
+    const fill = document.getElementById('shop-pocket-fill');
+    if (!fill || !shopData) return;
+    const percent = Math.min(100, ((shopData.pocket || 0) / MAX_POCKET) * 100);
+    fill.style.width = percent + '%';
+    fill.className = 'scale-fill ' + pocketColorClass(shopData.pocket);
+  }
+
+  function renderShopTabs() {
+    const box = document.getElementById('shop-tabs');
+    if (!box || !shopData) return;
+    box.innerHTML = '';
+
+    shopData.categories.forEach(cat => {
+      const tab = document.createElement('button');
+      tab.className = 'shop-tab' + (cat.key === currentCategory ? ' active' : '');
+      tab.textContent = cat.title;
+      tab.onclick = () => {
+        currentCategory = cat.key;
+        renderShopTabs();
+        renderShopItems();
+      };
+      box.appendChild(tab);
+    });
+  }
+
+  function renderShopItems() {
+    const box = document.getElementById('shop-items');
+    if (!box || !shopData) return;
+    box.innerHTML = '';
+
+    const cat = shopData.categories.find(c => c.key === currentCategory);
+    if (!cat) return;
+
+    const pocket = shopData.pocket || 0;
+
+    cat.items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'shop-card';
+      if (item.owned) card.classList.add('owned');
+      if (item.locked && !item.owned) card.classList.add('locked');
+      if (!item.owned && !item.locked && pocket >= item.price && item.price > 0) {
+        card.classList.add('buyable');
+      }
+
+      const svg = window.ShopIcons ? window.ShopIcons.render(item.svg) : '';
+
+      let scalePercent = 0;
+      let scaleClass = 'fits';
+      if (item.owned) {
+        scalePercent = 100;
+        scaleClass = 'fits';
+      } else if (item.price === 0) {
+        scalePercent = 100;
+        scaleClass = 'fits';
+      } else {
+        const ratio = pocket / item.price;
+        scalePercent = Math.min(100, ratio * 100);
+        scaleClass = ratio >= 1 ? 'fits' : 'doesnt-fit';
+      }
+
+      card.innerHTML =
+        (item.owned ? '<div class="shop-card-badge">Есть</div>' : '') +
+        '<div class="shop-card-image">' + svg + '</div>' +
+        '<div class="shop-card-title">' + item.title + '</div>' +
+        '<div class="shop-card-scale">' +
+          '<div class="shop-card-scale-fill ' + scaleClass + '" style="width:' + scalePercent + '%"></div>' +
+        '</div>';
+
+      card.onclick = () => {
+        openShopItem(item);
+      };
+
+      box.appendChild(card);
+    });
+  }
+
+  function openShopItem(item) {
+    currentItem = item;
+
+    const img = document.getElementById('item-image');
+    if (img) {
+      const svg = window.ShopIcons ? window.ShopIcons.render(item.svg) : '';
+      img.innerHTML = svg;
+    }
+
+    const title = document.getElementById('item-title');
+    if (title) title.textContent = item.title;
+
+    const desc = document.getElementById('item-desc');
+    if (desc) desc.textContent = item.desc;
+
+    const pocket = shopData ? (shopData.pocket || 0) : 0;
+
+    const ownFill = document.getElementById('item-own-fill');
+    if (ownFill) {
+      const ownPercent = Math.min(100, (pocket / MAX_POCKET) * 100);
+      ownFill.style.width = ownPercent + '%';
+    }
+
+    const priceFill = document.getElementById('item-price-fill');
+    if (priceFill) {
+      const pricePercent = Math.min(100, (item.price / MAX_POCKET) * 100);
+      priceFill.style.width = pricePercent + '%';
+      priceFill.className = 'scale-fill ' + (pocket >= item.price ? 'fits' : 'doesnt-fit');
+    }
+
+    const btnBuy = document.getElementById('btn-item-buy');
+    if (btnBuy) {
+      if (item.owned) {
+        btnBuy.textContent = 'Уже есть';
+        btnBuy.disabled = true;
+      } else if (item.locked) {
+        btnBuy.textContent = 'Недоступно';
+        btnBuy.disabled = true;
+      } else if (pocket >= item.price && item.price > 0) {
+        btnBuy.textContent = 'В корзину';
+        btnBuy.disabled = false;
+      } else if (item.price === 0) {
+        btnBuy.textContent = 'Стартовый';
+        btnBuy.disabled = true;
+      } else {
+        btnBuy.textContent = 'Не хватает';
+        btnBuy.disabled = true;
+      }
+    }
+
+    show('screen-shop-item');
+  }
+
+  const btnOpenShop = document.getElementById('btn-open-shop');
+  if (btnOpenShop) {
+    btnOpenShop.onclick = () => {
+      socket.emit('director_open_shop');
+    };
+  }
+
+  const btnShopBack = document.getElementById('btn-shop-back');
+  if (btnShopBack) {
+    btnShopBack.onclick = () => {
+      show('screen-game-director');
+    };
+  }
+
+  const btnItemBack = document.getElementById('btn-item-back');
+  if (btnItemBack) {
+    btnItemBack.onclick = () => {
+      show('screen-shop');
+    };
+  }
+
+  const btnItemBuy = document.getElementById('btn-item-buy');
+  if (btnItemBuy) {
+    btnItemBuy.onclick = () => {
+      if (!currentItem) return;
+      socket.emit('director_buy_item', { itemKey: currentItem.key });
+      show('screen-shop');
+    };
+  }
+
   function renderDecisions(left) {
     decisionsLeft = left;
     const max = 3;
@@ -288,7 +488,6 @@
     }
   }
 
-  // ─── Доступность кнопок уровней ───
   function updateLevelButtonsAvailability() {
     document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(b => {
       const lvl = parseInt(b.dataset.lvl, 10);
@@ -317,7 +516,6 @@
     });
   }
 
-  // ─── Подменю ───
   const mainActions      = document.getElementById('main-actions');
   const submenuDirs      = document.getElementById('submenu-dirs');
   const submenuLevels    = document.getElementById('submenu-levels');
@@ -349,7 +547,6 @@
     shiftDone.classList.add('hidden');
   }
 
-  // ─── Превью ───
   function showPreviewLevel(dir, targetLevel) {
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
     const fill = document.getElementById('preview-fill');
@@ -401,7 +598,6 @@
     if (el) el.classList.add('hidden');
   }
 
-  // ═══ Инвестиции в отдел ═══
   document.getElementById('btn-set-level').onclick = () => {
     mainActions.classList.add('hidden');
     submenuDirs.classList.remove('hidden');
@@ -459,7 +655,6 @@
     });
   });
 
-  // ═══ Забрать себе ═══
   document.getElementById('btn-take').onclick = () => {
     mainActions.classList.add('hidden');
     submenuTakeSrc.classList.remove('hidden');
@@ -546,12 +741,10 @@
     });
   });
 
-  // ═══ Завершить смену — открыть список отчётов ═══
   document.getElementById('btn-finish').onclick = () => {
     socket.emit('player_finish_shift');
   };
 
-  // Кнопка «Завершить смену» внизу списка отчётов
   const btnReportsFinish = document.getElementById('btn-reports-finish');
   if (btnReportsFinish) {
     btnReportsFinish.onclick = () => {
@@ -566,7 +759,7 @@
   }
 
   // ═══════════════════════════════════════════
-  // СОБЫТИЯ С СЕРВЕРА
+  // СОБЫТИЯ
   // ═══════════════════════════════════════════
   socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings, products }) => {
     if (state.myRole !== 'director') return;
@@ -664,6 +857,7 @@
   socket.on('new_shift', ({ decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
     reportsList = [];
+    stillInShift = [];
     reportsReviewed = false;
     shiftDone.classList.add('hidden');
     renderDecisions(dl || 3);
@@ -676,7 +870,6 @@
     toast('Ответ по отчёту: ' + label);
   });
 
-  // ─── Директор должен открыть отчёты (при завершении смены) ───
   socket.on('need_reports', () => {
     if (state.myRole !== 'director') return;
 
@@ -684,20 +877,17 @@
     hideAllSubmenus();
     submenuReports.classList.remove('hidden');
 
-    // Запрашиваем список
     socket.emit('director_get_reports');
   });
 
-  // ─── Список отчётов пришёл ───
-  socket.on('director_reports', ({ reports, reviewed }) => {
+  socket.on('director_reports', ({ list, stillInShift: inShift, reviewed }) => {
     if (state.myRole !== 'director') return;
-
-    reportsList = reports || [];
+    reportsList = list || [];
+    stillInShift = inShift || [];
     reportsReviewed = reviewed || false;
     renderReportsList();
   });
 
-  // ─── Обработка отчёта завершена ───
   socket.on('report_processed', ({ action, targetRole, amount }) => {
     if (state.myRole !== 'director') return;
 
@@ -712,15 +902,63 @@
     }
 
     reportsReviewed = true;
-    // Обновим список после обработки
-    socket.emit('director_get_reports');
   });
 
-  // ─── Новый отчёт от игрока ───
+  socket.on('director_wait_others', ({ waiting }) => {
+    if (state.myRole !== 'director') return;
+
+    const roles = (waiting || []).map(r => ROLE_LABELS[r] || r).join(', ');
+    toast('Ещё не все завершили смену. Ждём: ' + roles);
+  });
+
   socket.on('new_report', ({ role }) => {
     if (state.myRole !== 'director') return;
     const roleLabel = ROLE_LABELS[role] || role;
     toast(roleLabel + ' сдал отчёт');
+  });
+
+  // ─── Магазин ───
+  socket.on('shop_opened', (data) => {
+    if (state.myRole !== 'director') return;
+
+    shopData = data;
+    currentCategory = data.categories[0] ? data.categories[0].key : null;
+
+    renderShopPocket();
+    renderShopTabs();
+    renderShopItems();
+
+    show('screen-shop');
+  });
+
+  socket.on('item_ordered', (data) => {
+    if (state.myRole !== 'director') return;
+
+    if (data.item) {
+      toast('Заказано: ' + data.item.title);
+    }
+
+    socket.emit('director_open_shop');
+  });
+
+  socket.on('luxury_delivered', ({ items }) => {
+    if (state.myRole !== 'director') return;
+
+    if (items && items.length > 0) {
+      items.forEach(it => {
+        toast('Доставлено: ' + it.title);
+      });
+    }
+  });
+
+  socket.on('director_luxury_update', (data) => {
+    if (state.myRole !== 'director') return;
+
+    const f = state.factory;
+    if (data && typeof data.pocket !== 'undefined') {
+      f.pocket = data.pocket;
+      renderScales();
+    }
   });
 
   socket.on('game_over', ({ reason, type, biographies }) => {
@@ -739,7 +977,6 @@
 
   socket.on('error_msg', (msg) => toast(msg));
 
-  // ═══ Сговор ═══
   socket.on('deal_offered', () => {
     if (state.myRole !== 'director') return;
     document.getElementById('deal-modal').classList.remove('hidden');
@@ -767,7 +1004,6 @@
     document.getElementById('deal-modal').classList.add('hidden');
   };
 
-  // ─── Помещение выбрано ───
   socket.on('factory_update', (data) => {
     if (state.myRole !== 'director') return;
 

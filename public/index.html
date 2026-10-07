@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/css/cabinet-hr.css">
 <link rel="stylesheet" href="/css/choose-setup.css">
 <link rel="stylesheet" href="/css/report.css">
+<link rel="stylesheet" href="/css/director-shop.css">
 </head>
 <body>
 
@@ -143,7 +144,7 @@
           <div class="scale"><div class="scale-fill mid" id="budget-fill" style="width:50%"></div></div>
         </div>
         <div class="status-item hidden" id="pocket-box">
-          <div class="status-header"><span class="status-label">В кармане</span><span class="status-value" id="pocket-word">пусто</span></div>
+          <div class="status-header"><span class="status-label">Накоплено</span><span class="status-value" id="pocket-word">пусто</span></div>
           <div class="scale"><div class="scale-fill mid" id="pocket-fill" style="width:0%"></div></div>
         </div>
       </div>
@@ -151,6 +152,7 @@
       <div class="shift-actions" id="main-actions">
         <button class="btn" id="btn-set-level">Инвестиции в отдел</button>
         <button class="btn secondary" id="btn-take">Забрать себе</button>
+        <button class="btn warn" id="btn-open-shop">Обнал</button>
         <button class="btn secondary" id="btn-finish">Завершить смену</button>
       </div>
 
@@ -221,7 +223,6 @@
         <button class="btn secondary" id="btn-back-take-levels">← Назад</button>
       </div>
 
-      <!-- ЭКРАН ОТЧЁТОВ ДИРЕКТОРА (открывается в конце смены) -->
       <div class="submenu hidden" id="submenu-reports">
         <div class="submenu-title">Отчёты за смену</div>
         <div class="reports-list" id="reports-list"></div>
@@ -279,6 +280,13 @@
         <div class="submenu-title">Отчёты по запросам</div>
         <div class="dossier-list" id="request-reports-list"></div>
         <button class="btn secondary" id="btn-back-security-request-reports">← Назад</button>
+      </div>
+      <div class="submenu hidden" id="submenu-security-luxury">
+        <div class="submenu-title">Обнал</div>
+        <div class="luxury-list" id="luxury-list"></div>
+        <button class="btn" id="btn-confiscate-luxury">Конфисковать всё</button>
+        <button class="btn secondary" id="btn-spread-rumor">Пустить слух</button>
+        <button class="btn secondary" id="btn-back-security-luxury">← Назад</button>
       </div>
     </div>
   </div>
@@ -384,14 +392,11 @@
   <!-- ЭКРАН 6d: HR -->
   <div class="glass hidden" id="wrap-game-hr">
     <div id="screen-game-hr" class="shift shift-hr">
-
       <div class="factory-sign" id="factory-sign-hr"></div>
-
       <div class="decisions-bar">
         <span class="decisions-label">Ваши решения</span>
         <span class="decisions-dots" id="decisions-dots-hr"></span>
       </div>
-
       <div class="shift-status">
         <div class="status-item">
           <div class="status-header"><span class="status-label">Люди</span><span class="status-value" id="hr-people-word">средне</span></div>
@@ -402,14 +407,12 @@
           <div class="scale"><div class="scale-fill mid" id="hr-nepotism-fill" style="width:0%"></div></div>
         </div>
       </div>
-
       <div class="shift-actions" id="hr-actions">
         <button class="btn" id="btn-hr-hire">Нанять</button>
         <button class="btn secondary" id="btn-hr-fire">Сократить</button>
         <button class="btn warn" id="btn-hr-nepotism">Кумовство</button>
         <button class="btn secondary" id="btn-finish-hr">Завершить смену</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-hire">
         <div class="submenu-title">Как нанимать?</div>
         <button class="btn" data-hire-path="ad">Дать объявление</button>
@@ -417,13 +420,11 @@
         <button class="btn" data-hire-path="retrain">Переучить своих</button>
         <button class="btn secondary" id="btn-back-hr-hire">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-hire-step">
         <div class="submenu-title" id="hr-hire-step-title">Выбор</div>
         <div id="hr-hire-step-options"></div>
         <button class="btn secondary" id="btn-back-hr-hire-step">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-fire">
         <div class="submenu-title">Насколько сократить?</div>
         <button class="btn" data-hr-fire-lvl="33">Отпустить пару</button>
@@ -431,7 +432,6 @@
         <button class="btn" data-hr-fire-lvl="100">Разогнать бригаду</button>
         <button class="btn secondary" id="btn-back-hr-fire">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-nepotism">
         <div class="submenu-title">Кумовство</div>
         <button class="btn" id="btn-hr-adopt">Пристроить своего</button>
@@ -439,7 +439,6 @@
         <button class="btn secondary" id="btn-hr-fire-relative">Уволить одного</button>
         <button class="btn secondary" id="btn-back-hr-nepotism">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-who">
         <div class="submenu-title">Кто он тебе?</div>
         <button class="btn" data-hr-kind="nephew">Племянник</button>
@@ -447,7 +446,6 @@
         <button class="btn" data-hr-kind="neighbor">Сосед</button>
         <button class="btn secondary" id="btn-back-hr-who">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-where">
         <div class="submenu-title">Куда его?</div>
         <button class="btn" data-hr-place="workshop">В цех</button>
@@ -456,7 +454,6 @@
         <button class="btn" data-hr-place="security">В безопасность</button>
         <button class="btn secondary" id="btn-back-hr-where">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-position">
         <div class="submenu-title">На какую должность?</div>
         <button class="btn" data-hr-position="worker">Работяга</button>
@@ -464,24 +461,69 @@
         <button class="btn" data-hr-position="boss">Начальник</button>
         <button class="btn secondary" id="btn-back-hr-position">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-hr-fire-relative">
         <div class="submenu-title">Кого уволить?</div>
         <div class="family-list" id="hr-family-list"></div>
         <button class="btn secondary" id="btn-back-hr-fire-relative">← Назад</button>
       </div>
-
       <div class="hidden" id="shift-done-hr"><div class="subtitle">Смена завершена.<br>Ожидайте коллег…</div></div>
-
     </div>
   </div>
 
-  <!-- ЭКРАН ОТЧЁТА (для игрока) -->
+  <!-- ЭКРАН МАГАЗИНА ОБНАЛА -->
+  <div class="glass hidden" id="wrap-shop">
+    <div id="screen-shop" class="shop">
+
+      <div class="shop-header">
+        <div class="shop-title">ОБНАЛ</div>
+      </div>
+
+      <!-- ШКАЛА НАКОПЛЕНИЯ -->
+      <div class="shop-pocket">
+        <div class="scale">
+          <div class="scale-fill mid" id="shop-pocket-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="shop-tabs" id="shop-tabs"></div>
+      <div class="shop-items" id="shop-items"></div>
+      <button class="btn secondary" id="btn-shop-back" style="margin-top:16px;">← Назад</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН КАРТОЧКИ ТОВАРА -->
+  <div class="glass hidden" id="wrap-shop-item">
+    <div id="screen-shop-item" class="shop-item-full">
+      <div class="shop-item-image" id="item-image"></div>
+      <div class="shop-item-title" id="item-title">—</div>
+      <div class="shop-item-desc" id="item-desc">—</div>
+
+      <!-- ДВЕ ШКАЛЫ: У ВАС И ЦЕНА -->
+      <div class="shop-item-scales">
+        <div class="shop-scale-row">
+          <span class="shop-scale-label">У вас</span>
+          <div class="scale">
+            <div class="scale-fill mid" id="item-own-fill" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="shop-scale-row">
+          <span class="shop-scale-label">Цена</span>
+          <div class="scale">
+            <div class="scale-fill mid" id="item-price-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" id="btn-item-buy">В корзину</button>
+      <button class="btn secondary" id="btn-item-back">← Назад</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ОТЧЁТА -->
   <div class="glass hidden" id="wrap-report">
     <div id="screen-report" class="report">
       <h1 class="report-title">ОТЧЁТ</h1>
       <div class="report-subtitle" id="report-subtitle">Что покажешь Директору?</div>
-
       <div class="report-step" id="report-step-show">
         <div class="report-options">
           <button class="btn report-opt" data-report-show="real">
@@ -498,7 +540,6 @@
           </button>
         </div>
       </div>
-
       <div class="report-step hidden" id="report-step-explain">
         <div class="report-options">
           <button class="btn report-opt" data-report-explain="ok">
@@ -518,7 +559,7 @@
     </div>
   </div>
 
-  <!-- ЭКРАН БУМАЖНОГО ОТЧЁТА (для Директора) -->
+  <!-- ЭКРАН БУМАЖНОГО ОТЧЁТА -->
   <div class="glass hidden" id="wrap-report-single">
     <div id="screen-report-single" class="report-single">
       <div class="paper">
@@ -540,9 +581,14 @@
             <span class="paper-value" id="paper-explain">—</span>
           </div>
         </div>
-        <div class="paper-signature hidden" id="paper-signature">
-          <div class="signature-line"></div>
-          <div class="signature-text">Подписано</div>
+
+        <!-- ПЕЧАТЬ "СОГЛАСОВАНО" -->
+        <div class="paper-approval hidden" id="paper-approval">
+          <div class="approval-stamp">
+            <div class="stamp-circle">
+              <div class="stamp-text">СОГЛАСОВАНО</div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="paper-actions" id="paper-actions">
@@ -585,6 +631,7 @@
 
   <script src="/js/app.js"></script>
   <script src="/js/factory-sign.js"></script>
+  <script src="/js/shop-icons.js"></script>
   <script src="/js/smoking.js"></script>
   <script src="/js/badge.js"></script>
   <script src="/js/choose-factory.js"></script>

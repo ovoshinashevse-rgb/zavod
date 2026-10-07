@@ -1,0 +1,346 @@
+/* ═══════════════════════════════════════════
+   МАГАЗИН ОБНАЛА — стили
+   ═══════════════════════════════════════════ */
+
+.shop {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
+
+/* ═══════════════════════════════════════════
+   ШАПКА МАГАЗИНА
+   ═══════════════════════════════════════════ */
+.shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.shop-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: #fff;
+  background: linear-gradient(180deg, #fff 0%, #c8bcc8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Шкала накопления в шапке ─── */
+.shop-pocket {
+  padding: 0 4px 4px;
+}
+
+.shop-pocket .scale {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.shop-pocket .scale-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #d97a5a 0%, #e8a060 100%);
+  transition: width 0.5s ease;
+}
+
+/* ═══════════════════════════════════════════
+   ТАБЫ КАТЕГОРИЙ — ПЕРЕНОС НА 2 СТРОКИ
+   ═══════════════════════════════════════════ */
+.shop-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 4px;
+}
+
+.shop-tab {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.shop-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.shop-tab.active {
+  background: rgba(217, 122, 90, 0.22);
+  border-color: rgba(217, 122, 90, 0.55);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════
+   СЕТКА ТОВАРОВ — 2 в ряд
+   ═══════════════════════════════════════════ */
+.shop-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ═══════════════════════════════════════════
+   КАРТОЧКА ТОВАРА
+   ═══════════════════════════════════════════ */
+.shop-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  cursor: pointer;
+  transition:
+    transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.3s ease,
+    border-color 0.3s ease;
+  overflow: hidden;
+}
+
+.shop-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.shop-card:active {
+  transform: scale(0.97);
+}
+
+/* Куплено — зелёная рамка */
+.shop-card.owned {
+  background: rgba(74, 168, 118, 0.10);
+  border-color: rgba(74, 168, 118, 0.30);
+}
+
+/* Можно купить — тёплая рамка */
+.shop-card.buyable {
+  border-color: rgba(217, 122, 90, 0.35);
+}
+
+/* Не хватает — приглушённая */
+.shop-card.locked {
+  opacity: 0.55;
+}
+
+/* ─── Картинка-превью ─── */
+.shop-card-image {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.shop-card-image svg {
+  width: 60%;
+  height: 60%;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ─── Название ─── */
+.shop-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  min-height: 34px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Шкала цены в карточке (тонкая полоска) ─── */
+.shop-card-scale {
+  height: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.shop-card-scale-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.shop-card-scale-fill.fits {
+  background: linear-gradient(90deg, #4aa876 0%, #6ac090 100%);
+}
+
+.shop-card-scale-fill.doesnt-fit {
+  background: linear-gradient(90deg, #b85060 0%, #d86a7a 100%);
+}
+
+/* ─── Бейдж «куплено» ─── */
+.shop-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  background: rgba(74, 168, 118, 0.85);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   ЭКРАН КАРТОЧКИ ТОВАРА
+   ═══════════════════════════════════════════ */
+.shop-item-full {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.shop-item-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 24px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.shop-item-image svg {
+  width: 55%;
+  height: 55%;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.shop-item-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.4px;
+  line-height: 1.25;
+}
+
+.shop-item-desc {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+  letter-spacing: -0.1px;
+  padding: 0 8px;
+}
+
+/* ─── Две шкалы: У вас и Цена ─── */
+.shop-item-scales {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 18px;
+}
+
+.shop-scale-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shop-scale-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.shop-scale-row .scale {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.shop-scale-row .scale-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.4s ease;
+}
+
+/* У вас — тёплый */
+#item-own-fill {
+  background: linear-gradient(90deg, #d97a5a 0%, #e8a060 100%);
+}
+
+/* Цена — зелёный если хватает, красный если нет */
+#item-price-fill.fits {
+  background: linear-gradient(90deg, #4aa876 0%, #6ac090 100%);
+}
+
+#item-price-fill.doesnt-fit {
+  background: linear-gradient(90deg, #b85060 0%, #d86a7a 100%);
+}
+
+/* ═══════════════════════════════════════════
+   СПИСОК ОБНАЛА У БЕЗОПАСНИКА
+   ═══════════════════════════════════════════ */
+.luxury-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.luxury-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(217, 74, 58, 0.08);
+  border: 1px solid rgba(217, 74, 58, 0.25);
+  border-radius: 16px;
+}
+
+.luxury-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.luxury-item-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0b0a0;
+}
+
+.luxury-empty {
+  padding: 24px;
+  text-align: center;
+  opacity: 0.5;
+  font-style: italic;
+  color: #fff;
+}

@@ -4,6 +4,7 @@
 
 const { hall, getPlayer } = require('../hall');
 const { confiscatePocket, DIRECTIONS } = require('../factory');
+const director = require('./director');
 
 const ROLE_TITLES = {
   director: 'Директор',
@@ -22,7 +23,6 @@ const INDICATOR_TITLES = {
   reputation: 'Репутация'
 };
 
-// Показатель → отделы, от которых зависит
 const INDICATOR_DIRECTIONS = {
   quality:    ['equipment', 'people'],
   clients:    ['ads'],
@@ -32,8 +32,8 @@ const INDICATOR_DIRECTIONS = {
 };
 
 const COVER_DECISION_COST = 2;
-const FORGED_CHANCE = 0.3;      // 30% — подделан
-const DEPARTMENT_AGREE_CHANCE = 0.5; // 50/50 — отдел согласился
+const FORGED_CHANCE = 0.3;
+const DEPARTMENT_AGREE_CHANCE = 0.5;
 
 function canAct(p) {
   if (!p || p.role !== 'security') return { error: 'Только Безопасник' };
@@ -43,7 +43,9 @@ function canAct(p) {
   return { ok: true };
 }
 
-// ─── Проверка игрока (старая механика — оставляем) ───
+// ═══════════════════════════════════════════
+// ПРОВЕРКА ИГРОКА
+// ═══════════════════════════════════════════
 function checkPlayer(socketId, targetId) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -56,13 +58,27 @@ function checkPlayer(socketId, targetId) {
   const target = getPlayer(targetId);
   if (!target) return { error: 'Игрок не найден' };
 
-  p.dossier.push({
+  // Проверяем обнал, если это Директор
+  let luxuryFound = null;
+  if (target.role === 'director') {
+    luxuryFound = inspectLuxury(target);
+  }
+
+  const entry = {
     shift: hall.shift,
     targetId: targetId,
     targetRole: target.role,
     targetTitle: ROLE_TITLES[target.role] || '—',
     result: 'pending'
-  });
+  };
+
+  if (luxuryFound) {
+    entry.luxuryFound = true;
+    entry.luxuryList = luxuryFound.list;
+    entry.luxuryTotal = luxuryFound.total;
+  }
+
+  p.dossier.push(entry);
 
   p.decisionsLeft -= 1;
 
@@ -70,11 +86,122 @@ function checkPlayer(socketId, targetId) {
     ok: true,
     pending: true,
     targetTitle: ROLE_TITLES[target.role] || '—',
+    luxuryFound: !!luxuryFound,
     decisionsLeft: p.decisionsLeft,
     dossier: p.dossier
   };
 }
 
+// ─── Что у Директора куплено ───
+function inspectLuxury(target) {
+  if (!target || target.role !== 'director') return null;
+  if (!target.luxury) return null;
+
+  const shop = require('./director-shop');
+
+  let total = 0;
+  const list = [];
+
+  Object.keys(target.luxury).forEach(catKey => {
+    const itemKey = target.luxury[catKey];
+    if (!itemKey) return;
+    const item = shop.getItem(itemKey);
+    if (!item) return;
+    if (item.price <= 0) return; // стартовые вещи — не считаем
+    total += item.price;
+    list.push({
+      key: item.key,
+      title: item.title,
+      price: item.price,
+      category: item.category
+    });
+  });
+
+  if (list.length === 0) return null;
+  return { list, total };
+}
+
+// ─── Конфискация обнала ───
+function confiscateLuxury(socketId, targetId) {
+  const p = getPlayer(socketId);
+  const check = canAct(p);
+  if (check.error) return check;
+
+  const target = getPlayer(targetId);
+  if (!target) return { error: 'Игрок не найден' };
+  if (target.role !== 'director') return { error: 'Обнал только у Директора' };
+
+  // Есть ли проверка с найденным обналом?
+  const entry = p.dossier.find(d =>
+    d.targetId === targetId &&
+    d.luxuryFound &&
+    d.shift >= hall.shift - 2
+  );
+  if (!entry) return { error: 'Нет проверки с обналом' };
+
+  // Конфискуем через director.js
+  const result = director.confiscateAll(targetId);
+  if (result.error) return result;
+
+  // Деньги в бюджет завода
+  hall.factory.money += result.total;
+  hall.factory.budgetPercent = Math.round((hall.factory.money / 500) * 100);
+  p.returns += result.total;
+
+  // Записываем факт конфискации
+  if (!hall.confiscationsLog) hall.confiscationsLog = [];
+  hall.confiscationsLog.push({
+    shift: hall.shift,
+    targetId: targetId,
+    amount: result.total
+  });
+
+  // Удаляем запись с обналом из досье (всё сделано)
+  p.dossier = p.dossier.filter(d => !(d.targetId === targetId && d.luxuryFound));
+
+  p.decisionsLeft -= 1;
+
+  return {
+    ok: true,
+    total: result.total,
+    targetTitle: ROLE_TITLES[target.role] || '—',
+    decisionsLeft: p.decisionsLeft,
+    returns: p.returns,
+    dossier: p.dossier
+  };
+}
+
+// ─── Слух ───
+function spreadRumor(socketId, targetId) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'security') return { error: 'Только Безопасник' };
+  if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
+  if (p.decisionsLeft <= 0) return { error: 'Решения закончились' };
+
+  const target = getPlayer(targetId);
+  if (!target) return { error: 'Игрок не найден' };
+
+  // Записываем в лог слухов — для финала и для разговоров
+  if (!hall.rumorsLog) hall.rumorsLog = [];
+  hall.rumorsLog.push({
+    shift: hall.shift,
+    fromRole: 'security',
+    targetId: targetId,
+    targetRole: target.role
+  });
+
+  p.decisionsLeft -= 1;
+
+  return {
+    ok: true,
+    targetTitle: ROLE_TITLES[target.role] || '—',
+    decisionsLeft: p.decisionsLeft
+  };
+}
+
+// ═══════════════════════════════════════════
+// ПРОВЕРКИ ОТЧЁТОВ
+// ═══════════════════════════════════════════
 function resolvePendingChecks() {
   const sec = hall.players.find(x => x.role === 'security');
   if (!sec) return null;
@@ -97,43 +224,35 @@ function resolvePendingChecks() {
   return results;
 }
 
-// ─── Обработка проверок отчётов в начале смены ───
-// Вызывается при new_shift. Продвигает каждый активный check по этапам.
 function processChecksOnShiftStart() {
   const currentShift = hall.shift;
   const security = hall.players.find(x => x.role === 'security');
 
   hall.reportChecks.forEach(c => {
-    if (c.directorNotified) return;   // уже завершён
+    if (c.directorNotified) return;
 
     const elapsed = currentShift - c.requestedShift;
 
-    // Смена N+1: проверка (если ещё не проверено)
     if (elapsed >= 1 && !c.checked) {
       c.checked = true;
       c.isForged = Math.random() < FORGED_CHANCE;
 
       if (c.isForged) {
-        // Считаем размер отката от отдела
         c.theftAmount = calcDepartmentTheft(hall.factory, c.indicator);
       } else {
-        // Настоящий отчёт — автоответ
         c.answerSent = true;
         c.answer = 'real';
       }
     }
 
-    // Смена N+2: если была попытка прикрытия — отдел отвечает
     if (elapsed >= 2 && c.coverAttempted && c.departmentAgreed === null) {
       c.departmentAgreed = Math.random() < DEPARTMENT_AGREE_CHANCE;
 
       if (c.departmentAgreed) {
-        // Отдел согласился: откат идёт Безопаснику в карман
         if (security) security.kickbacks += c.theftAmount;
         c.theftResolved = true;
         c.answer = 'real';
       } else {
-        // Отдел отказался: откат идёт в бюджет + в конфисковано
         if (hall.factory) {
           hall.factory.money += c.theftAmount;
           hall.factory.budgetPercent = Math.round((hall.factory.money / 500) * 100);
@@ -145,14 +264,12 @@ function processChecksOnShiftStart() {
       c.answerSent = true;
     }
 
-    // Смена N+4: Директор получает ответ
     if (elapsed >= 4 && c.answerSent && !c.directorNotified) {
       c.directorNotified = true;
     }
   });
 }
 
-// Сколько монет откатил отдел — зависит от уровня отдела
 function calcDepartmentTheft(factory, indicator) {
   const dirs = INDICATOR_DIRECTIONS[indicator] || [];
   if (dirs.length === 0) return 10;
@@ -165,7 +282,6 @@ function calcDepartmentTheft(factory, indicator) {
   return 10;
 }
 
-// ─── Прикрытие отдела (Безопасник) ───
 function coverDepartment(socketId, indicator) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -175,7 +291,6 @@ function coverDepartment(socketId, indicator) {
     return { error: 'Недостаточно решений для прикрытия' };
   }
 
-  // Найти запрос по этому показателю
   const c = hall.reportChecks.find(rc =>
     rc.indicator === indicator &&
     rc.checked &&
@@ -191,7 +306,6 @@ function coverDepartment(socketId, indicator) {
   return { ok: true, decisionsLeft: p.decisionsLeft };
 }
 
-// ─── Обычный ответ Безопасника «подделан» ───
 function answerForged(socketId, indicator) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'security') return { error: 'Только Безопасник' };
@@ -205,7 +319,6 @@ function answerForged(socketId, indicator) {
   );
   if (!c) return { error: 'Нет запроса на этот отчёт' };
 
-  // Возврат денег в бюджет + Конфисковано
   if (hall.factory) {
     hall.factory.money += c.theftAmount;
     hall.factory.budgetPercent = Math.round((hall.factory.money / 500) * 100);
@@ -219,7 +332,9 @@ function answerForged(socketId, indicator) {
   return { ok: true, theftAmount: c.theftAmount, returns: p.returns };
 }
 
-// ─── Сговор (старая механика) ───
+// ═══════════════════════════════════════════
+// СГОВОР
+// ═══════════════════════════════════════════
 function offerDeal(socketId) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -228,16 +343,16 @@ function offerDeal(socketId) {
   if (hall.deal.active) return { error: 'Сговор уже активен' };
   if (hall.deal.pending) return { error: 'Предложение уже отправлено' };
 
-  const director = hall.players.find(x => x.role === 'director');
-  if (!director) return { error: 'Директор не найден' };
+  const d = hall.players.find(x => x.role === 'director');
+  if (!d) return { error: 'Директор не найден' };
 
   hall.deal.pending = true;
   hall.deal.securityId = socketId;
-  hall.deal.directorId = director.id;
+  hall.deal.directorId = d.id;
 
   p.decisionsLeft -= 1;
 
-  return { ok: true, pending: true, directorId: director.id, decisionsLeft: p.decisionsLeft };
+  return { ok: true, pending: true, directorId: d.id, decisionsLeft: p.decisionsLeft };
 }
 
 function acceptDeal(socketId) {
@@ -284,7 +399,9 @@ function breakDeal(socketId) {
   return { ok: true, broken: true, decisionsLeft: p.decisionsLeft };
 }
 
-// ─── Конфискация (донос на игрока — старая механика) ───
+// ═══════════════════════════════════════════
+// ДОНОС (старая механика)
+// ═══════════════════════════════════════════
 function reportPlayer(socketId, targetId) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -326,15 +443,15 @@ function recalcSuspicionsAfterShift() {
   const sec = hall.players.find(x => x.role === 'security');
   if (!sec) return;
 
-  const director = hall.players.find(x => x.role === 'director');
-  if (!director) return;
+  const d = hall.players.find(x => x.role === 'director');
+  if (!d) return;
 
   const pastShift = hall.shift - 1;
   const thefts = hall.theftsLog.filter(t => t.shift === pastShift);
 
   if (thefts.length === 0) return;
 
-  const checked = sec.dossier.some(d => d.shift === pastShift && d.targetId === director.id);
+  const checked = sec.dossier.some(x => x.shift === pastShift && x.targetId === d.id);
 
   if (!checked) sec.suspicions += 20;
   if (hall.deal.active) sec.suspicions += 10;
@@ -344,11 +461,12 @@ function recalcSuspicionsAfterShift() {
   return { suspicions: sec.suspicions };
 }
 
-// ─── Снимок Безопасника ───
+// ═══════════════════════════════════════════
+// СНИМОК
+// ═══════════════════════════════════════════
 function securitySnapshot(p) {
   if (!p || p.role !== 'security') return null;
 
-  // Активные проверки для Безопасника
   const activeChecks = hall.reportChecks
     .filter(c =>
       c.checked &&
@@ -364,6 +482,17 @@ function securitySnapshot(p) {
       requestedShift: c.requestedShift
     }));
 
+  // Список целей с найденным обналом (для кнопок)
+  const luxuryTargets = p.dossier
+    .filter(d => d.luxuryFound && d.shift >= hall.shift - 2)
+    .map(d => ({
+      targetId: d.targetId,
+      targetRole: d.targetRole,
+      targetTitle: d.targetTitle,
+      total: d.luxuryTotal,
+      list: d.luxuryList || []
+    }));
+
   return {
     suspicions: p.suspicions,
     returns: p.returns,
@@ -376,7 +505,8 @@ function securitySnapshot(p) {
       iAmSecurity: hall.deal.securityId === p.id,
       iAmDirector: hall.deal.directorId === p.id
     },
-    reportChecks: activeChecks
+    reportChecks: activeChecks,
+    luxuryTargets: luxuryTargets
   };
 }
 
@@ -391,6 +521,8 @@ module.exports = {
   declineDeal,
   breakDeal,
   reportPlayer,
+  confiscateLuxury,
+  spreadRumor,
   recalcSuspicionsAfterShift,
   securitySnapshot,
   ROLE_TITLES,

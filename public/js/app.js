@@ -5,7 +5,6 @@
 (function () {
   const socket = io();
 
-  // ─── Состояние ───
   const state = {
     myName: '',
     myRole: null,
@@ -23,7 +22,6 @@
     }
   };
 
-  // ─── Список экранов ───
   const screens = {
     'screen-enter':           'wrap-enter',
     'screen-smoking':         'wrap-smoking',
@@ -38,14 +36,16 @@
     'screen-game-security':   'wrap-game-security',
     'screen-game-engineer':   'wrap-game-engineer',
     'screen-game-hr':         'wrap-game-hr',
+    'screen-shop':            'wrap-shop',
+    'screen-shop-item':       'wrap-shop-item',
     'screen-report':          'wrap-report',
+    'screen-report-single':   'wrap-report-single',
     'screen-pause':           'wrap-pause',
     'screen-end':             'wrap-end'
   };
 
   const screensOrder = Object.keys(screens);
 
-  // ─── Какие экраны — фасад, какие — курилка ───
   const FACADE_SCREENS = [
     'screen-enter',
     'screen-role',
@@ -55,7 +55,10 @@
     'screen-equipment',
     'screen-setup-wait',
     'screen-waiting',
+    'screen-shop',
+    'screen-shop-item',
     'screen-report',
+    'screen-report-single',
     'screen-pause',
     'screen-end'
   ];
@@ -69,7 +72,6 @@
     'screen-game-hr'
   ];
 
-  // ─── Снять все фоновые классы с body ───
   const ALL_BG_CLASSES = [
     'bg-facade',
     'bg-smoking',
@@ -138,7 +140,12 @@
 
   function show(id) {
     if (currentScreen === id) return;
-    if (isTransitioning) return;
+
+    // Если идёт анимация — откладываем вызов, не игнорируем
+    if (isTransitioning) {
+      setTimeout(() => show(id), 100);
+      return;
+    }
 
     const target = document.getElementById(screens[id]);
     if (!target) return;
@@ -193,13 +200,11 @@
     }, OUT_DURATION);
   }
 
-  // ─── Тема завода ───
   function applyTheme(theme) {
     document.body.classList.remove('rich', 'poor');
     document.body.classList.add(theme === 'poor' ? 'poor' : 'rich');
   }
 
-  // ─── Фон помещения ───
   const BUILDING_CLASSES = ['building-hangar', 'building-shop', 'building-main'];
   const BUILDING_MAP = {
     old_hangar:    'building-hangar',
@@ -215,7 +220,6 @@
     document.body.classList.add(cls);
   }
 
-  // ─── Состояние фона (rich / mid / poor) ───
   const BG_STATE_CLASSES = ['bg-rich', 'bg-mid', 'bg-poor'];
 
   function applyFactoryState(level) {
@@ -229,7 +233,6 @@
     else                       bg.classList.add('bg-mid');
   }
 
-  // ─── Всплывашка ───
   let toastTimer = null;
   function toast(text) {
     const box = document.getElementById('toast');
@@ -240,7 +243,6 @@
     toastTimer = setTimeout(() => box.classList.remove('show'), 2200);
   }
 
-  // ─── Хранилище для списка игроков ───
   socket.on('smoking_update', ({ players }) => {
     state.players = players;
   });
@@ -253,7 +255,6 @@
     state.myRole = role;
   });
 
-  // ─── Объект App ───
   window.App = {
     socket,
     state,
@@ -265,9 +266,8 @@
     applyFactoryState
   };
 
-  // ─── Глобальный haptic ───
   document.addEventListener('pointerdown', (e) => {
-    const el = e.target.closest('.btn, .setup-btn, .player, .badge-card, .decision-dot, .report-opt, .family-item');
+    const el = e.target.closest('.btn, .setup-btn, .player, .badge-card, .decision-dot, .report-opt, .family-item, .shop-card, .shop-tab');
     if (!el) return;
     if (el.disabled) return;
     haptic('light');
@@ -327,7 +327,6 @@
 
   function applyDayTime() {
     if (!isGameScreenActive()) return;
-
     if (maxDecisions <= 0) return;
     let progress = usedDecisions / maxDecisions;
     progress = Math.pow(progress, 0.8);
@@ -372,9 +371,6 @@
     }
   });
 
-  // ═══════════════════════════════════════════
-  // СТАРТ
-  // ═══════════════════════════════════════════
   show('screen-enter');
 
   console.log('App: каркас готов');

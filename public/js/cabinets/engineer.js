@@ -104,7 +104,7 @@
     }
   }
 
-  // ─── Плывущий интерфейс по опьянению ───
+  // ─── Плывущий интерфейс ───
   function applyDrunkClass() {
     const card = document.getElementById('screen-game-engineer');
     if (!card) return;
@@ -123,7 +123,7 @@
     if (cls) card.classList.add(cls);
   }
 
-  // ─── Подменю и показ главного экрана ───
+  // ─── Подменю ───
   const actionsBox        = document.getElementById('engineer-actions');
   const drinkBox          = document.getElementById('engineer-drink');
   const submenuDistribute = document.getElementById('submenu-engineer-distribute');
@@ -150,7 +150,6 @@
     shiftDone.classList.add('hidden');
   }
 
-  // Фильтрация компаний по месту
   function filterCompanies(place) {
     document.querySelectorAll('[data-drink-company]').forEach(btn => {
       if (btn.dataset.place === place) {
@@ -161,7 +160,6 @@
     });
   }
 
-  // Показ конкретного шага запоя
   function showDrinkStep(step) {
     actionsBox.classList.add('hidden');
     hideAllSubmenus();
@@ -187,40 +185,26 @@
     }
   }
 
-  // ─── Обновление снимка ───
+  // ─── Снимок ───
   function applySnapshot(data) {
     if (typeof data.decisionsLeft !== 'undefined') {
       engState.decisionsLeft = data.decisionsLeft;
       renderDecisions(data.decisionsLeft);
     }
-    if (typeof data.pocket !== 'undefined') {
-      engState.pocket = data.pocket;
-    }
-    if (typeof data.equipmentFund !== 'undefined') {
-      engState.equipmentFund = data.equipmentFund;
-    }
-    if (typeof data.intoxication !== 'undefined') {
-      engState.intoxication = data.intoxication;
-    }
-    if (typeof data.blackout !== 'undefined') {
-      engState.blackout = data.blackout;
-    }
-    if (typeof data.drunkState !== 'undefined') {
-      engState.drunkState = data.drunkState;
-    }
-    if (data.indicators) {
-      engState.indicators = data.indicators;
-    }
-    if (data.report) {
-      engState.report = data.report;
-    }
+    if (typeof data.pocket !== 'undefined') engState.pocket = data.pocket;
+    if (typeof data.equipmentFund !== 'undefined') engState.equipmentFund = data.equipmentFund;
+    if (typeof data.intoxication !== 'undefined') engState.intoxication = data.intoxication;
+    if (typeof data.blackout !== 'undefined') engState.blackout = data.blackout;
+    if (typeof data.drunkState !== 'undefined') engState.drunkState = data.drunkState;
+    if (data.indicators) engState.indicators = data.indicators;
+    if (data.report) engState.report = data.report;
 
     renderScales();
     applyDrunkClass();
     applyDrunkState();
   }
 
-  // ─── Кнопки главного экрана ───
+  // ─── Кнопки ───
   document.getElementById('btn-eng-work').onclick = () => {
     socket.emit('engineer_work');
   };
@@ -281,7 +265,6 @@
     socket.emit('player_finish_shift');
   };
 
-  // ─── Кнопки запоя ───
   document.querySelectorAll('[data-drink-place]').forEach(btn => {
     btn.onclick = () => {
       socket.emit('engineer_drink_place', { place: btn.dataset.drinkPlace });
@@ -312,7 +295,7 @@
     };
   });
 
-  // ─── События с сервера ───
+  // ─── События ───
   socket.on('engineer_update', (data) => {
     applySnapshot(data);
   });
@@ -400,10 +383,17 @@
     show('screen-setup-wait');
   });
 
+  // ─── Показ экрана смены ───
   socket.on('factory_chosen', ({ factory }) => {
     if (state.myRole && state.myRole !== 'engineer') return;
 
     mountSign(factory);
+
+    // Не показываем смену, пока продукт и оборудование не выбраны.
+    // Инженер должен увидеть экран выбора оборудования.
+    if (!factory || !factory.product || !factory.equipment) {
+      return;
+    }
 
     show('screen-game-engineer');
     renderDecisions(engState.decisionsLeft);

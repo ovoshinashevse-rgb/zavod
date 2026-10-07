@@ -3,7 +3,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
-// ─── Модули ───
 const { hall, addPlayer, getPlayer, removePlayer, allDecided } = require('./server/hall');
 const smoking = require('./server/smoking');
 const { assignRoles } = require('./server/roles');
@@ -179,6 +178,7 @@ io.on('connection', (socket) => {
 
     emitFactory(result.factory);
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    emitDirectorUpdate(socket.id);
 
     if (result.bankrupt) {
       hall.phase = 'end';
@@ -195,6 +195,7 @@ io.on('connection', (socket) => {
 
     emitFactory(result.factory);
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    emitDirectorUpdate(socket.id);
   });
 
   socket.on('director_submit_report', ({ indicator }) => {
@@ -216,20 +217,41 @@ io.on('connection', (socket) => {
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
 
-  // Список отчётов
+  // ─── Магазин обнала ───
+  socket.on('director_open_shop', () => {
+    const result = director.openShop(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+    socket.emit('shop_opened', result);
+  });
+
+  socket.on('director_buy_item', ({ itemKey }) => {
+    const result = director.buyItem(socket.id, itemKey);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('item_ordered', result);
+    emitDirectorUpdate(socket.id);
+  });
+
+  // ─── Список отчётов ───
   socket.on('director_get_reports', () => {
     const p = getPlayer(socket.id);
     if (!p || p.role !== 'director') return;
 
-    const reports = director.getReports();
+    const data = director.getReports();
     socket.emit('director_reports', {
-      reports: reports,
+      list: data.list,
+      stillInShift: data.stillInShift,
       reviewed: p.reportReviewedThisShift || false,
       decisionsLeft: p.decisionsLeft
     });
   });
 
-  // Обработка отчёта
   socket.on('director_process_report', ({ playerId, action }) => {
     const result = director.processReport(socket.id, playerId, action);
     if (result.error) {
@@ -250,13 +272,32 @@ io.on('connection', (socket) => {
       targetRole: result.targetRole,
       amount: result.amount || null
     });
+
+    // Обновляем список у Директора
+    const p = getPlayer(socket.id);
+    if (p && p.role === 'director') {
+      const data = director.getReports();
+      socket.emit('director_reports', {
+        list: data.list,
+        stillInShift: data.stillInShift,
+        reviewed: p.reportReviewedThisShift || false,
+        decisionsLeft: p.decisionsLeft
+      });
+    }
   });
 
-  // Завершение смены Директором ПОСЛЕ отчётов
+  // ─── Директор завершает смену после отчётов ───
   socket.on('director_finish_after_reports', () => {
     const result = director.finishAfterReports(socket.id);
     if (result.error) {
-      socket.emit('error_msg', result.error);
+      // Если не все завершили — эмитим отдельное событие
+      if (result.notAllFinished) {
+        socket.emit('director_wait_others', {
+          waiting: result.waiting || []
+        });
+      } else {
+        socket.emit('error_msg', result.error);
+      }
       return;
     }
 
@@ -445,7 +486,7 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
   });
 
-  // ─── Отчёт (универсальный) ───
+    // ─── Отчёт HR ───
   socket.on('submit_report', ({ whatToShow, howToExplain }) => {
     const p = getPlayer(socket.id);
     if (!p) return;
@@ -458,28 +499,25 @@ io.on('connection', (socket) => {
       }
 
       emitHrUpdate(socket.id);
-      broadcastReportToDirector(p, result.report);
 
-      // Завершаем смену HR
+      // Сначала завершаем смену HR — чтобы он стал finished
       const finishResult = director.finishShift(socket.id);
       if (finishResult.error) {
         socket.emit('error_msg', finishResult.error);
         return;
       }
 
-      // HR сразу показывает «ожидание»
-      io.to(socket.id).emit('shift_progress', {
+      // Теперь эмитим отчёт Директору — HR уже finished
+      broadcastReportToDirector(p, result.report);
+
+      socket.emit('hr_report_submitted');
+
+      io.emit('shift_progress', {
         finished: hall.players.map(x => ({ id: x.id, name: x.name, finished: x.finished }))
       });
 
-      // Если HR последний — запускаем общий flow
       if (finishResult.newShift) {
         handleFinishShift(socket.id, finishResult);
-      } else {
-        // Иначе — просто завершаем смену для остальных (шлём progress)
-        io.emit('shift_progress', {
-          finished: hall.players.map(x => ({ id: x.id, name: x.name, finished: x.finished }))
-        });
       }
     }
   });
@@ -498,8 +536,45 @@ io.on('connection', (socket) => {
     socket.emit('security_update', security.securitySnapshot(sec));
 
     socket.emit('security_check_pending', {
-      targetTitle: result.targetTitle
+      targetTitle: result.targetTitle,
+      luxuryFound: result.luxuryFound || false
     });
+  });
+
+  socket.on('security_confiscate_luxury', ({ targetId }) => {
+    const result = security.confiscateLuxury(socket.id, targetId);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    socket.emit('luxury_confiscated', {
+      total: result.total,
+      targetRole: result.targetRole
+    });
+
+    emitFactory(hall.factory);
+
+    const sec = getPlayer(socket.id);
+    socket.emit('security_update', security.securitySnapshot(sec));
+  });
+
+  socket.on('security_spread_rumor', ({ targetId }) => {
+    const result = security.spreadRumor(socket.id, targetId);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+
+    io.emit('rumor_spread', {
+      targetRole: result.targetTitle
+    });
+
+    const sec = getPlayer(socket.id);
+    socket.emit('security_update', security.securitySnapshot(sec));
   });
 
   socket.on('security_cover_department', ({ indicator }) => {
@@ -599,13 +674,11 @@ io.on('connection', (socket) => {
     const p = getPlayer(socket.id);
     if (!p) return;
 
-    // Директор — сначала список отчётов
     if (p.role === 'director' && !p.finished) {
       socket.emit('need_reports', { role: 'director' });
       return;
     }
 
-    // HR — открыть экран отчёта
     if (p.role === 'hr' && !p.report) {
       socket.emit('need_report', { role: 'hr' });
       return;
@@ -620,31 +693,68 @@ io.on('connection', (socket) => {
     handleFinishShift(socket.id, result);
   });
 
-  // ─── Отключение ───
+  // ═══════════════════════════════════════════
+  // ОТКЛЮЧЕНИЕ
+  // ═══════════════════════════════════════════
   socket.on('disconnect', () => {
     const p = getPlayer(socket.id);
     if (!p) return;
 
     if (hall.phase === 'game') {
+      // НЕ удаляем — помечаем disconnected
+      p.disconnected = true;
       hall.paused = true;
-      hall.disconnected.push({ id: socket.id, name: p.name });
+
+      // Если игрок не завершил смену — считаем его завершившим
+      if (!p.finished) {
+        p.finished = true;
+      }
+
       io.emit('paused', {
-        disconnected: hall.disconnected.map(x => x.name)
+        disconnected: hall.players.filter(x => x.disconnected).map(x => x.name)
       });
+
+      // Обновляем отчёты у Директора
+      const d = hall.players.find(x => x.role === 'director');
+      if (d && !d.disconnected) {
+        const data = director.getReports();
+        io.to(d.id).emit('director_reports', {
+          list: data.list,
+          stillInShift: data.stillInShift,
+          reviewed: d.reportReviewedThisShift || false,
+          decisionsLeft: d.decisionsLeft
+        });
+      }
+
+      // Проверяем, все ли завершили (с учётом disconnected)
+      if (allFinishedShift()) {
+        // Не стартуем новую смену автоматически — Директор решает
+        console.log('Все завершили смену (с учётом отключённых)');
+      }
     } else {
+      // Вне игры — удаляем
       removePlayer(socket.id);
       io.emit('smoking_update', smoking.getSmokingState());
     }
   });
 
   socket.on('reconnect_player', ({ name }) => {
+    // Ищем отключённого по имени
+    const p = hall.players.find(x => x.name === name && x.disconnected);
+    if (p) {
+      // Меняем socket id
+      p.id = socket.id;
+      p.disconnected = false;
+    }
+
     hall.disconnected = hall.disconnected.filter(x => x.name !== name);
-    if (hall.disconnected.length === 0) {
+
+    if (hall.players.every(x => !x.disconnected)) {
       hall.paused = false;
       io.emit('resumed');
     } else {
       io.emit('paused', {
-        disconnected: hall.disconnected.map(x => x.name)
+        disconnected: hall.players.filter(x => x.disconnected).map(x => x.name)
       });
     }
   });
@@ -682,6 +792,13 @@ function handleFinishShift(socketId, result) {
       p.hiring = null;
       p.reportReviewedThisShift = false;
 
+      if (p.role === 'director') {
+        const arrived = director.processDelivery(p);
+        if (arrived && arrived.length > 0) {
+          io.to(p.id).emit('luxury_delivered', { items: arrived });
+        }
+      }
+
       io.to(p.id).emit('new_shift', {
         shift: result.shift,
         decisionsLeft: p.decisionsLeft
@@ -689,6 +806,7 @@ function handleFinishShift(socketId, result) {
 
       if (p.role === 'director' && hall.factory) {
         io.to(p.id).emit('factory_update', factorySnapshot(hall.factory, { forDirector: true }));
+        emitDirectorUpdate(p.id);
 
         const reply = hall.reportChecks.find(c =>
           c.directorId === p.id && c.directorNotified && !c.notifiedOnce
@@ -720,17 +838,32 @@ function handleFinishShift(socketId, result) {
   }
 }
 
-// ─── Уведомить Директора о новом отчёте (только роль) ───
+function emitDirectorUpdate(socketId) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'director') return;
+  const snap = director.directorSnapshot(p);
+  if (snap) io.to(p.id).emit('director_luxury_update', snap);
+}
+
+// ─── Уведомить Директора о новом отчёте + обновить список ───
 function broadcastReportToDirector(player, report) {
   const d = hall.players.find(x => x.role === 'director');
-  if (!d) return;
+  if (!d || d.disconnected) return;
 
   io.to(d.id).emit('new_report', {
     role: player.role
   });
+
+  // Свежий список отчётов
+  const data = director.getReports();
+  io.to(d.id).emit('director_reports', {
+    list: data.list,
+    stillInShift: data.stillInShift,
+    reviewed: d.reportReviewedThisShift || false,
+    decisionsLeft: d.decisionsLeft
+  });
 }
 
-// ─── Снимок без кармана ───
 function stripPocket(snapshot) {
   return {
     directions: snapshot.directions,
@@ -770,7 +903,6 @@ function emitHrUpdate(socketId) {
   io.to(p.id).emit('hr_update', hr.hrSnapshot(p));
 }
 
-// ─── Старт игры ───
 function startGameAfterSetup() {
   hall.phase = 'game';
   hall.shift = 1;
@@ -803,16 +935,15 @@ function startGameAfterSetup() {
       io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
     } else if (p.role === 'director') {
       io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
+      emitDirectorUpdate(p.id);
     }
   });
 
   console.log('Игра началась');
 }
 
-// ─── Биографии ───
 function buildBiographies() {
   const bios = {};
-
   hall.players.forEach(p => {
     if (p.role === 'director')      bios[p.id] = buildDirectorBio(p);
     else if (p.role === 'security') bios[p.id] = buildSecurityBio(p);
@@ -820,12 +951,11 @@ function buildBiographies() {
     else if (p.role === 'hr')       bios[p.id] = buildHrBio(p);
     else                            bios[p.id] = 'Вы играли свою роль.';
   });
-
   return bios;
 }
 
 function buildDirectorBio(p) {
-  const pocket = hall.factory.pocket || 0;
+  const pocket = p.pocket || 0;
   let line = 'Вы — Директор. ';
   if (pocket > 100) line += 'Вы вкладывали в завод, но и забирали себе немало. ';
   else if (pocket > 30) line += 'Вы вкладывали в завод, иногда брали себе. ';
@@ -883,7 +1013,6 @@ function buildHrBio(p) {
   return line;
 }
 
-// ─── Старт ролей ───
 function startRoles() {
   const assignments = assignRoles();
 
@@ -891,6 +1020,8 @@ function startRoles() {
   hall.reportChecks = [];
   hall.reports = [];
   hall.finesLog = [];
+  hall.confiscationsLog = [];
+  hall.rumorsLog = [];
   hall.deal = { pending: false, active: false, securityId: null, directorId: null };
 
   assignments.forEach(a => {
@@ -908,5 +1039,5 @@ function startRoles() {
 }
 
 server.listen(PORT, () => {
-  console.log('ЗАВОД запущен! Порт:', PORT);
+  console.log('ЗАВОД запущен! PORT:', PORT);
 });

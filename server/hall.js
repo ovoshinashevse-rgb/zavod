@@ -29,7 +29,6 @@ const hall = {
   shift: 0,
   factory: null,
 
-  // Сговор
   deal: {
     pending: false,
     active: false,
@@ -37,10 +36,7 @@ const hall = {
     directorId: null
   },
 
-  // Журнал краж
   theftsLog: [],
-
-  // Активные проверки отчётов
   reportChecks: []
 };
 
@@ -54,6 +50,7 @@ function addPlayer(socketId, name) {
       ready: false,
       role: null,
       finished: false,
+      disconnected: false,
       decisionsLeft: 0,
       dossier: [],
       suspicions: 0,
@@ -65,11 +62,10 @@ function addPlayer(socketId, name) {
       marketerReport: null,
       accountantReport: null,
 
-      // ─── Запой Инженера ───
-      intoxication: 0,     // уровень опьянения (0..7+)
-      blackout: 0,         // сколько смен в обмороке
-      drunkState: null,    // текущий шаг выбора запоя
-      drinkLog: []         // записи о запоях
+      intoxication: 0,
+      blackout: 0,
+      drunkState: null,
+      drinkLog: []
     };
     hall.players.push(p);
   } else {
@@ -77,6 +73,7 @@ function addPlayer(socketId, name) {
     p.status = 'thinking';
     p.ready = false;
     p.finished = false;
+    p.disconnected = false;
   }
   return p;
 }
@@ -93,31 +90,18 @@ function allDecided() {
   return hall.players.length >= 1 && hall.players.every(x => x.ready === true);
 }
 
+// ─── Все завершили смену ───
+// Отключённые считаются завершившими (иначе Директор застрянет)
 function allFinishedShift() {
-  return hall.players.length >= 1 && hall.players.every(x => x.finished);
+  return hall.players.length >= 1 && hall.players.every(x =>
+    x.finished === true || x.disconnected === true
+  );
 }
 
-// ─── Обновление между сменами ───
-// Опьянение −1, сброс ломки, обморок
 function resetFinished() {
   hall.players.forEach(p => {
     p.finished = false;
     p.decisionsLeft = DECISIONS_PER_SHIFT[p.role] || 0;
-
-    // Инженер — обновление опьянения
-    if (p.role === 'engineer') {
-      // Обморок — если был, то спим
-      if (p.blackout && p.blackout > 0) {
-        p.blackout -= 1;
-        // Пока в обмороке — опьянение не падает, но и не растёт
-      } else if (p.intoxication && p.intoxication > 0) {
-        // Естественное протрезвление −1 в смену
-        p.intoxication = Math.max(0, p.intoxication - 1);
-      }
-
-      // Если начался новый выбор — сбрасываем незавершённое
-      p.drunkState = null;
-    }
   });
   hall.shift += 1;
 }
