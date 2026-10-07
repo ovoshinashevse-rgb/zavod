@@ -499,12 +499,13 @@ function finishAfterReports(socketId) {
   if (p.role !== 'director') return { error: 'Только Директор' };
   if (p.finished) return { error: 'Вы уже завершили смену' };
 
-  // Ещё не все завершили — Директор должен ждать
-  if (!allFinishedShift()) {
-    const waiting = hall.players
-      .filter(x => x.role !== 'director' && x.finished !== true && x.disconnected !== true)
-      .map(x => ROLE_TITLES[x.role] || x.role);
+  // Проверяем, что все, кроме Директора, завершили
+  const othersNotFinished = hall.players.filter(x =>
+    x.role !== 'director' && x.finished !== true && x.disconnected !== true
+  );
 
+  if (othersNotFinished.length > 0) {
+    const waiting = othersNotFinished.map(x => ROLE_TITLES[x.role] || x.role);
     return {
       error: 'Ещё не все завершили смену',
       notAllFinished: true,

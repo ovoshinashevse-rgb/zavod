@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
-const { hall, addPlayer, getPlayer, removePlayer, allDecided } = require('./server/hall');
+const { hall, addPlayer, getPlayer, removePlayer, allDecided, allFinishedShift } = require('./server/hall');
 const smoking = require('./server/smoking');
 const { assignRoles } = require('./server/roles');
 const director = require('./server/cabinets/director');
