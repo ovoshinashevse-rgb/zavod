@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// КАБИНЕТ ДИРЕКТОРА — шкалы, решения, откаты
+// КАБИНЕТ ДИРЕКТОРА — шкалы, решения, откаты, отчёты
 // ═══════════════════════════════════════════
 
 (function () {
@@ -13,26 +13,15 @@
     economy:   'Экономика'
   };
 
-  const LEVEL_LABELS = {
-    33:  'Низкий',
-    66:  'Средний',
-    100: 'Высокий'
-  };
+  const LEVEL_LABELS = { 33: 'Низкий', 66: 'Средний', 100: 'Высокий' };
+  const DECISION_COST = { 33: 1, 66: 2, 100: 3 };
 
-  const DECISION_COST = {
-    33:  1,
-    66:  2,
-    100: 3
-  };
-
-  // Человеческие названия для помещений
   const BUILDING_LABELS = {
     old_hangar:    { title: 'Старый ангар',     desc: 'Дёшево, много места. Оборудование старое.' },
     new_shop:      { title: 'Новый цех',         desc: 'Всё новое, чисто. Дорого, места мало.' },
     main_building: { title: 'Заводской корпус',  desc: 'Средне по цене. Нормально.' }
   };
 
-  // Картинка помещения — для превью
   const BUILDING_THUMBS = {
     old_hangar:    '/img/backgrounds/hangar.jpg',
     new_shop:      '/img/backgrounds/shop.jpg',
@@ -53,12 +42,24 @@
     reputation: 'Репутация'
   };
 
-  const REPORT_LABELS = {
-    high:    'высокое',
-    mid:     'среднее',
-    low:     'низкое',
-    missing: 'не сдан'
+  const ROLE_LABELS = {
+    director:   'Директор',
+    security:   'Безопасник',
+    engineer:   'Инженер',
+    hr:         'HR',
+    marketer:   'Маркетолог',
+    accountant: 'Бухгалтер'
   };
+
+  const EXPLAIN_LABELS = {
+    ok:      'Всё в порядке',
+    issues:  'Есть проблемы',
+    perfect: 'Всё отлично'
+  };
+
+  let reportsList = [];
+  let reportsReviewed = false;
+  let currentReport = null;
 
   let decisionsLeft = 3;
 
@@ -100,7 +101,7 @@
     return 'много';
   }
 
-  // ─── Отрисовка шкал ───
+  // ─── Шкалы ───
   function renderScales() {
     const repFill = document.getElementById('reputation-fill');
     if (!repFill) return;
@@ -137,58 +138,134 @@
     } else {
       pocketBox.classList.add('hidden');
     }
-
-    // Отчёты
-    renderReports();
   }
 
-  // ─── Отрисовка отчётов ───
-  function renderReports() {
-    const f = state.factory;
+  // ─── Список отчётов (только роли) ───
+  function renderReportsList() {
     const box = document.getElementById('reports-list');
     if (!box) return;
-
     box.innerHTML = '';
 
-    const indicators = ['quality', 'clients', 'employees', 'equipment', 'reputation'];
+    if (!reportsList || reportsList.length === 0) {
+      box.innerHTML = '<div class="report-empty">Отчётов пока нет.</div>';
+      return;
+    }
 
-    const hasActiveCheck = f.activeCheck && !f.activeCheck.directorNotified;
+    reportsList.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'report-item' + (r.status === 'missing' ? ' missing' : '');
 
-    indicators.forEach(key => {
-      const row = document.createElement('div');
-      row.className = 'report-row';
+      const info = document.createElement('div');
+      info.className = 'report-item-info';
 
-      const value = (f.reports && f.reports[key]) || 'missing';
-      const label = REPORT_LABELS[value] || '—';
+      const name = document.createElement('div');
+      name.className = 'report-item-name';
+      name.textContent = ROLE_LABELS[r.role] || r.role;
 
-      const isActive = f.activeCheck && f.activeCheck.indicator === key;
-      const disabled = hasActiveCheck || value === 'missing';
+      const meta = document.createElement('div');
+      meta.className = 'report-item-meta';
+      if (r.status === 'missing') {
+        meta.textContent = 'Не сдан';
+      } else {
+        meta.textContent = 'Состояние: ' + (r.shownWord || '—');
+      }
 
-      row.innerHTML =
-        '<span class="report-label">' + INDICATOR_LABELS[key] + '</span>' +
-        '<span class="report-value ' + value + '">' + label + '</span>';
+      info.appendChild(name);
+      info.appendChild(meta);
 
-      const btn = document.createElement('button');
-      btn.className = 'report-check-btn';
-      btn.dataset.indicator = key;
-      btn.textContent = isActive ? 'Проверяется…' : 'Проверить';
-      btn.disabled = disabled;
-      if (isActive) btn.classList.add('active');
+      const actions = document.createElement('div');
+      actions.className = 'report-item-actions';
 
-      btn.onclick = () => {
-        if (btn.disabled) return;
-        socket.emit('director_request_check', { indicator: key });
-        toast('Отчёт отправлен на проверку');
-      };
+      if (r.status === 'missing') {
+        const btnFine = document.createElement('button');
+        btnFine.className = 'btn btn-small btn-fine';
+        btnFine.textContent = 'Штраф';
+        btnFine.disabled = reportsReviewed;
+        btnFine.onclick = () => {
+          socket.emit('director_process_report', {
+            playerId: r.playerId,
+            action: 'fine'
+          });
+        };
+        actions.appendChild(btnFine);
+      } else {
+        const btnCheck = document.createElement('button');
+        btnCheck.className = 'btn btn-small';
+        btnCheck.textContent = 'Проверить';
+        btnCheck.disabled = reportsReviewed;
+        btnCheck.onclick = () => {
+          openReport(r);
+        };
+        actions.appendChild(btnCheck);
+      }
 
-      row.appendChild(btn);
-      box.appendChild(row);
+      item.appendChild(info);
+      item.appendChild(actions);
+      box.appendChild(item);
     });
   }
 
-  window.renderScales = renderScales;
+  // ─── Открытие бумажного отчёта ───
+  function openReport(reportData) {
+    currentReport = reportData;
 
-  // ─── Отрисовка точек решений ───
+    const shift = document.getElementById('paper-shift');
+    if (shift) shift.textContent = 'Смена ' + (reportData.shift || '—');
+
+    const role = document.getElementById('paper-role');
+    if (role) role.textContent = ROLE_LABELS[reportData.role] || reportData.role;
+
+    const shown = document.getElementById('paper-shown');
+    if (shown) shown.textContent = reportData.shownWord || '—';
+
+    const explain = document.getElementById('paper-explain');
+    if (explain) explain.textContent = EXPLAIN_LABELS[reportData.howToExplain] || '—';
+
+    const sig = document.getElementById('paper-signature');
+    if (sig) sig.classList.add('hidden');
+
+    const actions = document.getElementById('paper-actions');
+    if (actions) actions.classList.remove('hidden');
+
+    show('screen-report-single');
+  }
+
+  // ─── Подпись с анимацией ───
+  function showSignature() {
+    const sig = document.getElementById('paper-signature');
+    if (sig) sig.classList.remove('hidden');
+
+    const actions = document.getElementById('paper-actions');
+    if (actions) actions.classList.add('hidden');
+
+    // Возврат к списку отчётов через 2.2 сек
+    setTimeout(() => {
+      hideAllSubmenus();
+      submenuReports.classList.remove('hidden');
+    }, 2200);
+  }
+
+  // ─── Кнопки бумажного отчёта ───
+  document.getElementById('btn-paper-approve').onclick = () => {
+    if (!currentReport) return;
+    socket.emit('director_process_report', {
+      playerId: currentReport.playerId,
+      action: 'approve'
+    });
+    showSignature();
+  };
+
+  document.getElementById('btn-paper-check').onclick = () => {
+    if (!currentReport) return;
+    socket.emit('director_process_report', {
+      playerId: currentReport.playerId,
+      action: 'check'
+    });
+    hideAllSubmenus();
+    submenuReports.classList.remove('hidden');
+  };
+
+  // ─── Точки решений ───
   function renderDecisions(left) {
     decisionsLeft = left;
     const max = 3;
@@ -205,18 +282,13 @@
     document.getElementById('btn-set-level').disabled = noDecisions;
     document.getElementById('btn-take').disabled = noDecisions;
 
-    const reportBtns = document.querySelectorAll('.report-check-btn');
-    reportBtns.forEach(b => {
-      b.disabled = b.disabled || decisionsLeft < 2;
-    });
-
     if (window.App && window.App.setDecisionsLeft) {
       window.App.setMaxDecisions(3);
       window.App.setDecisionsLeft(left);
     }
   }
 
-  // ─── Обновить доступность кнопок уровней ───
+  // ─── Доступность кнопок уровней ───
   function updateLevelButtonsAvailability() {
     document.querySelectorAll('#submenu-levels .btn[data-lvl]').forEach(b => {
       const lvl = parseInt(b.dataset.lvl, 10);
@@ -277,7 +349,7 @@
     shiftDone.classList.add('hidden');
   }
 
-  // ─── Превью уровня ───
+  // ─── Превью ───
   function showPreviewLevel(dir, targetLevel) {
     const value = (state.factory.directions && state.factory.directions[dir]) || 0;
     const fill = document.getElementById('preview-fill');
@@ -325,12 +397,11 @@
   }
 
   function hideDirPreview() {
-    document.getElementById('dir-preview').classList.add('hidden');
+    const el = document.getElementById('dir-preview');
+    if (el) el.classList.add('hidden');
   }
 
-  // ═══════════════════════════════════════════
-  // ИНВЕСТИЦИИ В ОТДЕЛ
-  // ═══════════════════════════════════════════
+  // ═══ Инвестиции в отдел ═══
   document.getElementById('btn-set-level').onclick = () => {
     mainActions.classList.add('hidden');
     submenuDirs.classList.remove('hidden');
@@ -388,9 +459,7 @@
     });
   });
 
-  // ═══════════════════════════════════════════
-  // ЗАБРАТЬ СЕБЕ
-  // ═══════════════════════════════════════════
+  // ═══ Забрать себе ═══
   document.getElementById('btn-take').onclick = () => {
     mainActions.classList.add('hidden');
     submenuTakeSrc.classList.remove('hidden');
@@ -477,23 +546,18 @@
     });
   });
 
-  // ═══════════════════════════════════════════
-  // ЗАВЕРШИТЬ СМЕНУ
-  // ═══════════════════════════════════════════
+  // ═══ Завершить смену — открыть список отчётов ═══
   document.getElementById('btn-finish').onclick = () => {
     socket.emit('player_finish_shift');
   };
 
-  document.getElementById('btn-reports').onclick = () => {
-    mainActions.classList.add('hidden');
-    submenuReports.classList.remove('hidden');
-    renderReports();
-  };
-
-  document.getElementById('btn-back-reports').onclick = () => {
-    submenuReports.classList.add('hidden');
-    mainActions.classList.remove('hidden');
-  };
+  // Кнопка «Завершить смену» внизу списка отчётов
+  const btnReportsFinish = document.getElementById('btn-reports-finish');
+  if (btnReportsFinish) {
+    btnReportsFinish.onclick = () => {
+      socket.emit('director_finish_after_reports');
+    };
+  }
 
   function enterShiftDone() {
     hideAllSubmenus();
@@ -504,7 +568,7 @@
   // ═══════════════════════════════════════════
   // СОБЫТИЯ С СЕРВЕРА
   // ═══════════════════════════════════════════
-socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings, products }) => {
+  socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings, products }) => {
     if (state.myRole !== 'director') return;
 
     state.factory = factory;
@@ -523,7 +587,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     show('screen-game-director');
   });
 
-  // ─── Отрисовка помещений — с превью ───
   function renderBuildings(buildings) {
     const box = document.getElementById('buildings-list');
     if (!box) return;
@@ -552,7 +615,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     });
   }
 
-  // ─── Отрисовка продуктов — с SVG-превью ───
   function renderProducts(products) {
     const box = document.getElementById('products-list');
     if (!box) return;
@@ -563,7 +625,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     Object.keys(list).forEach(key => {
       const p = PRODUCT_LABELS[key] || { title: key, desc: '' };
 
-      // SVG-символ продукта из знака завода
       const svg = (window.FactorySign && window.FactorySign.render)
         ? window.FactorySign.render(key)
         : '';
@@ -602,6 +663,8 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
 
   socket.on('new_shift', ({ decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
+    reportsList = [];
+    reportsReviewed = false;
     shiftDone.classList.add('hidden');
     renderDecisions(dl || 3);
     showMainActions();
@@ -610,7 +673,54 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
   socket.on('report_check_reply', ({ indicator, answer }) => {
     if (state.myRole !== 'director') return;
     const label = answer === 'real' ? 'настоящий' : 'подделан';
-    toast('Ответ по отчёту «' + INDICATOR_LABELS[indicator] + '»: ' + label);
+    toast('Ответ по отчёту: ' + label);
+  });
+
+  // ─── Директор должен открыть отчёты (при завершении смены) ───
+  socket.on('need_reports', () => {
+    if (state.myRole !== 'director') return;
+
+    mainActions.classList.add('hidden');
+    hideAllSubmenus();
+    submenuReports.classList.remove('hidden');
+
+    // Запрашиваем список
+    socket.emit('director_get_reports');
+  });
+
+  // ─── Список отчётов пришёл ───
+  socket.on('director_reports', ({ reports, reviewed }) => {
+    if (state.myRole !== 'director') return;
+
+    reportsList = reports || [];
+    reportsReviewed = reviewed || false;
+    renderReportsList();
+  });
+
+  // ─── Обработка отчёта завершена ───
+  socket.on('report_processed', ({ action, targetRole, amount }) => {
+    if (state.myRole !== 'director') return;
+
+    const roleLabel = ROLE_LABELS[targetRole] || targetRole;
+
+    if (action === 'fine') {
+      toast('Штраф: ' + roleLabel + ' — ' + (amount || 10));
+    } else if (action === 'approve') {
+      toast('Согласовано: ' + roleLabel);
+    } else if (action === 'check') {
+      toast('На проверку: ' + roleLabel);
+    }
+
+    reportsReviewed = true;
+    // Обновим список после обработки
+    socket.emit('director_get_reports');
+  });
+
+  // ─── Новый отчёт от игрока ───
+  socket.on('new_report', ({ role }) => {
+    if (state.myRole !== 'director') return;
+    const roleLabel = ROLE_LABELS[role] || role;
+    toast(roleLabel + ' сдал отчёт');
   });
 
   socket.on('game_over', ({ reason, type, biographies }) => {
@@ -629,9 +739,7 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
 
   socket.on('error_msg', (msg) => toast(msg));
 
-  // ═══════════════════════════════════════════
-  // СГОВОР
-  // ═══════════════════════════════════════════
+  // ═══ Сговор ═══
   socket.on('deal_offered', () => {
     if (state.myRole !== 'director') return;
     document.getElementById('deal-modal').classList.remove('hidden');
@@ -675,9 +783,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     mountSign(data);
 
     renderScales();
-    if (document.getElementById('reports-list')) {
-      renderReports();
-    }
     if (selectedDir) {
       resetPreviewLevel(selectedDir);
       updateLevelButtonsAvailability();
@@ -688,14 +793,12 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     }
   });
 
-  // ─── Если продукт выбран раньше помещения ───
   socket.on('need_building', () => {
     if (state.myRole !== 'director') return;
     renderBuildings();
     show('screen-building');
   });
 
-  // ─── Игра началась ───
   socket.on('game_started', ({ factory, decisionsLeft: dl }) => {
     if (state.myRole !== 'director') return;
     state.factory = factory;
@@ -707,5 +810,6 @@ socket.on('factory_chosen', ({ factory, decisionsLeft: dl, needSetup, buildings,
     showMainActions();
     show('screen-game-director');
   });
+
   console.log('Cabinet Director: модуль готов');
 })();

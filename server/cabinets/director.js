@@ -15,26 +15,24 @@ const {
   INDICATORS
 } = require('../factory');
 
-const REPORT_CHECK_DECISION_COST = 2;    // стоимость запроса
-const REPORT_CHECK_DELAY = 4;            // через сколько смен придёт ответ
+const REPORT_CHECK_DECISION_COST = 2;
+const REPORT_CHECK_DELAY = 4;
+const FINE_AMOUNT = 10;
 
-// ─── Помещения (выбирает Директор) ───
-// Три варианта по оси «дёшево / баланс / дорого»
+// ─── Помещения ───
 const BUILDINGS = {
   old_hangar:   { title: 'Старый ангар',     moneyBonus: 100,  qualityMod: -10, spaceMod:  20 },
   main_building:{ title: 'Заводской корпус', moneyBonus: 0,    qualityMod:   0, spaceMod:   0 },
   new_shop:     { title: 'Новый цех',        moneyBonus: -50,  qualityMod: +15, spaceMod: -10 }
 };
 
-// ─── Продукты (выбирает Директор) ───
-// Три варианта по оси «массовый / средний / премиум»
+// ─── Продукты ───
 const PRODUCTS = {
   bread:       { title: 'Хлеб',       needQuality: 40, needStaff: 30, market: 'mass' },
   furniture:   { title: 'Мебель',     needQuality: 60, needStaff: 50, market: 'premium' },
   electronics: { title: 'Электроника', needQuality: 90, needStaff: 60, market: 'premium' }
 };
 
-// Проверить, что Директор может делать действие
 function canAct(p) {
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
   if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
@@ -44,13 +42,12 @@ function canAct(p) {
   return { ok: true };
 }
 
-// Создать завод по выбору Директора
 function chooseFactory(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
   if (hall.phase !== 'roles') return { error: 'Сейчас не время' };
 
-  hall.factory = createFactory('neutral');   // нейтральный старт
+  hall.factory = createFactory('neutral');
   hall.phase = 'choose_setup';
   hall.shift = 0;
 
@@ -62,7 +59,6 @@ function chooseFactory(socketId) {
   };
 }
 
-// ─── Директор выбирает помещение ───
 function chooseBuilding(socketId, buildingKey) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
@@ -72,12 +68,10 @@ function chooseBuilding(socketId, buildingKey) {
 
   hall.factory.building = buildingKey;
 
-  // Применяем бонус к деньгам
   const b = BUILDINGS[buildingKey];
   hall.factory.money = Math.max(0, hall.factory.money + b.moneyBonus);
   hall.factory.budgetPercent = calcBudgetPercent(hall.factory.money);
 
-  // Применяем модификатор к качеству
   hall.factory.indicators.quality = Math.max(0, Math.min(100,
     hall.factory.indicators.quality + b.qualityMod));
 
@@ -89,7 +83,6 @@ function chooseBuilding(socketId, buildingKey) {
   };
 }
 
-// ─── Директор выбирает продукт ───
 function chooseProduct(socketId, productKey) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
@@ -103,7 +96,6 @@ function chooseProduct(socketId, productKey) {
     return { ok: true, product: productKey, needBuilding: true };
   }
 
-  // Фазу НЕ меняем — этим займётся server.js
   return {
     ok: true,
     product: productKey,
@@ -111,13 +103,11 @@ function chooseProduct(socketId, productKey) {
   };
 }
 
-// Установить уровень отдела
 function setDirectionLevel(socketId, direction, level) {
   const p = getPlayer(socketId);
   const check = canAct(p);
   if (check.error) return check;
 
-  // Сколько решений стоит это действие
   const cost = DECISION_COST[level];
   if (!cost) return { error: 'Неизвестный уровень' };
   if (p.decisionsLeft < cost) {
@@ -137,7 +127,6 @@ function setDirectionLevel(socketId, direction, level) {
   };
 }
 
-// Откат из бюджета
 function takeFromBudgetAction(socketId, level) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -162,7 +151,6 @@ function takeFromBudgetAction(socketId, level) {
   };
 }
 
-// Откат из инвестиций
 function takeFromDirectionAction(socketId, direction, level) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -186,13 +174,175 @@ function takeFromDirectionAction(socketId, direction, level) {
   };
 }
 
-// Завершить смену
+// ═══════════════════════════════════════════
+// ОТЧЁТЫ — Директор видит роли, не имена
+// ═══════════════════════════════════════════
+
+// Список отчётов за смену — только роли
+function getReports() {
+  const list = hall.players
+    .filter(p => p.role !== 'director')
+    .map(p => {
+      const report = p.report;
+
+      if (report && report.shift === hall.shift) {
+        return {
+          playerId: p.id,
+          role: p.role,
+          status: 'submitted',
+          shownWord: report.shownWord || '—',
+          howToExplain: report.howToExplain || null,
+          whatToShow: report.whatToShow || null,
+          isLie: report.isLie || false,
+          shift: report.shift
+        };
+      }
+
+      return {
+        playerId: p.id,
+        role: p.role,
+        status: 'missing'
+      };
+    });
+
+  return list;
+}
+
+// Обработка отчёта: согласовать / проверить / штраф
+function processReport(socketId, playerId, action) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'director') return { error: 'Только Директор' };
+  if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
+  if (p.finished) return { error: 'Вы уже завершили смену' };
+
+  if (p.reportReviewedThisShift) {
+    return { error: 'Вы уже разобрали один отчёт в эту смену' };
+  }
+
+  const target = getPlayer(playerId);
+  if (!target) return { error: 'Игрок не найден' };
+
+  if (action === 'approve') {
+    p.reportReviewedThisShift = true;
+    return {
+      ok: true,
+      action: 'approve',
+      targetRole: target.role
+    };
+  }
+
+  if (action === 'check') {
+    if (p.decisionsLeft < REPORT_CHECK_DECISION_COST) {
+      return { error: 'Недостаточно решений для проверки' };
+    }
+
+    p.decisionsLeft -= REPORT_CHECK_DECISION_COST;
+    p.reportReviewedThisShift = true;
+
+    if (!hall.reportChecks) hall.reportChecks = [];
+    hall.reportChecks.push({
+      directorId: socketId,
+      targetId: playerId,
+      targetRole: target.role,
+      indicator: 'people',
+      requestedShift: hall.shift,
+      checked: false,
+      isForged: null,
+      coverAttempted: false,
+      departmentAgreed: null,
+      theftAmount: 0,
+      theftResolved: false,
+      answerSent: false,
+      answer: null,
+      directorNotified: false
+    });
+
+    return {
+      ok: true,
+      action: 'check',
+      targetRole: target.role,
+      decisionsLeft: p.decisionsLeft
+    };
+  }
+
+  if (action === 'fine') {
+    const targetReport = target.report;
+    if (targetReport && targetReport.shift === hall.shift) {
+      return { error: 'Игрок сдал отчёт — штраф невозможен' };
+    }
+
+    hall.factory.money = Math.max(0, hall.factory.money - FINE_AMOUNT);
+    hall.factory.budgetPercent = calcBudgetPercent(hall.factory.money);
+
+    if (!hall.finesLog) hall.finesLog = [];
+    hall.finesLog.push({
+      shift: hall.shift,
+      targetId: playerId,
+      amount: FINE_AMOUNT
+    });
+
+    p.reportReviewedThisShift = true;
+
+    return {
+      ok: true,
+      action: 'fine',
+      targetRole: target.role,
+      amount: FINE_AMOUNT,
+      factory: factorySnapshot(hall.factory, { forDirector: true })
+    };
+  }
+
+  return { error: 'Неизвестное действие' };
+}
+
+// ═══════════════════════════════════════════
+// ЗАВЕРШИТЬ СМЕНУ — для Директора новый поток
+// ═══════════════════════════════════════════
+// Если Директор — открывает список отчётов.
+// Если HR без отчёта — просит отчёт.
+// Иначе — завершает.
 function finishShift(socketId) {
   const p = getPlayer(socketId);
   if (!p) return { error: 'Игрок не найден' };
   if (hall.phase !== 'game') return { error: 'Сейчас не смена' };
   if (p.finished) return { error: 'Вы уже завершили смену' };
 
+  // ─── Директор: открыть список отчётов ───
+  if (p.role === 'director') {
+    return {
+      ok: true,
+      needReports: true,
+      newShift: false,
+      shift: hall.shift
+    };
+  }
+
+  // ─── HR: требуется отчёт ───
+  if (p.role === 'hr' && !p.report) {
+    return {
+      ok: true,
+      needReport: true,
+      newShift: false,
+      shift: hall.shift
+    };
+  }
+
+  // ─── Обычное завершение ───
+  return doFinish(socketId);
+}
+
+// Финальное завершение (после отчётов или без)
+function finishAfterReports(socketId) {
+  const p = getPlayer(socketId);
+  if (!p) return { error: 'Игрок не найден' };
+  if (p.role !== 'director') return { error: 'Только Директор' };
+  if (p.finished) return { error: 'Вы уже завершили смену' };
+
+  return doFinish(socketId);
+}
+
+function doFinish(socketId) {
+  const p = getPlayer(socketId);
   p.finished = true;
 
   if (allFinishedShift()) {
@@ -203,7 +353,6 @@ function finishShift(socketId) {
   return { ok: true, newShift: false };
 }
 
-// Сдать отчёт по показателю
 function submitReportAction(socketId, indicatorKey) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'director') return { error: 'Только Директор' };
@@ -228,7 +377,6 @@ function submitReportAction(socketId, indicatorKey) {
   };
 }
 
-// Запросить проверку отчёта
 function requestReportCheck(socketId, indicator) {
   const p = getPlayer(socketId);
   const check = canAct(p);
@@ -238,7 +386,6 @@ function requestReportCheck(socketId, indicator) {
     return { error: 'Неизвестный показатель' };
   }
 
-  // Один активный запрос
   const active = hall.reportChecks.find(c =>
     c.directorId === socketId && !c.directorNotified
   );
@@ -246,7 +393,6 @@ function requestReportCheck(socketId, indicator) {
     return { error: 'Уже есть активный запрос' };
   }
 
-  // Проверка стоимости
   if (p.decisionsLeft < REPORT_CHECK_DECISION_COST) {
     return { error: 'Недостаточно решений для запроса проверки' };
   }
@@ -284,7 +430,11 @@ module.exports = {
   takeFromDirectionAction,
   submitReportAction,
   requestReportCheck,
+  getReports,
+  processReport,
   finishShift,
+  finishAfterReports,
   BUILDINGS,
-  PRODUCTS
+  PRODUCTS,
+  FINE_AMOUNT
 };

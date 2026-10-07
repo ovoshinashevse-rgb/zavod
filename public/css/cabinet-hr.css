@@ -10,83 +10,209 @@
 }
 
 /* ═══════════════════════════════════════════
-   КАРМАН — акцент на HR
+   ШКАЛА КУМОВСТВА — терракотовая, не золотая
    ═══════════════════════════════════════════ */
-#hr-pocket-fill {
-  background: linear-gradient(90deg, #d9a93a 0%, #e8c050 100%);
+#hr-nepotism-fill {
+  background: linear-gradient(90deg, #b85a3e 0%, #d97a5a 100%);
 }
 
 /* ═══════════════════════════════════════════
-   КНОПКА «ПОДДЕЛАТЬ ШТАТ» — акцентная опасность
-   Это воровство. Кнопка должна ощущаться как
-   «переступить черту».
+   КНОПКА «НАНЯТЬ» — основная, зелёная
    ═══════════════════════════════════════════ */
-#btn-hr-fake {
-  background: rgba(217, 74, 58, 0.12);
-  border: 1px solid rgba(217, 74, 58, 0.35);
-  color: #f0b0a0;
-}
-
-#btn-hr-fake:hover {
-  background: rgba(217, 74, 58, 0.2);
-  border-color: rgba(217, 74, 58, 0.55);
-}
-
-#btn-hr-fake:active {
-  background: rgba(217, 74, 58, 0.28);
-  border-color: rgba(217, 74, 58, 0.7);
+#btn-hr-hire {
+  background: linear-gradient(180deg, #4aa876 0%, #2e7a52 100%);
+  box-shadow:
+    0 4px 16px rgba(50, 150, 100, 0.3),
+    0 1px 0 rgba(180, 240, 200, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
 }
 
 /* ═══════════════════════════════════════════
-   КНОПКА «ОТЧЁТ» — акцентная честность
+   КНОПКА «СОКРАТИТЬ» — серая, спокойная
    ═══════════════════════════════════════════ */
-#btn-hr-report {
-  background: rgba(78, 205, 196, 0.08);
-  border: 1px solid rgba(78, 205, 196, 0.25);
-  color: #a0e0d8;
+#btn-hr-fire {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
 }
 
-#btn-hr-report:hover {
-  background: rgba(78, 205, 196, 0.15);
-  border-color: rgba(78, 205, 196, 0.45);
+#btn-hr-fire:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ═══════════════════════════════════════════
-   ПОДМЕНЮ «ОТЧЁТ» — две большие кнопки
+   КНОПКА «КУМОВСТВО» — тревожная, тёплая
    ═══════════════════════════════════════════ */
-#btn-hr-report-real {
-  background: rgba(78, 205, 196, 0.15);
-  border: 1px solid rgba(78, 205, 196, 0.4);
-  color: #4ecdc4;
+#btn-hr-nepotism {
+  background: rgba(217, 122, 90, 0.15);
+  border: 1px solid rgba(217, 122, 90, 0.45);
+  color: #f0c0a0;
 }
 
-#btn-hr-report-fake {
-  background: rgba(217, 74, 58, 0.15);
-  border: 1px solid rgba(217, 74, 58, 0.4);
-  color: #d94a3a;
+#btn-hr-nepotism:hover {
+  background: rgba(217, 122, 90, 0.25);
+  border-color: rgba(217, 122, 90, 0.65);
 }
 
 /* ═══════════════════════════════════════════
-   ПОДМЕНЮ «НАНЯТЬ» — обычный найм / обучение
+   ПОДМЕНЮ НАЙМА — пути
    ═══════════════════════════════════════════ */
-#btn-hr-hire-normal {
+#submenu-hr-hire .btn[data-hire-path] {
   background: rgba(74, 168, 118, 0.12);
   border: 1px solid rgba(74, 168, 118, 0.35);
   color: #b0e0c8;
 }
 
-#btn-hr-hire-normal:hover {
+#submenu-hr-hire .btn[data-hire-path]:hover {
   background: rgba(74, 168, 118, 0.2);
   border-color: rgba(74, 168, 118, 0.55);
 }
 
-#btn-hr-hire-train {
-  background: rgba(184, 152, 72, 0.12);
-  border: 1px solid rgba(184, 152, 72, 0.35);
+/* ═══════════════════════════════════════════
+   ШАГИ НАЙМА — динамические кнопки
+   ═══════════════════════════════════════════ */
+#hr-hire-step-options .btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px 24px;
+}
+
+#hr-hire-step-options .btn:hover {
+  background: rgba(74, 168, 118, 0.12);
+  border-color: rgba(74, 168, 118, 0.4);
+}
+
+#hr-hire-step-options .btn .option-title {
+  font-weight: 600;
+  font-size: 17px;
+  color: #fff;
+}
+
+#hr-hire-step-options .btn .option-hint {
+  font-size: 13px;
+  opacity: 0.65;
+  line-height: 1.35;
+}
+
+/* ═══════════════════════════════════════════
+   ПОДМЕНЮ СОКРАЩЕНИЯ
+   ═══════════════════════════════════════════ */
+#submenu-hr-fire .btn[data-hr-fire-lvl] {
+  background: rgba(184, 152, 72, 0.10);
+  border: 1px solid rgba(184, 152, 72, 0.30);
   color: #e8d0a0;
 }
 
-#btn-hr-hire-train:hover {
-  background: rgba(184, 152, 72, 0.2);
-  border-color: rgba(184, 152, 72, 0.55);
+#submenu-hr-fire .btn[data-hr-fire-lvl]:hover {
+  background: rgba(184, 152, 72, 0.18);
+  border-color: rgba(184, 152, 72, 0.5);
+}
+
+/* ═══════════════════════════════════════════
+   ПОДМЕНЮ КУМОВСТВА — кто / куда / должность
+   ═══════════════════════════════════════════ */
+#submenu-hr-who .btn,
+#submenu-hr-where .btn,
+#submenu-hr-position .btn {
+  background: rgba(217, 122, 90, 0.10);
+  border: 1px solid rgba(217, 122, 90, 0.28);
+  color: rgba(255, 230, 220, 0.95);
+}
+
+#submenu-hr-who .btn:hover,
+#submenu-hr-where .btn:hover,
+#submenu-hr-position .btn:hover {
+  background: rgba(217, 122, 90, 0.18);
+  border-color: rgba(217, 122, 90, 0.5);
+}
+
+/* ═══════════════════════════════════════════
+   ПОДМЕНЮ КУМОВСТВА — меню
+   ═══════════════════════════════════════════ */
+#btn-hr-adopt {
+  background: rgba(217, 122, 90, 0.18);
+  border: 1px solid rgba(217, 122, 90, 0.5);
+  color: #f0c0a0;
+}
+
+#btn-hr-adopt:hover {
+  background: rgba(217, 122, 90, 0.28);
+  border-color: rgba(217, 122, 90, 0.7);
+}
+
+#btn-hr-cover {
+  background: rgba(184, 152, 72, 0.15);
+  border: 1px solid rgba(184, 152, 72, 0.45);
+  color: #e8d0a0;
+}
+
+#btn-hr-cover:hover {
+  background: rgba(184, 152, 72, 0.25);
+  border-color: rgba(184, 152, 72, 0.65);
+}
+
+#btn-hr-fire-relative {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+#btn-hr-fire-relative:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ═══════════════════════════════════════════
+   СПИСОК РОДНИ — для увольнения
+   ═══════════════════════════════════════════ */
+.family-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.family-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: 16px;
+  width: 100%;
+  text-align: left;
+}
+
+.family-item:hover {
+  background: rgba(217, 74, 58, 0.15);
+  border-color: rgba(217, 74, 58, 0.35);
+  transform: scale(0.99);
+}
+
+.family-item .family-name {
+  font-weight: 600;
+  color: #fff;
+}
+
+.family-item .family-info {
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.family-empty {
+  padding: 20px;
+  text-align: center;
+  opacity: 0.5;
+  font-style: italic;
 }

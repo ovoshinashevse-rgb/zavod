@@ -123,23 +123,12 @@
     if (cls) card.classList.add(cls);
   }
 
-  // ─── Кнопка «Закончить» видна, если опьянение > 0 ───
-  function applyDrinkExit() {
-    const box = document.getElementById('engineer-drink-exit');
-    if (!box) return;
-    if ((engState.intoxication || 0) > 0) {
-      box.classList.remove('hidden');
-    } else {
-      box.classList.add('hidden');
-    }
-  }
-
-  // ─── Показ главного экрана или экрана запоя ───
-  const actionsBox   = document.getElementById('engineer-actions');
-  const drinkBox     = document.getElementById('engineer-drink');
+  // ─── Подменю и показ главного экрана ───
+  const actionsBox        = document.getElementById('engineer-actions');
+  const drinkBox          = document.getElementById('engineer-drink');
   const submenuDistribute = document.getElementById('submenu-engineer-distribute');
-  const submenuReport = document.getElementById('submenu-engineer-report');
-  const shiftDone    = document.getElementById('shift-done-engineer');
+  const submenuReport     = document.getElementById('submenu-engineer-report');
+  const shiftDone         = document.getElementById('shift-done-engineer');
 
   function hideAllSubmenus() {
     submenuDistribute.classList.add('hidden');
@@ -159,10 +148,9 @@
     if (drinkBox) drinkBox.classList.add('hidden');
     actionsBox.classList.remove('hidden');
     shiftDone.classList.add('hidden');
-    applyDrinkExit();
   }
 
-  // Фильтрация компаний по выбранному месту
+  // Фильтрация компаний по месту
   function filterCompanies(place) {
     document.querySelectorAll('[data-drink-company]').forEach(btn => {
       if (btn.dataset.place === place) {
@@ -182,7 +170,6 @@
     if (drinkBox) drinkBox.classList.remove('hidden');
     if (shiftDone) shiftDone.classList.add('hidden');
 
-    // Перед показом шага «компания» — фильтруем кнопки
     if (step === 'company' && engState.drunkState && engState.drunkState.place) {
       filterCompanies(engState.drunkState.place);
     }
@@ -190,20 +177,17 @@
     const stepId = 'drink-' + step;
     const stepEl = document.getElementById(stepId);
     if (stepEl) stepEl.classList.remove('hidden');
-
-    applyDrinkExit();
   }
 
   function applyDrunkState() {
     if (engState.drunkState && engState.drunkState.step) {
       showDrinkStep(engState.drunkState.step);
     } else if (drinkBox && !drinkBox.classList.contains('hidden')) {
-      // Сессия запоя закончилась — вернуться на главный
       showActions();
     }
   }
 
-  // ─── Обновление снимка Инженера ───
+  // ─── Обновление снимка ───
   function applySnapshot(data) {
     if (typeof data.decisionsLeft !== 'undefined') {
       engState.decisionsLeft = data.decisionsLeft;
@@ -233,7 +217,6 @@
 
     renderScales();
     applyDrunkClass();
-    applyDrinkExit();
     applyDrunkState();
   }
 
@@ -299,44 +282,30 @@
   };
 
   // ─── Кнопки запоя ───
-
-  // Шаг 1: место
   document.querySelectorAll('[data-drink-place]').forEach(btn => {
     btn.onclick = () => {
       socket.emit('engineer_drink_place', { place: btn.dataset.drinkPlace });
     };
   });
 
-  // Шаг 2: компания
   document.querySelectorAll('[data-drink-company]').forEach(btn => {
     btn.onclick = () => {
       socket.emit('engineer_drink_company', { company: btn.dataset.drinkCompany });
     };
   });
 
-  // Шаг 3: напиток
   document.querySelectorAll('[data-drink-drink]').forEach(btn => {
     btn.onclick = () => {
       socket.emit('engineer_drink_drink', { drink: btn.dataset.drinkDrink });
     };
   });
 
-  // Шаг 4: количество
   document.querySelectorAll('[data-drink-amount]').forEach(btn => {
     btn.onclick = () => {
       socket.emit('engineer_drink_amount', { amount: btn.dataset.drinkAmount });
     };
   });
 
-  // Выход из запоя
-  const btnExitDrink = document.getElementById('btn-eng-exit-drink');
-  if (btnExitDrink) {
-    btnExitDrink.onclick = () => {
-      socket.emit('engineer_exit_drink');
-    };
-  }
-
-  // Кнопки «Назад» из запоя
   document.querySelectorAll('[data-drink-back]').forEach(btn => {
     btn.onclick = () => {
       showActions();
@@ -367,7 +336,6 @@
     hideAllDrinkSteps();
     if (drinkBox) drinkBox.classList.add('hidden');
     applyDrunkClass();
-    applyDrinkExit();
   });
 
   socket.on('shift_progress', ({ finished }) => {
@@ -432,7 +400,6 @@
     show('screen-setup-wait');
   });
 
-  // ─── Показ экрана смены ───
   socket.on('factory_chosen', ({ factory }) => {
     if (state.myRole && state.myRole !== 'engineer') return;
 
@@ -442,7 +409,6 @@
     renderDecisions(engState.decisionsLeft);
     renderScales();
     applyDrunkClass();
-    applyDrinkExit();
     showActions();
   });
 

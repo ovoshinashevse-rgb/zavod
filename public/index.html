@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="/css/cabinet-engineer.css">
 <link rel="stylesheet" href="/css/cabinet-hr.css">
 <link rel="stylesheet" href="/css/choose-setup.css">
+<link rel="stylesheet" href="/css/report.css">
 </head>
 <body>
 
@@ -40,16 +41,11 @@
       <h1>КУРИЛКА</h1>
       <div class="subtitle">Здесь ждут остальные.</div>
       <div class="players" id="smoking-players"></div>
-
       <div class="row" style="margin-top:20px;">
         <button class="btn" id="btn-smoke">Сделать затяжку</button>
         <button class="btn secondary" id="btn-wave">Отмахнуть дым</button>
       </div>
-
-      <button class="btn success" id="btn-ready" style="margin-top:16px;">
-        Пройти на смену
-      </button>
-
+      <button class="btn success" id="btn-ready" style="margin-top:16px;">Пройти на смену</button>
       <button class="btn warn hidden" id="btn-hurry">Поторопить</button>
       <button class="btn secondary" id="btn-invite">Позвать коллегу</button>
     </div>
@@ -63,50 +59,37 @@
         <div class="badge-role" id="badge-role">—</div>
         <div class="badge-role-label">должность</div>
         <div class="badge-footer">
-          <div class="col">
-            Отдел<br><strong id="badge-dept">—</strong>
-          </div>
-          <div class="col right">
-            Пропуск №<br><strong id="badge-id">—</strong>
-          </div>
+          <div class="col">Отдел<br><strong id="badge-dept">—</strong></div>
+          <div class="col right">Пропуск №<br><strong id="badge-id">—</strong></div>
         </div>
       </div>
     </div>
     <button class="btn" id="btn-start-shift" style="max-width:340px;margin:28px auto 0;">Приступить</button>
   </div>
 
-  <!-- ЭКРАН 4: НАЧАЛО СМЕНЫ -->
+  <!-- ЭКРАН 4: НАЧАЛО -->
   <div class="glass hidden" id="wrap-choose">
     <div id="screen-choose">
       <h1>НАЧАЛО</h1>
-      <div class="subtitle">
-        Завод ждёт.<br>
-        Пора начинать.
-      </div>
-      <button class="btn" id="btn-factory-good">
-        Приступить
-      </button>
+      <div class="subtitle">Завод ждёт.<br>Пора начинать.</div>
+      <button class="btn" id="btn-factory-good">Приступить</button>
     </div>
   </div>
 
-  <!-- ЭКРАН 4a: ВЫБОР ПОМЕЩЕНИЯ -->
+  <!-- ЭКРАН 4a: ПОМЕЩЕНИЕ -->
   <div class="glass hidden" id="wrap-building">
     <div id="screen-building">
       <h1>ПОМЕЩЕНИЕ</h1>
-      <div class="subtitle">
-        Где будет работать завод?
-      </div>
+      <div class="subtitle">Где будет работать завод?</div>
       <div id="buildings-list"></div>
     </div>
   </div>
 
-  <!-- ЭКРАН 4b: ВЫБОР ПРОДУКТА -->
+  <!-- ЭКРАН 4b: ПРОДУКТ -->
   <div class="glass hidden" id="wrap-product">
     <div id="screen-product">
       <h1>ПРОДУКТ</h1>
-      <div class="subtitle">
-        Что будет делать завод?
-      </div>
+      <div class="subtitle">Что будет делать завод?</div>
       <div id="products-list"></div>
     </div>
   </div>
@@ -115,20 +98,15 @@
   <div class="glass hidden" id="wrap-setup-wait">
     <div id="screen-setup-wait">
       <h1>ОЖИДАНИЕ</h1>
-      <div class="subtitle">
-        Директор выбирает помещение и продукт…<br>
-        Скоро начнётся первая смена.
-      </div>
+      <div class="subtitle">Директор выбирает помещение и продукт…<br>Скоро начнётся первая смена.</div>
     </div>
   </div>
 
-  <!-- ЭКРАН 4d: ВЫБОР ОБОРУДОВАНИЯ -->
+  <!-- ЭКРАН 4d: ОБОРУДОВАНИЕ -->
   <div class="glass hidden" id="wrap-equipment">
     <div id="screen-equipment">
       <h1>ОБОРУДОВАНИЕ</h1>
-      <div class="subtitle" id="equipment-subtitle">
-        Что ставим в цеху?
-      </div>
+      <div class="subtitle" id="equipment-subtitle">Что ставим в цеху?</div>
       <div id="equipment-list"></div>
     </div>
   </div>
@@ -137,19 +115,15 @@
   <div class="glass hidden" id="wrap-waiting">
     <div id="screen-waiting">
       <h1>ОЖИДАНИЕ</h1>
-      <div class="subtitle">
-        Директор выбирает завод…<br>
-        Приготовьтесь к первой смене.
-      </div>
+      <div class="subtitle">Директор выбирает завод…<br>Приготовьтесь к первой смене.</div>
     </div>
   </div>
 
-  <!-- ЭКРАН 6a: СМЕНА ДИРЕКТОРА -->
+  <!-- ЭКРАН 6a: ДИРЕКТОР -->
   <div class="glass hidden" id="wrap-game-director">
     <div id="screen-game-director" class="shift">
 
       <div class="factory-sign" id="factory-sign-director"></div>
-
       <div class="decisions-bar">
         <span class="decisions-label">Ваши решения</span>
         <span class="decisions-dots" id="decisions-dots-director"></span>
@@ -157,70 +131,39 @@
 
       <div class="shift-status">
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Репутация</span>
-            <span class="status-value" id="reputation-word">средняя</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="reputation-fill" style="width:50%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Репутация</span><span class="status-value" id="reputation-word">средняя</span></div>
+          <div class="scale"><div class="scale-fill mid" id="reputation-fill" style="width:50%"></div></div>
         </div>
-
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Инвестиции</span>
-            <span class="status-value" id="investments-word">средние</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="investments-fill" style="width:50%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Инвестиции</span><span class="status-value" id="investments-word">средние</span></div>
+          <div class="scale"><div class="scale-fill mid" id="investments-fill" style="width:50%"></div></div>
         </div>
-
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Бюджет</span>
-            <span class="status-value" id="budget-word">средний</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="budget-fill" style="width:50%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Бюджет</span><span class="status-value" id="budget-word">средний</span></div>
+          <div class="scale"><div class="scale-fill mid" id="budget-fill" style="width:50%"></div></div>
         </div>
-
         <div class="status-item hidden" id="pocket-box">
-          <div class="status-header">
-            <span class="status-label">В кармане</span>
-            <span class="status-value" id="pocket-word">пусто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="pocket-fill" style="width:0%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">В кармане</span><span class="status-value" id="pocket-word">пусто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="pocket-fill" style="width:0%"></div></div>
         </div>
       </div>
 
       <div class="shift-actions" id="main-actions">
         <button class="btn" id="btn-set-level">Инвестиции в отдел</button>
         <button class="btn secondary" id="btn-take">Забрать себе</button>
-        <button class="btn secondary" id="btn-reports">Отчёты</button>
         <button class="btn secondary" id="btn-finish">Завершить смену</button>
       </div>
 
       <div class="hidden" id="shift-done-director">
-        <div class="subtitle">
-          Смена завершена.<br>
-          Ожидайте коллег…
-        </div>
+        <div class="subtitle">Смена завершена.<br>Ожидайте коллег…</div>
       </div>
 
       <div class="submenu hidden" id="submenu-dirs">
         <div class="submenu-title">Какой отдел</div>
-
         <div class="preview-scale hidden" id="dir-preview">
           <span class="status-label" id="dir-preview-label">Отдел</span>
-          <div class="scale">
-            <div class="scale-fill mid" id="dir-preview-fill" style="width:50%"></div>
-          </div>
+          <div class="scale"><div class="scale-fill mid" id="dir-preview-fill" style="width:50%"></div></div>
         </div>
-
         <button class="btn" data-dir="equipment">Оборудование</button>
         <button class="btn" data-dir="people">Люди</button>
         <button class="btn" data-dir="ads">Реклама</button>
@@ -231,24 +174,13 @@
 
       <div class="submenu hidden" id="submenu-levels">
         <div class="submenu-title" id="levels-title">Уровень</div>
-
         <div class="preview-scale">
           <span class="status-label" id="levels-preview-label">Отдел</span>
-          <div class="scale">
-            <div class="scale-fill mid" id="preview-fill" style="width:50%"></div>
-          </div>
+          <div class="scale"><div class="scale-fill mid" id="preview-fill" style="width:50%"></div></div>
         </div>
-
-        <button class="btn btn-amount" data-lvl="33">
-          <span class="amt-name">Низкий уровень</span>
-        </button>
-        <button class="btn btn-amount" data-lvl="66">
-          <span class="amt-name">Средний уровень</span>
-        </button>
-        <button class="btn btn-amount" data-lvl="100">
-          <span class="amt-name">Высокий уровень</span>
-        </button>
-
+        <button class="btn btn-amount" data-lvl="33"><span class="amt-name">Низкий уровень</span></button>
+        <button class="btn btn-amount" data-lvl="66"><span class="amt-name">Средний уровень</span></button>
+        <button class="btn btn-amount" data-lvl="100"><span class="amt-name">Высокий уровень</span></button>
         <button class="btn secondary" id="btn-back-levels">← Назад</button>
       </div>
 
@@ -261,15 +193,9 @@
 
       <div class="submenu hidden" id="submenu-take-budget">
         <div class="submenu-title">Сколько забрать</div>
-        <button class="btn btn-amount" data-take-lvl="33">
-          <span class="amt-name">Низкий уровень</span>
-        </button>
-        <button class="btn btn-amount" data-take-lvl="66">
-          <span class="amt-name">Средний уровень</span>
-        </button>
-        <button class="btn btn-amount" data-take-lvl="100">
-          <span class="amt-name">Высокий уровень</span>
-        </button>
+        <button class="btn btn-amount" data-take-lvl="33"><span class="amt-name">Низкий уровень</span></button>
+        <button class="btn btn-amount" data-take-lvl="66"><span class="amt-name">Средний уровень</span></button>
+        <button class="btn btn-amount" data-take-lvl="100"><span class="amt-name">Высокий уровень</span></button>
         <button class="btn secondary" id="btn-back-take-budget">← Назад</button>
       </div>
 
@@ -285,177 +211,104 @@
 
       <div class="submenu hidden" id="submenu-take-levels">
         <div class="submenu-title" id="take-levels-title">До какого уровня опустить</div>
-
         <div class="preview-scale">
           <span class="status-label" id="take-levels-preview-label">Отдел</span>
-          <div class="scale">
-            <div class="scale-fill mid" id="take-preview-fill" style="width:50%"></div>
-          </div>
+          <div class="scale"><div class="scale-fill mid" id="take-preview-fill" style="width:50%"></div></div>
         </div>
-
-        <button class="btn btn-amount" data-take-dir-lvl="33">
-          <span class="amt-name">До низкого</span>
-        </button>
-        <button class="btn btn-amount" data-take-dir-lvl="66">
-          <span class="amt-name">До среднего</span>
-        </button>
-        <button class="btn btn-amount" data-take-dir-lvl="100">
-          <span class="amt-name">До высокого</span>
-        </button>
-
+        <button class="btn btn-amount" data-take-dir-lvl="33"><span class="amt-name">До низкого</span></button>
+        <button class="btn btn-amount" data-take-dir-lvl="66"><span class="amt-name">До среднего</span></button>
+        <button class="btn btn-amount" data-take-dir-lvl="100"><span class="amt-name">До высокого</span></button>
         <button class="btn secondary" id="btn-back-take-levels">← Назад</button>
       </div>
 
+      <!-- ЭКРАН ОТЧЁТОВ ДИРЕКТОРА (открывается в конце смены) -->
       <div class="submenu hidden" id="submenu-reports">
-        <div class="submenu-title">Отчёты отделов</div>
+        <div class="submenu-title">Отчёты за смену</div>
         <div class="reports-list" id="reports-list"></div>
-        <button class="btn secondary" id="btn-back-reports">← Назад</button>
+        <button class="btn secondary" id="btn-reports-finish">Завершить смену</button>
       </div>
 
     </div>
   </div>
 
-  <!-- ЭКРАН 6b: СМЕНА БЕЗОПАСНИКА -->
+  <!-- ЭКРАН 6b: БЕЗОПАСНИК -->
   <div class="glass hidden" id="wrap-game-security">
     <div id="screen-game-security" class="shift shift-security">
-
       <div class="factory-sign" id="factory-sign-security"></div>
-
       <div class="decisions-bar">
         <span class="decisions-label">Ваши решения</span>
         <span class="decisions-dots" id="decisions-dots-security"></span>
       </div>
-
       <div class="shift-status">
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Подозрения</span>
-            <span class="status-value" id="suspicions-word">чисто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="suspicions-fill" style="width:0%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Подозрения</span><span class="status-value" id="suspicions-word">чисто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="suspicions-fill" style="width:0%"></div></div>
         </div>
-
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Конфисковано</span>
-            <span class="status-value" id="returns-word">пусто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="returns-fill" style="width:0%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Конфисковано</span><span class="status-value" id="returns-word">пусто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="returns-fill" style="width:0%"></div></div>
         </div>
-
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Откат</span>
-            <span class="status-value" id="kickbacks-word">пусто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="kickbacks-fill" style="width:0%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Откат</span><span class="status-value" id="kickbacks-word">пусто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="kickbacks-fill" style="width:0%"></div></div>
         </div>
       </div>
-
       <div class="dossier-box" id="dossier-box">
         <div class="dossier-title">Досье</div>
-        <div class="dossier-list" id="dossier-list">
-          <div class="dossier-empty">Пока пусто.</div>
-        </div>
+        <div class="dossier-list" id="dossier-list"><div class="dossier-empty">Пока пусто.</div></div>
       </div>
-
       <div class="deal-status hidden" id="deal-status"></div>
-
       <div class="shift-actions" id="security-actions">
         <button class="btn" id="btn-security-check">Проверка</button>
         <button class="btn secondary" id="btn-security-check-reports">Отчёты по проверкам</button>
         <button class="btn secondary" id="btn-security-request-reports">Отчёты по запросам</button>
         <button class="btn secondary" id="btn-finish-security">Завершить смену</button>
       </div>
-
-      <div class="hidden" id="shift-done-security">
-        <div class="subtitle">
-          Смена завершена.<br>
-          Ожидайте коллег…
-        </div>
-      </div>
-
+      <div class="hidden" id="shift-done-security"><div class="subtitle">Смена завершена.<br>Ожидайте коллег…</div></div>
       <div class="submenu hidden" id="submenu-security-check">
         <div class="submenu-title">Кого проверить</div>
         <button class="btn" data-check-target="" id="btn-check-list"></button>
         <button class="btn secondary" id="btn-back-security-check">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-security-check-reports">
         <div class="submenu-title">Отчёты по проверкам</div>
         <div class="dossier-list" id="check-reports-list"></div>
         <button class="btn secondary" id="btn-back-security-check-reports">← Назад</button>
       </div>
-
       <div class="submenu hidden" id="submenu-security-request-reports">
         <div class="submenu-title">Отчёты по запросам</div>
         <div class="dossier-list" id="request-reports-list"></div>
         <button class="btn secondary" id="btn-back-security-request-reports">← Назад</button>
       </div>
-
     </div>
   </div>
 
-  <!-- ЭКРАН 6c: СМЕНА ИНЖЕНЕРА -->
+  <!-- ЭКРАН 6c: ИНЖЕНЕР -->
   <div class="glass hidden" id="wrap-game-engineer">
     <div id="screen-game-engineer" class="shift shift-engineer">
-
       <div class="factory-sign" id="factory-sign-engineer"></div>
-
       <div class="decisions-bar">
         <span class="decisions-label">Ваши решения</span>
         <span class="decisions-dots" id="decisions-dots-engineer"></span>
       </div>
-
       <div class="shift-status">
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Качество</span>
-            <span class="status-value" id="eng-quality-word">среднее</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="eng-quality-fill" style="width:50%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Качество</span><span class="status-value" id="eng-quality-word">среднее</span></div>
+          <div class="scale"><div class="scale-fill mid" id="eng-quality-fill" style="width:50%"></div></div>
         </div>
-
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Оборудование</span>
-            <span class="status-value" id="eng-equipment-word">среднее</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="eng-equipment-fill" style="width:50%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Оборудование</span><span class="status-value" id="eng-equipment-word">среднее</span></div>
+          <div class="scale"><div class="scale-fill mid" id="eng-equipment-fill" style="width:50%"></div></div>
         </div>
-
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Фонд оборудования</span>
-            <span class="status-value" id="eng-fund-word">пусто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="eng-fund-fill" style="width:0%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Фонд оборудования</span><span class="status-value" id="eng-fund-word">пусто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="eng-fund-fill" style="width:0%"></div></div>
         </div>
-
         <div class="status-item hidden" id="eng-pocket-box">
-          <div class="status-header">
-            <span class="status-label">В кармане</span>
-            <span class="status-value" id="eng-pocket-word">пусто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="eng-pocket-fill" style="width:0%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">В кармане</span><span class="status-value" id="eng-pocket-word">пусто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="eng-pocket-fill" style="width:0%"></div></div>
         </div>
       </div>
-
-      <!-- ОСНОВНЫЕ ДЕЙСТВИЯ -->
       <div class="shift-actions" id="engineer-actions">
         <button class="btn" id="btn-eng-work">Работать</button>
         <button class="btn secondary" id="btn-eng-drink">Уйти в запой</button>
@@ -463,11 +316,7 @@
         <button class="btn secondary" id="btn-eng-report">Отчёт Директору</button>
         <button class="btn secondary" id="btn-finish-engineer">Завершить смену</button>
       </div>
-
-      <!-- РАЗДЕЛ ЗАПОЯ -->
       <div class="drink-box hidden" id="engineer-drink">
-
-        <!-- Шаг 1: место -->
         <div class="drink-step" id="drink-place">
           <div class="drink-title">Куда пойдёшь?</div>
           <div class="drink-options">
@@ -477,27 +326,21 @@
           </div>
           <button class="btn secondary" data-drink-back>← Назад</button>
         </div>
-
-        <!-- Шаг 2: компания -->
         <div class="drink-step hidden" id="drink-company">
           <div class="drink-title">С кем?</div>
           <div class="drink-options">
             <button class="btn" data-drink-company="home_alone"    data-place="home">Один</button>
             <button class="btn" data-drink-company="home_neighbors" data-place="home">С соседями</button>
             <button class="btn" data-drink-company="home_family"   data-place="home">С женой (мужем)</button>
-
             <button class="btn" data-drink-company="work_workers"    data-place="work">В цеху с мужиками</button>
             <button class="btn" data-drink-company="work_corporate"  data-place="work">На корпорате</button>
             <button class="btn" data-drink-company="work_boss"       data-place="work">В кабинете с начальством</button>
-
             <button class="btn" data-drink-company="nature_fishing" data-place="nature">На рыбалке</button>
             <button class="btn" data-drink-company="nature_garage"  data-place="nature">В гараже с братом</button>
             <button class="btn" data-drink-company="nature_dacha"   data-place="nature">На даче</button>
           </div>
           <button class="btn secondary" data-drink-back>← Назад</button>
         </div>
-
-        <!-- Шаг 3: напиток -->
         <div class="drink-step hidden" id="drink-drink">
           <div class="drink-title">Что пьёшь?</div>
           <div class="drink-options">
@@ -507,8 +350,6 @@
           </div>
           <button class="btn secondary" data-drink-back>← Назад</button>
         </div>
-
-        <!-- Шаг 4: количество -->
         <div class="drink-step hidden" id="drink-amount">
           <div class="drink-title">Сколько?</div>
           <div class="drink-options">
@@ -518,57 +359,29 @@
           </div>
           <button class="btn secondary" data-drink-back>← Назад</button>
         </div>
-
       </div>
-
-      <!-- ВЫЙТИ ИЗ ЗАПОЯ (показывается, если опьянение > 0) -->
-      <div class="drink-exit hidden" id="engineer-drink-exit">
-        <button class="btn warn" id="btn-eng-exit-drink">Закончить</button>
-      </div>
-
-      <div class="hidden" id="shift-done-engineer">
-        <div class="subtitle">
-          Смена завершена.<br>
-          Ожидайте коллег…
-        </div>
-      </div>
-
-      <!-- ПОДМЕНЮ: распределить инвестиции -->
+      <div class="hidden" id="shift-done-engineer"><div class="subtitle">Смена завершена.<br>Ожидайте коллег…</div></div>
       <div class="submenu hidden" id="submenu-engineer-distribute">
         <div class="submenu-title">Распределить инвестиции</div>
-
         <div class="preview-scale">
           <span class="status-label">Фонд оборудования</span>
-          <div class="scale">
-            <div class="scale-fill mid" id="eng-fund-preview-fill" style="width:0%"></div>
-          </div>
+          <div class="scale"><div class="scale-fill mid" id="eng-fund-preview-fill" style="width:0%"></div></div>
         </div>
-
-        <button class="btn btn-amount" data-eng-lvl="33">
-          <span class="amt-name">Низкий уровень</span>
-        </button>
-        <button class="btn btn-amount" data-eng-lvl="66">
-          <span class="amt-name">Средний уровень</span>
-        </button>
-        <button class="btn btn-amount" data-eng-lvl="100">
-          <span class="amt-name">Высокий уровень</span>
-        </button>
-
+        <button class="btn btn-amount" data-eng-lvl="33"><span class="amt-name">Низкий уровень</span></button>
+        <button class="btn btn-amount" data-eng-lvl="66"><span class="amt-name">Средний уровень</span></button>
+        <button class="btn btn-amount" data-eng-lvl="100"><span class="amt-name">Высокий уровень</span></button>
         <button class="btn secondary" id="btn-back-eng-distribute">← Назад</button>
       </div>
-
-      <!-- ПОДМЕНЮ: отчёт Директору -->
       <div class="submenu hidden" id="submenu-engineer-report">
         <div class="submenu-title">Что написать в отчёте</div>
         <button class="btn success" id="btn-eng-report-real">Честно</button>
         <button class="btn danger" id="btn-eng-report-fake">Подделать</button>
         <button class="btn secondary" id="btn-back-eng-report">← Назад</button>
       </div>
-
     </div>
   </div>
 
-  <!-- ЭКРАН 6d: СМЕНА HR -->
+  <!-- ЭКРАН 6d: HR -->
   <div class="glass hidden" id="wrap-game-hr">
     <div id="screen-game-hr" class="shift shift-hr">
 
@@ -581,77 +394,169 @@
 
       <div class="shift-status">
         <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Люди</span>
-            <span class="status-value" id="hr-people-word">средне</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="hr-people-fill" style="width:50%"></div>
-          </div>
+          <div class="status-header"><span class="status-label">Люди</span><span class="status-value" id="hr-people-word">средне</span></div>
+          <div class="scale"><div class="scale-fill mid" id="hr-people-fill" style="width:50%"></div></div>
         </div>
-
-        <div class="status-item">
-          <div class="status-header">
-            <span class="status-label">Фонд зарплат</span>
-            <span class="status-value" id="hr-fund-word">пусто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="hr-fund-fill" style="width:0%"></div>
-          </div>
-        </div>
-
-        <div class="status-item hidden" id="hr-pocket-box">
-          <div class="status-header">
-            <span class="status-label">В кармане</span>
-            <span class="status-value" id="hr-pocket-word">пусто</span>
-          </div>
-          <div class="scale">
-            <div class="scale-fill mid" id="hr-pocket-fill" style="width:0%"></div>
-          </div>
+        <div class="status-item hidden" id="hr-nepotism-box">
+          <div class="status-header"><span class="status-label">Кумовство</span><span class="status-value" id="hr-nepotism-word">пусто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="hr-nepotism-fill" style="width:0%"></div></div>
         </div>
       </div>
 
       <div class="shift-actions" id="hr-actions">
         <button class="btn" id="btn-hr-hire">Нанять</button>
-        <button class="btn secondary" id="btn-hr-fire">Уволить</button>
-        <button class="btn danger" id="btn-hr-fake">Подделать штат</button>
-        <button class="btn secondary" id="btn-hr-report">Отчёт Директору</button>
+        <button class="btn secondary" id="btn-hr-fire">Сократить</button>
+        <button class="btn warn" id="btn-hr-nepotism">Кумовство</button>
         <button class="btn secondary" id="btn-finish-hr">Завершить смену</button>
       </div>
 
-      <div class="hidden" id="shift-done-hr">
-        <div class="subtitle">
-          Смена завершена.<br>
-          Ожидайте коллег…
-        </div>
-      </div>
-
       <div class="submenu hidden" id="submenu-hr-hire">
-        <div class="submenu-title">Как нанимать</div>
-        <button class="btn" id="btn-hr-hire-normal">Обычный найм</button>
-        <button class="btn" id="btn-hr-hire-train">Обучить (дешевле)</button>
+        <div class="submenu-title">Как нанимать?</div>
+        <button class="btn" data-hire-path="ad">Дать объявление</button>
+        <button class="btn" data-hire-path="poach">Сманить с другого завода</button>
+        <button class="btn" data-hire-path="retrain">Переучить своих</button>
         <button class="btn secondary" id="btn-back-hr-hire">← Назад</button>
       </div>
 
-      <div class="submenu hidden" id="submenu-hr-report">
-        <div class="submenu-title">Что написать в отчёте</div>
-        <button class="btn success" id="btn-hr-report-real">Честно</button>
-        <button class="btn danger" id="btn-hr-report-fake">Подделать</button>
-        <button class="btn secondary" id="btn-back-hr-report">← Назад</button>
+      <div class="submenu hidden" id="submenu-hr-hire-step">
+        <div class="submenu-title" id="hr-hire-step-title">Выбор</div>
+        <div id="hr-hire-step-options"></div>
+        <button class="btn secondary" id="btn-back-hr-hire-step">← Назад</button>
       </div>
+
+      <div class="submenu hidden" id="submenu-hr-fire">
+        <div class="submenu-title">Насколько сократить?</div>
+        <button class="btn" data-hr-fire-lvl="33">Отпустить пару</button>
+        <button class="btn" data-hr-fire-lvl="66">Урезать смену</button>
+        <button class="btn" data-hr-fire-lvl="100">Разогнать бригаду</button>
+        <button class="btn secondary" id="btn-back-hr-fire">← Назад</button>
+      </div>
+
+      <div class="submenu hidden" id="submenu-hr-nepotism">
+        <div class="submenu-title">Кумовство</div>
+        <button class="btn" id="btn-hr-adopt">Пристроить своего</button>
+        <button class="btn secondary" id="btn-hr-cover">Прикрыть родню</button>
+        <button class="btn secondary" id="btn-hr-fire-relative">Уволить одного</button>
+        <button class="btn secondary" id="btn-back-hr-nepotism">← Назад</button>
+      </div>
+
+      <div class="submenu hidden" id="submenu-hr-who">
+        <div class="submenu-title">Кто он тебе?</div>
+        <button class="btn" data-hr-kind="nephew">Племянник</button>
+        <button class="btn" data-hr-kind="kum">Сват / кум</button>
+        <button class="btn" data-hr-kind="neighbor">Сосед</button>
+        <button class="btn secondary" id="btn-back-hr-who">← Назад</button>
+      </div>
+
+      <div class="submenu hidden" id="submenu-hr-where">
+        <div class="submenu-title">Куда его?</div>
+        <button class="btn" data-hr-place="workshop">В цех</button>
+        <button class="btn" data-hr-place="accounts">В бухгалтерию</button>
+        <button class="btn" data-hr-place="ads">В рекламу</button>
+        <button class="btn" data-hr-place="security">В безопасность</button>
+        <button class="btn secondary" id="btn-back-hr-where">← Назад</button>
+      </div>
+
+      <div class="submenu hidden" id="submenu-hr-position">
+        <div class="submenu-title">На какую должность?</div>
+        <button class="btn" data-hr-position="worker">Работяга</button>
+        <button class="btn" data-hr-position="master">Специалист</button>
+        <button class="btn" data-hr-position="boss">Начальник</button>
+        <button class="btn secondary" id="btn-back-hr-position">← Назад</button>
+      </div>
+
+      <div class="submenu hidden" id="submenu-hr-fire-relative">
+        <div class="submenu-title">Кого уволить?</div>
+        <div class="family-list" id="hr-family-list"></div>
+        <button class="btn secondary" id="btn-back-hr-fire-relative">← Назад</button>
+      </div>
+
+      <div class="hidden" id="shift-done-hr"><div class="subtitle">Смена завершена.<br>Ожидайте коллег…</div></div>
 
     </div>
   </div>
 
-  <!-- Модальное окно сговора -->
+  <!-- ЭКРАН ОТЧЁТА (для игрока) -->
+  <div class="glass hidden" id="wrap-report">
+    <div id="screen-report" class="report">
+      <h1 class="report-title">ОТЧЁТ</h1>
+      <div class="report-subtitle" id="report-subtitle">Что покажешь Директору?</div>
+
+      <div class="report-step" id="report-step-show">
+        <div class="report-options">
+          <button class="btn report-opt" data-report-show="real">
+            <span class="report-opt-title">Только настоящих</span>
+            <span class="report-opt-desc">Реальное число работников</span>
+          </button>
+          <button class="btn report-opt" data-report-show="all">
+            <span class="report-opt-title">Всех, как есть</span>
+            <span class="report-opt-desc">Всё, включая родню</span>
+          </button>
+          <button class="btn report-opt" data-report-show="embellish">
+            <span class="report-opt-title">Приукрасить</span>
+            <span class="report-opt-desc">Больше, чем есть на деле</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="report-step hidden" id="report-step-explain">
+        <div class="report-options">
+          <button class="btn report-opt" data-report-explain="ok">
+            <span class="report-opt-title">Всё в порядке</span>
+            <span class="report-opt-desc">Спокойно, обычно</span>
+          </button>
+          <button class="btn report-opt" data-report-explain="issues">
+            <span class="report-opt-title">Есть проблемы</span>
+            <span class="report-opt-desc">Честно про трудности</span>
+          </button>
+          <button class="btn report-opt" data-report-explain="perfect">
+            <span class="report-opt-title">Всё отлично</span>
+            <span class="report-opt-desc">Радужно. Может вызвать вопросы</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН БУМАЖНОГО ОТЧЁТА (для Директора) -->
+  <div class="glass hidden" id="wrap-report-single">
+    <div id="screen-report-single" class="report-single">
+      <div class="paper">
+        <div class="paper-header">
+          <div class="paper-stamp">ОТЧЁТ</div>
+          <div class="paper-shift" id="paper-shift">Смена —</div>
+        </div>
+        <div class="paper-body">
+          <div class="paper-row">
+            <span class="paper-label">Роль</span>
+            <span class="paper-value" id="paper-role">—</span>
+          </div>
+          <div class="paper-row">
+            <span class="paper-label">Состояние</span>
+            <span class="paper-value" id="paper-shown">—</span>
+          </div>
+          <div class="paper-row">
+            <span class="paper-label">Объяснение</span>
+            <span class="paper-value" id="paper-explain">—</span>
+          </div>
+        </div>
+        <div class="paper-signature hidden" id="paper-signature">
+          <div class="signature-line"></div>
+          <div class="signature-text">Подписано</div>
+        </div>
+      </div>
+      <div class="paper-actions" id="paper-actions">
+        <button class="btn" id="btn-paper-approve">Согласовать</button>
+        <button class="btn secondary" id="btn-paper-check">Отправить на проверку</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО СГОВОРА -->
   <div class="modal hidden" id="deal-modal">
     <div class="modal-card">
       <div class="modal-title">Сговор</div>
-      <div class="modal-text">
-        Безопасник предлагает сговор.<br>
-        Он не будет вас проверять,<br>
-        но получит 30% с каждой кражи.
-      </div>
+      <div class="modal-text">Безопасник предлагает сговор.<br>Он не будет вас проверять,<br>но получит 30% с каждой кражи.</div>
       <button class="btn" id="btn-deal-accept">Согласен</button>
       <button class="btn secondary" id="btn-deal-decline">Отказать</button>
     </div>
@@ -661,16 +566,13 @@
   <div class="glass hidden" id="wrap-pause">
     <div id="screen-pause">
       <h1>ПАУЗА</h1>
-      <div class="subtitle">
-        Смена приостановлена.<br>
-        Кто-то отошёл.
-      </div>
+      <div class="subtitle">Смена приостановлена.<br>Кто-то отошёл.</div>
       <div class="players" id="pause-players"></div>
       <button class="btn secondary" id="btn-invite-2">Позвать</button>
     </div>
   </div>
 
-  <!-- ЭКРАН 8: КОНЕЦ ИГРЫ -->
+  <!-- ЭКРАН 8: КОНЕЦ -->
   <div class="glass hidden" id="wrap-end">
     <div id="screen-end">
       <h1 id="end-title">ИГРА ОКОНЧЕНА</h1>

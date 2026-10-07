@@ -1,0 +1,350 @@
+/* ═══════════════════════════════════════════
+   ЭКРАН ОТЧЁТА (для игрока)
+   ═══════════════════════════════════════════ */
+
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: center;
+}
+
+.report-title {
+  margin-bottom: 8px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  color: #fff;
+  background: linear-gradient(180deg, #fff 0%, #c8bcc8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.report-subtitle {
+  font-size: 17px;
+  font-weight: 400;
+  opacity: 0.65;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.report-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: report-fade-in 0.35s ease;
+}
+
+@keyframes report-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.report-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  color: #fff;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.3s ease,
+    border-color 0.3s ease;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  width: 100%;
+}
+
+.report-opt:hover {
+  background: rgba(217, 122, 90, 0.12);
+  border-color: rgba(217, 122, 90, 0.35);
+}
+
+.report-opt:active {
+  transform: scale(0.97) translateY(1px);
+  background: rgba(217, 122, 90, 0.20);
+  border-color: rgba(217, 122, 90, 0.55);
+}
+
+.report-opt-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #fff;
+}
+
+.report-opt-desc {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.6;
+  line-height: 1.4;
+}
+
+/* ═══════════════════════════════════════════
+   БУМАЖНЫЙ ОТЧЁТ (для Директора)
+   Как настоящий лист бумаги
+   ═══════════════════════════════════════════ */
+.report-single {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.paper {
+  position: relative;
+  background:
+    linear-gradient(180deg, #f5eedc 0%, #ede3c8 100%);
+  border-radius: 12px;
+  padding: 32px 28px 40px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.08) inset,
+    2px 2px 0 rgba(0, 0, 0, 0.15);
+  color: #2a2018;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  text-align: left;
+  overflow: hidden;
+  transform: rotate(-0.4deg);
+  animation: paper-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes paper-in {
+  from { opacity: 0; transform: rotate(-2deg) translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: rotate(-0.4deg) translateY(0) scale(1); }
+}
+
+/* Лёгкая текстура бумаги — крапинки */
+.paper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    radial-gradient(circle at 12% 25%, rgba(120, 90, 60, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 68% 55%, rgba(120, 90, 60, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at 42% 82%, rgba(120, 90, 60, 0.05) 1px, transparent 1px);
+  background-size: 60px 60px, 90px 90px, 70px 70px;
+}
+
+/* Шапка */
+.paper-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid rgba(80, 55, 35, 0.25);
+  margin-bottom: 22px;
+}
+
+.paper-stamp {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #6a3f24;
+  text-transform: uppercase;
+}
+
+.paper-shift {
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: rgba(80, 55, 35, 0.7);
+  letter-spacing: 0.5px;
+}
+
+/* Тело */
+.paper-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.paper-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted rgba(80, 55, 35, 0.2);
+}
+
+.paper-label {
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: rgba(80, 55, 35, 0.6);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.paper-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2a2018;
+  font-family: 'Georgia', serif;
+  text-align: right;
+}
+
+/* ─── Подпись ─── */
+.paper-signature {
+  margin-top: 28px;
+  padding-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.paper-signature.hidden {
+  display: none;
+}
+
+.signature-line {
+  width: 60%;
+  height: 1.5px;
+  background: #2a2018;
+  transform-origin: right center;
+  transform: scaleX(0);
+  animation: sign-line 0.6s ease-out 0.2s forwards;
+}
+
+@keyframes sign-line {
+  to { transform: scaleX(1); }
+}
+
+.signature-text {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: #2a2018;
+  opacity: 0;
+  animation: sign-text 0.5s ease-out 1s forwards;
+}
+
+@keyframes sign-text {
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКИ ПОД БУМАГОЙ
+   ═══════════════════════════════════════════ */
+.paper-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#btn-paper-approve {
+  background: linear-gradient(180deg, #4aa876 0%, #2e7a52 100%);
+  box-shadow:
+    0 4px 16px rgba(50, 150, 100, 0.3),
+    0 1px 0 rgba(180, 240, 200, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
+
+#btn-paper-check {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ═══════════════════════════════════════════
+   СПИСОК ОТЧЁТОВ У ДИРЕКТОРА
+   ═══════════════════════════════════════════ */
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.report-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+.report-item.missing {
+  background: rgba(217, 74, 58, 0.08);
+  border-color: rgba(217, 74, 58, 0.25);
+}
+
+.report-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.report-item-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.report-item-meta {
+  font-size: 13px;
+  opacity: 0.65;
+  color: #fff;
+}
+
+.report-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-small {
+  padding: 10px 16px;
+  font-size: 14px;
+  border-radius: 18px;
+  margin-top: 0;
+  width: auto;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+
+.btn-fine {
+  background: linear-gradient(180deg, #b85060 0%, #883040 100%);
+  border: none;
+  color: #fff;
+  box-shadow:
+    0 2px 8px rgba(150, 50, 60, 0.35),
+    0 1px 0 rgba(255, 180, 200, 0.15) inset;
+}
+
+.btn-fine:active {
+  transform: scale(0.95);
+}
+
+.report-empty {
+  padding: 24px;
+  text-align: center;
+  opacity: 0.5;
+  font-style: italic;
+  color: #fff;
+}

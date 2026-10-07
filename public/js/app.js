@@ -38,6 +38,7 @@
     'screen-game-security':   'wrap-game-security',
     'screen-game-engineer':   'wrap-game-engineer',
     'screen-game-hr':         'wrap-game-hr',
+    'screen-report':          'wrap-report',
     'screen-pause':           'wrap-pause',
     'screen-end':             'wrap-end'
   };
@@ -54,6 +55,7 @@
     'screen-equipment',
     'screen-setup-wait',
     'screen-waiting',
+    'screen-report',
     'screen-pause',
     'screen-end'
   ];
@@ -247,7 +249,6 @@
     state.players = players;
   });
 
-  // ─── Сохраняем роль ───
   socket.on('your_role', ({ role }) => {
     state.myRole = role;
   });
@@ -266,7 +267,7 @@
 
   // ─── Глобальный haptic ───
   document.addEventListener('pointerdown', (e) => {
-    const el = e.target.closest('.btn, .setup-btn, .player, .badge-card, .decision-dot');
+    const el = e.target.closest('.btn, .setup-btn, .player, .badge-card, .decision-dot, .report-opt, .family-item');
     if (!el) return;
     if (el.disabled) return;
     haptic('light');

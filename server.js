@@ -27,13 +27,10 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─────────────────────────────────────────────
-// Сокет-соединения
-// ─────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log('Подключился:', socket.id);
 
-  // ─── Курилка ───
+  // ═══ Курилка ═══
   socket.on('enter_smoking', ({ name }) => {
     addPlayer(socket.id, name);
     hall.phase = 'smoking';
@@ -219,6 +216,53 @@ io.on('connection', (socket) => {
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
 
+  // Список отчётов
+  socket.on('director_get_reports', () => {
+    const p = getPlayer(socket.id);
+    if (!p || p.role !== 'director') return;
+
+    const reports = director.getReports();
+    socket.emit('director_reports', {
+      reports: reports,
+      reviewed: p.reportReviewedThisShift || false,
+      decisionsLeft: p.decisionsLeft
+    });
+  });
+
+  // Обработка отчёта
+  socket.on('director_process_report', ({ playerId, action }) => {
+    const result = director.processReport(socket.id, playerId, action);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    if (typeof result.decisionsLeft !== 'undefined') {
+      socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    }
+
+    if (result.factory) {
+      socket.emit('factory_update', result.factory);
+    }
+
+    socket.emit('report_processed', {
+      action: result.action,
+      targetRole: result.targetRole,
+      amount: result.amount || null
+    });
+  });
+
+  // Завершение смены Директором ПОСЛЕ отчётов
+  socket.on('director_finish_after_reports', () => {
+    const result = director.finishAfterReports(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    handleFinishShift(socket.id, result);
+  });
+
   // ═══════════════════════════════════════════
   // ИНЖЕНЕР
   // ═══════════════════════════════════════════
@@ -319,8 +363,43 @@ io.on('connection', (socket) => {
   // ═══════════════════════════════════════════
   // HR
   // ═══════════════════════════════════════════
-  socket.on('hr_hire', () => {
-    const result = hr.hireAction(socket.id);
+  socket.on('hr_hire_start', ({ path }) => {
+    const result = hr.hireStart(socket.id, path);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    socket.emit('hr_hiring_update', result.hiring);
+    emitHrUpdate(socket.id);
+  });
+
+  socket.on('hr_hire_step', ({ step, choice }) => {
+    const result = hr.hireStep(socket.id, step, choice);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    socket.emit('hr_hiring_update', result.hiring);
+
+    if (result.hiring.done) {
+      const finishResult = hr.hireFinish(socket.id);
+      if (finishResult.error) {
+        socket.emit('error_msg', finishResult.error);
+        return;
+      }
+      emitHrUpdate(socket.id);
+      emitFactory(finishResult.factory);
+    } else {
+      emitHrUpdate(socket.id);
+    }
+  });
+
+  socket.on('hr_fire', ({ level }) => {
+    const result = hr.fire(socket.id, level);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
@@ -331,8 +410,8 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
   });
 
-  socket.on('hr_fire', () => {
-    const result = hr.fireAction(socket.id);
+  socket.on('hr_adopt_relative', ({ kind, place, position }) => {
+    const result = hr.adoptRelative(socket.id, kind, place, position);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
@@ -343,8 +422,19 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
   });
 
-  socket.on('hr_train', () => {
-    const result = hr.trainAction(socket.id);
+  socket.on('hr_cover_family', () => {
+    const result = hr.coverFamily(socket.id);
+    if (result.error) {
+      socket.emit('error_msg', result.error);
+      return;
+    }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    emitHrUpdate(socket.id);
+  });
+
+  socket.on('hr_fire_relative', ({ index }) => {
+    const result = hr.fireRelative(socket.id, index);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
@@ -355,26 +445,43 @@ io.on('connection', (socket) => {
     emitFactory(result.factory);
   });
 
-  socket.on('hr_fake_staff', () => {
-    const result = hr.fakeStaffAction(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
+  // ─── Отчёт (универсальный) ───
+  socket.on('submit_report', ({ whatToShow, howToExplain }) => {
+    const p = getPlayer(socket.id);
+    if (!p) return;
+
+    if (p.role === 'hr') {
+      const result = hr.submitReport(socket.id, whatToShow, howToExplain);
+      if (result.error) {
+        socket.emit('error_msg', result.error);
+        return;
+      }
+
+      emitHrUpdate(socket.id);
+      broadcastReportToDirector(p, result.report);
+
+      // Завершаем смену HR
+      const finishResult = director.finishShift(socket.id);
+      if (finishResult.error) {
+        socket.emit('error_msg', finishResult.error);
+        return;
+      }
+
+      // HR сразу показывает «ожидание»
+      io.to(socket.id).emit('shift_progress', {
+        finished: hall.players.map(x => ({ id: x.id, name: x.name, finished: x.finished }))
+      });
+
+      // Если HR последний — запускаем общий flow
+      if (finishResult.newShift) {
+        handleFinishShift(socket.id, finishResult);
+      } else {
+        // Иначе — просто завершаем смену для остальных (шлём progress)
+        io.emit('shift_progress', {
+          finished: hall.players.map(x => ({ id: x.id, name: x.name, finished: x.finished }))
+        });
+      }
     }
-
-    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
-    emitHrUpdate(socket.id);
-  });
-
-  socket.on('hr_submit_report', ({ real }) => {
-    const result = hr.submitHrReport(socket.id, real);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
-
-    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
-    emitHrUpdate(socket.id);
   });
 
   // ═══════════════════════════════════════════
@@ -489,75 +596,28 @@ io.on('connection', (socket) => {
   // ЗАВЕРШЕНИЕ СМЕНЫ
   // ═══════════════════════════════════════════
   socket.on('player_finish_shift', () => {
+    const p = getPlayer(socket.id);
+    if (!p) return;
+
+    // Директор — сначала список отчётов
+    if (p.role === 'director' && !p.finished) {
+      socket.emit('need_reports', { role: 'director' });
+      return;
+    }
+
+    // HR — открыть экран отчёта
+    if (p.role === 'hr' && !p.report) {
+      socket.emit('need_report', { role: 'hr' });
+      return;
+    }
+
     const result = director.finishShift(socket.id);
     if (result.error) {
       socket.emit('error_msg', result.error);
       return;
     }
 
-    io.emit('shift_progress', {
-      finished: hall.players.map(p => ({ id: p.id, name: p.name, finished: p.finished }))
-    });
-
-    if (result.newShift) {
-      applyIndicatorChanges(hall.factory);
-
-      resetReports(hall.factory);
-      autoFillReports(hall.factory);
-
-      security.processChecksOnShiftStart();
-
-      const checkResults = security.resolvePendingChecks();
-      security.recalcSuspicionsAfterShift();
-
-      if (isFactoryReadyForSale(hall.factory)) {
-        hall.phase = 'end';
-        io.emit('game_over', {
-          reason: 'Инвесторы купили завод!',
-          type: 'sale',
-          biographies: buildBiographies()
-        });
-        return;
-      }
-
-      hall.players.forEach(p => {
-        io.to(p.id).emit('new_shift', {
-          shift: result.shift,
-          decisionsLeft: p.decisionsLeft
-        });
-
-        if (p.role === 'director' && hall.factory) {
-          io.to(p.id).emit('factory_update', factorySnapshot(hall.factory, { forDirector: true }));
-
-          const reply = hall.reportChecks.find(c =>
-            c.directorId === p.id && c.directorNotified && !c.notifiedOnce
-          );
-          if (reply) {
-            io.to(p.id).emit('report_check_reply', {
-              indicator: reply.indicator,
-              answer: reply.answer
-            });
-            reply.notifiedOnce = true;
-          }
-        }
-
-        if (p.role === 'security') {
-          io.to(p.id).emit('security_update', security.securitySnapshot(p));
-
-          if (checkResults && checkResults.length > 0) {
-            io.to(p.id).emit('security_check_results', { results: checkResults });
-          }
-        }
-
-        if (p.role === 'engineer') {
-          io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
-        }
-
-        if (p.role === 'hr') {
-          io.to(p.id).emit('hr_update', hr.hrSnapshot(p));
-        }
-      });
-    }
+    handleFinishShift(socket.id, result);
   });
 
   // ─── Отключение ───
@@ -590,6 +650,86 @@ io.on('connection', (socket) => {
   });
 });
 
+// ─── Завершение смены ───
+function handleFinishShift(socketId, result) {
+  io.emit('shift_progress', {
+    finished: hall.players.map(p => ({ id: p.id, name: p.name, finished: p.finished }))
+  });
+
+  if (result.newShift) {
+    applyIndicatorChanges(hall.factory);
+
+    resetReports(hall.factory);
+    autoFillReports(hall.factory);
+
+    security.processChecksOnShiftStart();
+
+    const checkResults = security.resolvePendingChecks();
+    security.recalcSuspicionsAfterShift();
+
+    if (isFactoryReadyForSale(hall.factory)) {
+      hall.phase = 'end';
+      io.emit('game_over', {
+        reason: 'Инвесторы купили завод!',
+        type: 'sale',
+        biographies: buildBiographies()
+      });
+      return;
+    }
+
+    hall.players.forEach(p => {
+      p.report = null;
+      p.hiring = null;
+      p.reportReviewedThisShift = false;
+
+      io.to(p.id).emit('new_shift', {
+        shift: result.shift,
+        decisionsLeft: p.decisionsLeft
+      });
+
+      if (p.role === 'director' && hall.factory) {
+        io.to(p.id).emit('factory_update', factorySnapshot(hall.factory, { forDirector: true }));
+
+        const reply = hall.reportChecks.find(c =>
+          c.directorId === p.id && c.directorNotified && !c.notifiedOnce
+        );
+        if (reply) {
+          io.to(p.id).emit('report_check_reply', {
+            indicator: reply.indicator,
+            answer: reply.answer
+          });
+          reply.notifiedOnce = true;
+        }
+      }
+
+      if (p.role === 'security') {
+        io.to(p.id).emit('security_update', security.securitySnapshot(p));
+        if (checkResults && checkResults.length > 0) {
+          io.to(p.id).emit('security_check_results', { results: checkResults });
+        }
+      }
+
+      if (p.role === 'engineer') {
+        io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
+      }
+
+      if (p.role === 'hr') {
+        io.to(p.id).emit('hr_update', hr.hrSnapshot(p));
+      }
+    });
+  }
+}
+
+// ─── Уведомить Директора о новом отчёте (только роль) ───
+function broadcastReportToDirector(player, report) {
+  const d = hall.players.find(x => x.role === 'director');
+  if (!d) return;
+
+  io.to(d.id).emit('new_report', {
+    role: player.role
+  });
+}
+
 // ─── Снимок без кармана ───
 function stripPocket(snapshot) {
   return {
@@ -599,7 +739,6 @@ function stripPocket(snapshot) {
     budgetPercent: snapshot.budgetPercent,
     reputation: snapshot.reputation,
     bankrupt: snapshot.bankrupt,
-
     building: snapshot.building || null,
     product: snapshot.product || null,
     equipment: snapshot.equipment || null,
@@ -607,7 +746,6 @@ function stripPocket(snapshot) {
   };
 }
 
-// ─── Отправить завод всем ───
 function emitFactory(snapshotWithPocket) {
   const snapshotNoPocket = stripPocket(snapshotWithPocket);
 
@@ -620,14 +758,12 @@ function emitFactory(snapshotWithPocket) {
   });
 }
 
-// ─── Снимок Инженера ───
 function emitEngineerUpdate(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'engineer') return;
   io.to(p.id).emit('engineer_update', engineer.engineerSnapshot(p));
 }
 
-// ─── Снимок HR ───
 function emitHrUpdate(socketId) {
   const p = getPlayer(socketId);
   if (!p || p.role !== 'hr') return;
@@ -673,24 +809,16 @@ function startGameAfterSetup() {
   console.log('Игра началась');
 }
 
-// ═══════════════════════════════════════════
-// БИОГРАФИИ
-// ═══════════════════════════════════════════
+// ─── Биографии ───
 function buildBiographies() {
   const bios = {};
 
   hall.players.forEach(p => {
-    if (p.role === 'director') {
-      bios[p.id] = buildDirectorBio(p);
-    } else if (p.role === 'security') {
-      bios[p.id] = buildSecurityBio(p);
-    } else if (p.role === 'engineer') {
-      bios[p.id] = buildEngineerBio(p);
-    } else if (p.role === 'hr') {
-      bios[p.id] = buildHrBio(p);
-    } else {
-      bios[p.id] = 'Вы играли свою роль.';
-    }
+    if (p.role === 'director')      bios[p.id] = buildDirectorBio(p);
+    else if (p.role === 'security') bios[p.id] = buildSecurityBio(p);
+    else if (p.role === 'engineer') bios[p.id] = buildEngineerBio(p);
+    else if (p.role === 'hr')       bios[p.id] = buildHrBio(p);
+    else                            bios[p.id] = 'Вы играли свою роль.';
   });
 
   return bios;
@@ -698,122 +826,71 @@ function buildBiographies() {
 
 function buildDirectorBio(p) {
   const pocket = hall.factory.pocket || 0;
-
   let line = 'Вы — Директор. ';
-  if (pocket > 100) {
-    line += 'Вы вкладывали в завод, но и забирали себе немало. ';
-  } else if (pocket > 30) {
-    line += 'Вы вкладывали в завод, иногда брали себе. ';
-  } else {
-    line += 'Вы работали честно, развивали завод. ';
-  }
-
-  if (hall.deal.active) {
-    line += 'Вы были в сговоре с Безопасником. ';
-  } else if (hall.theftsLog.length > 0) {
-    line += 'Безопасник вас не прикрывал. ';
-  }
-
+  if (pocket > 100) line += 'Вы вкладывали в завод, но и забирали себе немало. ';
+  else if (pocket > 30) line += 'Вы вкладывали в завод, иногда брали себе. ';
+  else line += 'Вы работали честно, развивали завод. ';
+  if (hall.deal.active) line += 'Вы были в сговоре с Безопасником. ';
+  else if (hall.theftsLog.length > 0) line += 'Безопасник вас не прикрывал. ';
   line += 'Завод продан инвесторам. ';
-
-  if (pocket > 100) {
-    line += 'Вы ушли богатым — но завод вас не вспомнит добрым словом.';
-  } else if (pocket > 30) {
-    line += 'Вы ушли с прибылью — но с чем вы ушли, как человек?';
-  } else {
-    line += 'Вы ушли с чистой совестью.';
-  }
-
+  if (pocket > 100) line += 'Вы ушли богатым — но завод вас не вспомнит добрым словом.';
+  else if (pocket > 30) line += 'Вы ушли с прибылью — но с чем вы ушли, как человек?';
+  else line += 'Вы ушли с чистой совестью.';
   return line;
 }
 
 function buildSecurityBio(p) {
   const returns = p.returns || 0;
   const kickbacks = p.kickbacks || 0;
-
   let line = 'Вы — Безопасник. ';
-
-  if (kickbacks > 50) {
-    line += 'Вы много заработали на сговоре. ';
-  } else if (kickbacks > 0) {
-    line += 'Вы иногда закрывали глаза за долю. ';
-  } else if (returns > 50) {
-    line += 'Вы честно ловили воров и возвращали деньги заводу. ';
-  } else if (returns > 0) {
-    line += 'Вы изредка ловили воров. ';
-  } else {
-    line += 'Вы так и не поймали ни одного вора. ';
-  }
-
+  if (kickbacks > 50) line += 'Вы много заработали на сговоре. ';
+  else if (kickbacks > 0) line += 'Вы иногда закрывали глаза за долю. ';
+  else if (returns > 50) line += 'Вы честно ловили воров и возвращали деньги заводу. ';
+  else if (returns > 0) line += 'Вы изредка ловили воров. ';
+  else line += 'Вы так и не поймали ни одного вора. ';
   line += 'Завод продан инвесторам.';
-
   return line;
 }
 
-// ─── Биография Инженера — из записей о запоях ───
 function buildEngineerBio(p) {
   const pocket = p.pocket || 0;
   const log = p.drinkLog || [];
   const quality = (hall.factory && hall.factory.indicators && hall.factory.indicators.quality) || 0;
-
   let line = 'Вы — Инженер. ';
-
   if (log.length === 0) {
-    if (quality >= 70) {
-      line += 'Вы ни разу не пили и держали качество на высоте. Золотые руки. ';
-    } else {
-      line += 'Вы ни разу не пили. ';
-    }
-  } else if (log.length < 3) {
-    line += 'Вы пару раз прикладывались к бутылке. ';
-  } else if (log.length < 7) {
-    line += 'Вы частенько уходили в запой. ';
-  } else {
-    line += 'Вы почти не просыхали. ';
-  }
-
-  if (pocket > 60) {
-    line += 'Денег с этого поимели немало. ';
-  }
-
-  if (quality < 30) {
-    line += 'Завод из-за вас почти развалился. ';
-  } else if (quality >= 70) {
-    line += 'Но качество держали. ';
-  }
-
+    if (quality >= 70) line += 'Вы ни разу не пили и держали качество на высоте. Золотые руки. ';
+    else line += 'Вы ни разу не пили. ';
+  } else if (log.length < 3) line += 'Вы пару раз прикладывались к бутылке. ';
+  else if (log.length < 7) line += 'Вы частенько уходили в запой. ';
+  else line += 'Вы почти не просыхали. ';
+  if (pocket > 60) line += 'Денег с этого поимели немало. ';
+  if (quality < 30) line += 'Завод из-за вас почти развалился. ';
+  else if (quality >= 70) line += 'Но качество держали. ';
   line += 'Завод продан инвесторам.';
-
   return line;
 }
 
 function buildHrBio(p) {
-  const pocket = p.pocket || 0;
-  const hasFake = p.hrReport && p.hrReport.isFake;
-
+  const familyCount = (p.family && p.family.length) || 0;
+  const fund = p.familyFund || 0;
   let line = 'Вы — HR. ';
-
-  if (hasFake && pocket > 30) {
-    line += 'Вы торговали мёртвыми душами — в штате числились те, кого никогда не было. ';
-  } else if (hasFake) {
-    line += 'Вы разок подделали штат. ';
-  } else if (pocket > 20) {
-    line += 'Вы аккуратно брали своё, но без подделок. ';
-  } else {
-    line += 'Вы честно собирали людей. ';
-  }
-
+  if (familyCount === 0) line += 'Вы никого не пристроили. Честный кадровик. ';
+  else if (familyCount < 3) line += 'Вы пристроили пару своих. ';
+  else if (familyCount < 7) line += 'У вас на заводе работала целая родня. ';
+  else line += 'Вы устроили всех своих — завод стал одной большой семьёй. ';
+  if (fund > 50) line += 'С этого поимели немало. ';
   line += 'Завод продан инвесторам.';
-
   return line;
 }
 
-// ─── Старт игры ───
+// ─── Старт ролей ───
 function startRoles() {
   const assignments = assignRoles();
 
   hall.theftsLog = [];
   hall.reportChecks = [];
+  hall.reports = [];
+  hall.finesLog = [];
   hall.deal = { pending: false, active: false, securityId: null, directorId: null };
 
   assignments.forEach(a => {
