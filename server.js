@@ -10,6 +10,7 @@ const director = require('./server/cabinets/director');
 const security = require('./server/cabinets/security');
 const engineer = require('./server/cabinets/engineer');
 const hr = require('./server/cabinets/hr');
+const marketer = require('./server/cabinets/marketer');
 const {
   applyIndicatorChanges,
   resetReports,
@@ -59,9 +60,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ═══════════════════════════════════════════
-  // ДИРЕКТОР
-  // ═══════════════════════════════════════════
+  // ═══ ДИРЕКТОР ═══
   socket.on('director_choose_factory', () => {
     const result = director.chooseFactory(socket.id);
     if (result.error) {
@@ -213,11 +212,9 @@ io.on('connection', (socket) => {
       socket.emit('error_msg', result.error);
       return;
     }
-
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
   });
 
-  // ─── Магазин обнала ───
   socket.on('director_open_shop', () => {
     const result = director.openShop(socket.id);
     if (result.error) {
@@ -238,7 +235,6 @@ io.on('connection', (socket) => {
     emitDirectorUpdate(socket.id);
   });
 
-  // ─── Список отчётов ───
   socket.on('director_get_reports', () => {
     const p = getPlayer(socket.id);
     if (!p || p.role !== 'director') return;
@@ -262,7 +258,6 @@ io.on('connection', (socket) => {
     if (typeof result.decisionsLeft !== 'undefined') {
       socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     }
-
     if (result.factory) {
       socket.emit('factory_update', result.factory);
     }
@@ -273,7 +268,6 @@ io.on('connection', (socket) => {
       amount: result.amount || null
     });
 
-    // Обновляем список у Директора
     const p = getPlayer(socket.id);
     if (p && p.role === 'director') {
       const data = director.getReports();
@@ -286,33 +280,23 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Директор завершает смену после отчётов ───
   socket.on('director_finish_after_reports', () => {
     const result = director.finishAfterReports(socket.id);
     if (result.error) {
-      // Если не все завершили — эмитим отдельное событие
       if (result.notAllFinished) {
-        socket.emit('director_wait_others', {
-          waiting: result.waiting || []
-        });
+        socket.emit('director_wait_others', { waiting: result.waiting || [] });
       } else {
         socket.emit('error_msg', result.error);
       }
       return;
     }
-
     handleFinishShift(socket.id, result);
   });
 
-  // ═══════════════════════════════════════════
-  // ИНЖЕНЕР
-  // ═══════════════════════════════════════════
+  // ═══ ИНЖЕНЕР ═══
   socket.on('engineer_work', () => {
     const result = engineer.workAction(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitEngineerUpdate(socket.id);
@@ -321,10 +305,7 @@ io.on('connection', (socket) => {
 
   socket.on('engineer_start_drink', () => {
     const result = engineer.startDrink(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitEngineerUpdate(socket.id);
@@ -332,37 +313,25 @@ io.on('connection', (socket) => {
 
   socket.on('engineer_drink_place', ({ place }) => {
     const result = engineer.chooseDrinkPlace(socket.id, place);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
     emitEngineerUpdate(socket.id);
   });
 
   socket.on('engineer_drink_company', ({ company }) => {
     const result = engineer.chooseDrinkCompany(socket.id, company);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
     emitEngineerUpdate(socket.id);
   });
 
   socket.on('engineer_drink_drink', ({ drink }) => {
     const result = engineer.chooseDrinkDrink(socket.id, drink);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
     emitEngineerUpdate(socket.id);
   });
 
   socket.on('engineer_drink_amount', ({ amount }) => {
     const result = engineer.chooseDrinkAmount(socket.id, amount);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     emitEngineerUpdate(socket.id);
     emitFactory(result.factory);
@@ -370,10 +339,7 @@ io.on('connection', (socket) => {
 
   socket.on('engineer_exit_drink', () => {
     const result = engineer.exitDrink(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     emitEngineerUpdate(socket.id);
     emitFactory(result.factory);
@@ -381,10 +347,7 @@ io.on('connection', (socket) => {
 
   socket.on('engineer_distribute', ({ level }) => {
     const result = engineer.distributeAction(socket.id, level);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitEngineerUpdate(socket.id);
@@ -393,23 +356,14 @@ io.on('connection', (socket) => {
 
   socket.on('engineer_submit_report', ({ real }) => {
     const result = engineer.submitEngineerReport(socket.id, real);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
-
+    if (result.error) { socket.emit('error_msg', result.error); return; }
     emitEngineerUpdate(socket.id);
   });
 
-  // ═══════════════════════════════════════════
-  // HR
-  // ═══════════════════════════════════════════
+  // ═══ HR ═══
   socket.on('hr_hire_start', ({ path }) => {
     const result = hr.hireStart(socket.id, path);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     socket.emit('hr_hiring_update', result.hiring);
@@ -418,20 +372,14 @@ io.on('connection', (socket) => {
 
   socket.on('hr_hire_step', ({ step, choice }) => {
     const result = hr.hireStep(socket.id, step, choice);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     socket.emit('hr_hiring_update', result.hiring);
 
     if (result.hiring.done) {
       const finishResult = hr.hireFinish(socket.id);
-      if (finishResult.error) {
-        socket.emit('error_msg', finishResult.error);
-        return;
-      }
+      if (finishResult.error) { socket.emit('error_msg', finishResult.error); return; }
       emitHrUpdate(socket.id);
       emitFactory(finishResult.factory);
     } else {
@@ -441,10 +389,7 @@ io.on('connection', (socket) => {
 
   socket.on('hr_fire', ({ level }) => {
     const result = hr.fire(socket.id, level);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitHrUpdate(socket.id);
@@ -453,10 +398,7 @@ io.on('connection', (socket) => {
 
   socket.on('hr_adopt_relative', ({ kind, place, position }) => {
     const result = hr.adoptRelative(socket.id, kind, place, position);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitHrUpdate(socket.id);
@@ -465,10 +407,7 @@ io.on('connection', (socket) => {
 
   socket.on('hr_cover_family', () => {
     const result = hr.coverFamily(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitHrUpdate(socket.id);
@@ -476,65 +415,93 @@ io.on('connection', (socket) => {
 
   socket.on('hr_fire_relative', ({ index }) => {
     const result = hr.fireRelative(socket.id, index);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     emitHrUpdate(socket.id);
     emitFactory(result.factory);
   });
 
-    // ─── Отчёт HR ───
+  // ═══ МАРКЕТОЛОГ ═══
+  socket.on('marketer_set_position', ({ market, audience }) => {
+    const result = marketer.setPosition(socket.id, market, audience);
+    if (result.error) { socket.emit('error_msg', result.error); return; }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    socket.emit('marketer_position_set', result);
+    emitMarketerUpdate(socket.id);
+  });
+
+  socket.on('marketer_run_ad', ({ channel, budget }) => {
+    const result = marketer.runAd(socket.id, channel, budget);
+    if (result.error) { socket.emit('error_msg', result.error); return; }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    socket.emit('marketer_ad_ran', result);
+    emitMarketerUpdate(socket.id);
+    emitFactory(factorySnapshot(hall.factory, { forDirector: true }));
+  });
+
+  socket.on('marketer_write_blog', ({ topic, tone, targetRole }) => {
+    const result = marketer.writeBlog(socket.id, topic, tone, targetRole);
+    if (result.error) { socket.emit('error_msg', result.error); return; }
+
+    socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
+    socket.emit('marketer_blog_written', result);
+    emitMarketerUpdate(socket.id);
+  });
+
+  // ═══ УНИВЕРСАЛЬНЫЙ ОТЧЁТ ═══
   socket.on('submit_report', ({ whatToShow, howToExplain }) => {
     const p = getPlayer(socket.id);
     if (!p) return;
 
     if (p.role === 'hr') {
       const result = hr.submitReport(socket.id, whatToShow, howToExplain);
-      if (result.error) {
-        socket.emit('error_msg', result.error);
-        return;
-      }
+      if (result.error) { socket.emit('error_msg', result.error); return; }
 
       emitHrUpdate(socket.id);
 
-      // Сначала завершаем смену HR — чтобы он стал finished
       const finishResult = director.finishShift(socket.id);
-      if (finishResult.error) {
-        socket.emit('error_msg', finishResult.error);
-        return;
-      }
+      if (finishResult.error) { socket.emit('error_msg', finishResult.error); return; }
 
-      // Теперь эмитим отчёт Директору — HR уже finished
       broadcastReportToDirector(p, result.report);
-
       socket.emit('hr_report_submitted');
 
       io.emit('shift_progress', {
         finished: hall.players.map(x => ({ id: x.id, name: x.name, finished: x.finished }))
       });
 
-      if (finishResult.newShift) {
-        handleFinishShift(socket.id, finishResult);
-      }
+      if (finishResult.newShift) handleFinishShift(socket.id, finishResult);
+    }
+
+    else if (p.role === 'marketer') {
+      const result = marketer.submitMarketerReport(socket.id, whatToShow, howToExplain);
+      if (result.error) { socket.emit('error_msg', result.error); return; }
+
+      emitMarketerUpdate(socket.id);
+
+      const finishResult = director.finishShift(socket.id);
+      if (finishResult.error) { socket.emit('error_msg', finishResult.error); return; }
+
+      broadcastReportToDirector(p, result.report);
+      socket.emit('marketer_report_submitted');
+
+      io.emit('shift_progress', {
+        finished: hall.players.map(x => ({ id: x.id, name: x.name, finished: x.finished }))
+      });
+
+      if (finishResult.newShift) handleFinishShift(socket.id, finishResult);
     }
   });
 
-  // ═══════════════════════════════════════════
-  // БЕЗОПАСНИК
-  // ═══════════════════════════════════════════
+  // ═══ БЕЗОПАСНИК ═══
   socket.on('security_check', ({ targetId }) => {
     const result = security.checkPlayer(socket.id, targetId);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     const sec = getPlayer(socket.id);
     socket.emit('security_update', security.securitySnapshot(sec));
-
     socket.emit('security_check_pending', {
       targetTitle: result.targetTitle,
       luxuryFound: result.luxuryFound || false
@@ -543,10 +510,7 @@ io.on('connection', (socket) => {
 
   socket.on('security_confiscate_luxury', ({ targetId }) => {
     const result = security.confiscateLuxury(socket.id, targetId);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     socket.emit('luxury_confiscated', {
@@ -555,23 +519,16 @@ io.on('connection', (socket) => {
     });
 
     emitFactory(hall.factory);
-
     const sec = getPlayer(socket.id);
     socket.emit('security_update', security.securitySnapshot(sec));
   });
 
   socket.on('security_spread_rumor', ({ targetId }) => {
     const result = security.spreadRumor(socket.id, targetId);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
-
-    io.emit('rumor_spread', {
-      targetRole: result.targetTitle
-    });
+    io.emit('rumor_spread', { targetRole: result.targetTitle });
 
     const sec = getPlayer(socket.id);
     socket.emit('security_update', security.securitySnapshot(sec));
@@ -579,10 +536,7 @@ io.on('connection', (socket) => {
 
   socket.on('security_cover_department', ({ indicator }) => {
     const result = security.coverDepartment(socket.id, indicator);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     const sec = getPlayer(socket.id);
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
@@ -591,10 +545,7 @@ io.on('connection', (socket) => {
 
   socket.on('security_answer_forged', ({ indicator }) => {
     const result = security.answerForged(socket.id, indicator);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     const sec = getPlayer(socket.id);
     socket.emit('security_update', security.securitySnapshot(sec));
@@ -602,10 +553,7 @@ io.on('connection', (socket) => {
 
   socket.on('security_offer_deal', () => {
     const result = security.offerDeal(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     io.to(result.directorId).emit('deal_offered');
@@ -616,31 +564,20 @@ io.on('connection', (socket) => {
 
   socket.on('director_accept_deal', () => {
     const result = security.acceptDeal(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
-
+    if (result.error) { socket.emit('error_msg', result.error); return; }
     io.to(hall.deal.securityId).emit('deal_activated');
     io.to(hall.deal.directorId).emit('deal_activated');
   });
 
   socket.on('director_decline_deal', () => {
     const result = security.declineDeal(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
-
+    if (result.error) { socket.emit('error_msg', result.error); return; }
     io.to(hall.deal.securityId).emit('deal_declined');
   });
 
   socket.on('security_break_deal', () => {
     const result = security.breakDeal(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     hall.players.forEach(p => {
       if (p.role === 'security' || p.role === 'director') {
@@ -653,13 +590,9 @@ io.on('connection', (socket) => {
 
   socket.on('security_report', ({ targetId }) => {
     const result = security.reportPlayer(socket.id, targetId);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
-      return;
-    }
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     const sec = getPlayer(socket.id);
-
     socket.emit('decisions_update', { decisionsLeft: result.decisionsLeft });
     socket.emit('security_update', security.securitySnapshot(sec));
 
@@ -667,9 +600,7 @@ io.on('connection', (socket) => {
     emitFactory(hall.factory);
   });
 
-  // ═══════════════════════════════════════════
-  // ЗАВЕРШЕНИЕ СМЕНЫ
-  // ═══════════════════════════════════════════
+  // ═══ ЗАВЕРШЕНИЕ СМЕНЫ ═══
   socket.on('player_finish_shift', () => {
     const p = getPlayer(socket.id);
     if (!p) return;
@@ -684,28 +615,26 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const result = director.finishShift(socket.id);
-    if (result.error) {
-      socket.emit('error_msg', result.error);
+    if (p.role === 'marketer' && !p.report) {
+      socket.emit('need_report', { role: 'marketer' });
       return;
     }
+
+    const result = director.finishShift(socket.id);
+    if (result.error) { socket.emit('error_msg', result.error); return; }
 
     handleFinishShift(socket.id, result);
   });
 
-  // ═══════════════════════════════════════════
-  // ОТКЛЮЧЕНИЕ
-  // ═══════════════════════════════════════════
+  // ═══ DISCONNECT ═══
   socket.on('disconnect', () => {
     const p = getPlayer(socket.id);
     if (!p) return;
 
     if (hall.phase === 'game') {
-      // НЕ удаляем — помечаем disconnected
       p.disconnected = true;
       hall.paused = true;
 
-      // Если игрок не завершил смену — считаем его завершившим
       if (!p.finished) {
         p.finished = true;
       }
@@ -714,7 +643,6 @@ io.on('connection', (socket) => {
         disconnected: hall.players.filter(x => x.disconnected).map(x => x.name)
       });
 
-      // Обновляем отчёты у Директора
       const d = hall.players.find(x => x.role === 'director');
       if (d && !d.disconnected) {
         const data = director.getReports();
@@ -726,23 +654,18 @@ io.on('connection', (socket) => {
         });
       }
 
-      // Проверяем, все ли завершили (с учётом disconnected)
       if (allFinishedShift()) {
-        // Не стартуем новую смену автоматически — Директор решает
         console.log('Все завершили смену (с учётом отключённых)');
       }
     } else {
-      // Вне игры — удаляем
       removePlayer(socket.id);
       io.emit('smoking_update', smoking.getSmokingState());
     }
   });
 
   socket.on('reconnect_player', ({ name }) => {
-    // Ищем отключённого по имени
     const p = hall.players.find(x => x.name === name && x.disconnected);
     if (p) {
-      // Меняем socket id
       p.id = socket.id;
       p.disconnected = false;
     }
@@ -768,10 +691,8 @@ function handleFinishShift(socketId, result) {
 
   if (result.newShift) {
     applyIndicatorChanges(hall.factory);
-
     resetReports(hall.factory);
     autoFillReports(hall.factory);
-
     security.processChecksOnShiftStart();
 
     const checkResults = security.resolvePendingChecks();
@@ -834,6 +755,10 @@ function handleFinishShift(socketId, result) {
       if (p.role === 'hr') {
         io.to(p.id).emit('hr_update', hr.hrSnapshot(p));
       }
+
+      if (p.role === 'marketer') {
+        io.to(p.id).emit('marketer_update', marketer.marketerSnapshot(p));
+      }
     });
   }
 }
@@ -845,16 +770,12 @@ function emitDirectorUpdate(socketId) {
   if (snap) io.to(p.id).emit('director_luxury_update', snap);
 }
 
-// ─── Уведомить Директора о новом отчёте + обновить список ───
 function broadcastReportToDirector(player, report) {
   const d = hall.players.find(x => x.role === 'director');
   if (!d || d.disconnected) return;
 
-  io.to(d.id).emit('new_report', {
-    role: player.role
-  });
+  io.to(d.id).emit('new_report', { role: player.role });
 
-  // Свежий список отчётов
   const data = director.getReports();
   io.to(d.id).emit('director_reports', {
     list: data.list,
@@ -903,6 +824,12 @@ function emitHrUpdate(socketId) {
   io.to(p.id).emit('hr_update', hr.hrSnapshot(p));
 }
 
+function emitMarketerUpdate(socketId) {
+  const p = getPlayer(socketId);
+  if (!p || p.role !== 'marketer') return;
+  io.to(p.id).emit('marketer_update', marketer.marketerSnapshot(p));
+}
+
 function startGameAfterSetup() {
   hall.phase = 'game';
   hall.shift = 1;
@@ -912,7 +839,7 @@ function startGameAfterSetup() {
     p.decisionsLeft = 3;
   });
 
-  const DECISIONS = { director: 3, security: 2, engineer: 3, hr: 3 };
+  const DECISIONS = { director: 3, security: 2, engineer: 3, hr: 3, marketer: 3 };
   hall.players.forEach(p => {
     p.decisionsLeft = DECISIONS[p.role] || 0;
   });
@@ -933,6 +860,9 @@ function startGameAfterSetup() {
     } else if (p.role === 'hr') {
       io.to(p.id).emit('hr_update', hr.hrSnapshot(p));
       io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
+    } else if (p.role === 'marketer') {
+      io.to(p.id).emit('marketer_update', marketer.marketerSnapshot(p));
+      io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
     } else if (p.role === 'director') {
       io.to(p.id).emit('decisions_update', { decisionsLeft: p.decisionsLeft });
       emitDirectorUpdate(p.id);
@@ -949,6 +879,7 @@ function buildBiographies() {
     else if (p.role === 'security') bios[p.id] = buildSecurityBio(p);
     else if (p.role === 'engineer') bios[p.id] = buildEngineerBio(p);
     else if (p.role === 'hr')       bios[p.id] = buildHrBio(p);
+    else if (p.role === 'marketer') bios[p.id] = buildMarketerBio(p);
     else                            bios[p.id] = 'Вы играли свою роль.';
   });
   return bios;
@@ -961,11 +892,7 @@ function buildDirectorBio(p) {
   else if (pocket > 30) line += 'Вы вкладывали в завод, иногда брали себе. ';
   else line += 'Вы работали честно, развивали завод. ';
   if (hall.deal.active) line += 'Вы были в сговоре с Безопасником. ';
-  else if (hall.theftsLog.length > 0) line += 'Безопасник вас не прикрывал. ';
-  line += 'Завод продан инвесторам. ';
-  if (pocket > 100) line += 'Вы ушли богатым — но завод вас не вспомнит добрым словом.';
-  else if (pocket > 30) line += 'Вы ушли с прибылью — но с чем вы ушли, как человек?';
-  else line += 'Вы ушли с чистой совестью.';
+  line += 'Завод продан инвесторам.';
   return line;
 }
 
@@ -975,7 +902,7 @@ function buildSecurityBio(p) {
   let line = 'Вы — Безопасник. ';
   if (kickbacks > 50) line += 'Вы много заработали на сговоре. ';
   else if (kickbacks > 0) line += 'Вы иногда закрывали глаза за долю. ';
-  else if (returns > 50) line += 'Вы честно ловили воров и возвращали деньги заводу. ';
+  else if (returns > 50) line += 'Вы честно ловили воров. ';
   else if (returns > 0) line += 'Вы изредка ловили воров. ';
   else line += 'Вы так и не поймали ни одного вора. ';
   line += 'Завод продан инвесторам.';
@@ -983,32 +910,38 @@ function buildSecurityBio(p) {
 }
 
 function buildEngineerBio(p) {
-  const pocket = p.pocket || 0;
   const log = p.drinkLog || [];
   const quality = (hall.factory && hall.factory.indicators && hall.factory.indicators.quality) || 0;
   let line = 'Вы — Инженер. ';
   if (log.length === 0) {
-    if (quality >= 70) line += 'Вы ни разу не пили и держали качество на высоте. Золотые руки. ';
+    if (quality >= 70) line += 'Вы ни разу не пили и держали качество. Золотые руки. ';
     else line += 'Вы ни разу не пили. ';
   } else if (log.length < 3) line += 'Вы пару раз прикладывались к бутылке. ';
   else if (log.length < 7) line += 'Вы частенько уходили в запой. ';
   else line += 'Вы почти не просыхали. ';
-  if (pocket > 60) line += 'Денег с этого поимели немало. ';
-  if (quality < 30) line += 'Завод из-за вас почти развалился. ';
-  else if (quality >= 70) line += 'Но качество держали. ';
   line += 'Завод продан инвесторам.';
   return line;
 }
 
 function buildHrBio(p) {
   const familyCount = (p.family && p.family.length) || 0;
-  const fund = p.familyFund || 0;
   let line = 'Вы — HR. ';
   if (familyCount === 0) line += 'Вы никого не пристроили. Честный кадровик. ';
   else if (familyCount < 3) line += 'Вы пристроили пару своих. ';
   else if (familyCount < 7) line += 'У вас на заводе работала целая родня. ';
   else line += 'Вы устроили всех своих — завод стал одной большой семьёй. ';
-  if (fund > 50) line += 'С этого поимели немало. ';
+  line += 'Завод продан инвесторам.';
+  return line;
+}
+
+function buildMarketerBio(p) {
+  const fame = p.fame || 0;
+  const pocket = p.pocket || 0;
+  let line = 'Вы — Маркетолог. ';
+  if (fame > 20) line += 'Вы стали звездой соцсетей. ';
+  else if (fame > 10) line += 'У вас появились подписчики. ';
+  else line += 'Ваш блог никто не читал. ';
+  if (pocket > 50) line += 'Хорошо заработали на рекламе. ';
   line += 'Завод продан инвесторам.';
   return line;
 }

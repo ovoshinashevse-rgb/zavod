@@ -17,7 +17,8 @@ const DECISIONS_PER_SHIFT = {
   director: 3,
   security: 2,
   engineer: 3,
-  hr: 3
+  hr: 3,
+  marketer: 3
 };
 
 const hall = {
@@ -65,7 +66,12 @@ function addPlayer(socketId, name) {
       intoxication: 0,
       blackout: 0,
       drunkState: null,
-      drinkLog: []
+      drinkLog: [],
+
+      // ─── Маркетолог ───
+      position: null,   // { market, audience }
+      fame: 0,          // личная слава
+      lastAdEffect: 0   // эффект последней рекламы
     };
     hall.players.push(p);
   } else {
@@ -90,8 +96,6 @@ function allDecided() {
   return hall.players.length >= 1 && hall.players.every(x => x.ready === true);
 }
 
-// ─── Все завершили смену ───
-// Отключённые считаются завершившими (иначе Директор застрянет)
 function allFinishedShift() {
   return hall.players.length >= 1 && hall.players.every(x =>
     x.finished === true || x.disconnected === true

@@ -1,0 +1,114 @@
+/* ═══════════════════════════════════════════
+   КАБИНЕТ МАРКЕТОЛОГА — стили
+   ═══════════════════════════════════════════ */
+
+.shift-marketer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   ШКАЛА ЛИЧНОГО БЛОГА — золотая (слава)
+   ═══════════════════════════════════════════ */
+#mk-fame-fill {
+  background: linear-gradient(90deg, #d9a93a 0%, #e8c050 100%);
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКА «ПОЗИЦИОНИРОВАНИЕ» — основная
+   ═══════════════════════════════════════════ */
+#btn-mk-position {
+  background: linear-gradient(180deg, #d97a5a 0%, #b85a3e 100%);
+  box-shadow:
+    0 4px 16px rgba(180, 80, 50, 0.3),
+    0 1px 0 rgba(255, 200, 180, 0.2) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКА «РЕКЛАМА» — синеватая
+   ═══════════════════════════════════════════ */
+#btn-mk-ad {
+  background: rgba(78, 130, 205, 0.12);
+  border: 1px solid rgba(78, 130, 205, 0.35);
+  color: #a8c8e8;
+}
+
+#btn-mk-ad:hover {
+  background: rgba(78, 130, 205, 0.20);
+  border-color: rgba(78, 130, 205, 0.55);
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКА «БЛОГ» — золотистая (слава)
+   ═══════════════════════════════════════════ */
+#btn-mk-blog {
+  background: rgba(217, 169, 58, 0.12);
+  border: 1px solid rgba(217, 169, 58, 0.35);
+  color: #e8d0a0;
+}
+
+#btn-mk-blog:hover {
+  background: rgba(217, 169, 58, 0.20);
+  border-color: rgba(217, 169, 58, 0.55);
+}
+
+/* ═══════════════════════════════════════════
+   ПОДМЕНЮ ВЫБОРА — опции
+   ═══════════════════════════════════════════ */
+.mk-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.mk-options .btn {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px 22px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 500;
+}
+
+.mk-options .btn:hover {
+  background: rgba(217, 122, 90, 0.12);
+  border-color: rgba(217, 122, 90, 0.35);
+}
+
+.mk-options .btn .mk-opt-title {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.3px;
+  color: #fff;
+}
+
+.mk-options .btn .mk-opt-desc {
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.65;
+  line-height: 1.35;
+}
+
+/* ─── Уже выбранная опция ─── */
+.mk-options .btn.mk-selected {
+  background: rgba(217, 122, 90, 0.20);
+  border-color: rgba(217, 122, 90, 0.55);
+}
+
+/* ═══════════════════════════════════════════
+   КНОПКА «НАЗАД» В ПОДМЕНЮ
+   ═══════════════════════════════════════════ */
+.submenu .btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+}

@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/cabinet-security.css">
 <link rel="stylesheet" href="/css/cabinet-engineer.css">
 <link rel="stylesheet" href="/css/cabinet-hr.css">
+<link rel="stylesheet" href="/css/cabinet-marketer.css">
 <link rel="stylesheet" href="/css/choose-setup.css">
 <link rel="stylesheet" href="/css/report.css">
 <link rel="stylesheet" href="/css/director-shop.css">
@@ -66,15 +67,6 @@
       </div>
     </div>
     <button class="btn" id="btn-start-shift" style="max-width:340px;margin:28px auto 0;">Приступить</button>
-  </div>
-
-  <!-- ЭКРАН 4: НАЧАЛО -->
-  <div class="glass hidden" id="wrap-choose">
-    <div id="screen-choose">
-      <h1>НАЧАЛО</h1>
-      <div class="subtitle">Завод ждёт.<br>Пора начинать.</div>
-      <button class="btn" id="btn-factory-good">Приступить</button>
-    </div>
   </div>
 
   <!-- ЭКРАН 4a: ПОМЕЩЕНИЕ -->
@@ -470,21 +462,99 @@
     </div>
   </div>
 
+  <!-- ЭКРАН 6e: МАРКЕТОЛОГ -->
+  <div class="glass hidden" id="wrap-game-marketer">
+    <div id="screen-game-marketer" class="shift shift-marketer">
+
+      <div class="factory-sign" id="factory-sign-marketer"></div>
+
+      <div class="decisions-bar">
+        <span class="decisions-label">Ваши решения</span>
+        <span class="decisions-dots" id="decisions-dots-marketer"></span>
+      </div>
+
+      <div class="shift-status">
+        <div class="status-item">
+          <div class="status-header"><span class="status-label">Реклама</span><span class="status-value" id="mk-ads-word">средне</span></div>
+          <div class="scale"><div class="scale-fill mid" id="mk-ads-fill" style="width:50%"></div></div>
+        </div>
+        <div class="status-item">
+          <div class="status-header"><span class="status-label">Клиенты</span><span class="status-value" id="mk-clients-word">средне</span></div>
+          <div class="scale"><div class="scale-fill mid" id="mk-clients-fill" style="width:50%"></div></div>
+        </div>
+        <div class="status-item hidden" id="mk-fame-box">
+          <div class="status-header"><span class="status-label">Личный блог</span><span class="status-value" id="mk-fame-word">пусто</span></div>
+          <div class="scale"><div class="scale-fill mid" id="mk-fame-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="shift-actions" id="marketer-actions">
+        <button class="btn" id="btn-mk-position">Позиционирование</button>
+        <button class="btn secondary" id="btn-mk-ad">Реклама</button>
+        <button class="btn secondary" id="btn-mk-blog">Блог</button>
+        <button class="btn secondary" id="btn-finish-marketer">Завершить смену</button>
+      </div>
+
+      <div class="hidden" id="shift-done-marketer">
+        <div class="subtitle">Смена завершена.<br>Ожидайте коллег…</div>
+      </div>
+
+      <!-- Подменю: Позиционирование — рынок -->
+      <div class="submenu hidden" id="submenu-mk-market">
+        <div class="submenu-title">Какой рынок?</div>
+        <div class="mk-options" id="mk-market-options"></div>
+        <button class="btn secondary" id="btn-back-mk-market">← Назад</button>
+      </div>
+
+      <!-- Подменю: Позиционирование — аудитория -->
+      <div class="submenu hidden" id="submenu-mk-audience">
+        <div class="submenu-title">Какая аудитория?</div>
+        <div class="mk-options" id="mk-audience-options"></div>
+        <button class="btn secondary" id="btn-back-mk-audience">← Назад</button>
+      </div>
+
+      <!-- Подменю: Реклама — канал -->
+      <div class="submenu hidden" id="submenu-mk-channel">
+        <div class="submenu-title">Где рекламировать?</div>
+        <div class="mk-options" id="mk-channel-options"></div>
+        <button class="btn secondary" id="btn-back-mk-channel">← Назад</button>
+      </div>
+
+      <!-- Подменю: Реклама — бюджет -->
+      <div class="submenu hidden" id="submenu-mk-budget">
+        <div class="submenu-title">Какой бюджет?</div>
+        <div class="mk-options" id="mk-budget-options"></div>
+        <button class="btn secondary" id="btn-back-mk-budget">← Назад</button>
+      </div>
+
+      <!-- Подменю: Блог — тема -->
+      <div class="submenu hidden" id="submenu-mk-blog-topic">
+        <div class="submenu-title">О чём пост?</div>
+        <div class="mk-options" id="mk-blog-topic-options"></div>
+        <button class="btn secondary" id="btn-back-mk-blog-topic">← Назад</button>
+      </div>
+
+      <!-- Подменю: Блог — тон -->
+      <div class="submenu hidden" id="submenu-mk-blog-tone">
+        <div class="submenu-title">Как подать?</div>
+        <div class="mk-options" id="mk-blog-tone-options"></div>
+        <button class="btn secondary" id="btn-back-mk-blog-tone">← Назад</button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ЭКРАН МАГАЗИНА ОБНАЛА -->
   <div class="glass hidden" id="wrap-shop">
     <div id="screen-shop" class="shop">
-
       <div class="shop-header">
         <div class="shop-title">ОБНАЛ</div>
       </div>
-
-      <!-- ШКАЛА НАКОПЛЕНИЯ -->
       <div class="shop-pocket">
         <div class="scale">
           <div class="scale-fill mid" id="shop-pocket-fill" style="width:0%"></div>
         </div>
       </div>
-
       <div class="shop-tabs" id="shop-tabs"></div>
       <div class="shop-items" id="shop-items"></div>
       <button class="btn secondary" id="btn-shop-back" style="margin-top:16px;">← Назад</button>
@@ -497,8 +567,6 @@
       <div class="shop-item-image" id="item-image"></div>
       <div class="shop-item-title" id="item-title">—</div>
       <div class="shop-item-desc" id="item-desc">—</div>
-
-      <!-- ДВЕ ШКАЛЫ: У ВАС И ЦЕНА -->
       <div class="shop-item-scales">
         <div class="shop-scale-row">
           <span class="shop-scale-label">У вас</span>
@@ -513,7 +581,6 @@
           </div>
         </div>
       </div>
-
       <button class="btn" id="btn-item-buy">В корзину</button>
       <button class="btn secondary" id="btn-item-back">← Назад</button>
     </div>
@@ -528,15 +595,15 @@
         <div class="report-options">
           <button class="btn report-opt" data-report-show="real">
             <span class="report-opt-title">Только настоящих</span>
-            <span class="report-opt-desc">Реальное число работников</span>
+            <span class="report-opt-desc">Реальные данные</span>
           </button>
           <button class="btn report-opt" data-report-show="all">
             <span class="report-opt-title">Всех, как есть</span>
-            <span class="report-opt-desc">Всё, включая родню</span>
+            <span class="report-opt-desc">Всё как есть</span>
           </button>
           <button class="btn report-opt" data-report-show="embellish">
             <span class="report-opt-title">Приукрасить</span>
-            <span class="report-opt-desc">Больше, чем есть на деле</span>
+            <span class="report-opt-desc">Больше, чем есть</span>
           </button>
         </div>
       </div>
@@ -552,7 +619,7 @@
           </button>
           <button class="btn report-opt" data-report-explain="perfect">
             <span class="report-opt-title">Всё отлично</span>
-            <span class="report-opt-desc">Радужно. Может вызвать вопросы</span>
+            <span class="report-opt-desc">Радужно</span>
           </button>
         </div>
       </div>
@@ -581,8 +648,6 @@
             <span class="paper-value" id="paper-explain">—</span>
           </div>
         </div>
-
-        <!-- ПЕЧАТЬ "СОГЛАСОВАНО" -->
         <div class="paper-approval hidden" id="paper-approval">
           <div class="approval-stamp">
             <div class="stamp-circle">
@@ -639,5 +704,6 @@
   <script src="/js/cabinets/security.js"></script>
   <script src="/js/cabinets/engineer.js"></script>
   <script src="/js/cabinets/hr.js"></script>
+  <script src="/js/cabinets/marketer.js"></script>
 </body>
 </html>

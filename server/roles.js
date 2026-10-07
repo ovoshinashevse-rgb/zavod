@@ -15,36 +15,31 @@ function shuffle(arr) {
 
 // Сколько ролей выдавать в зависимости от числа игроков
 // Порядок выдачи: важные для игры роли — раньше.
-// Сейчас реализованы: director, engineer, security, hr.
-// Бухгалтер и Маркетолог — когда будут готовы их кабинеты.
+// Реализованы: director, engineer, security, hr, marketer.
+// Бухгалтер — когда будет готов его кабинет.
 function pickRolesForCount(count) {
-  // 1 игрок: только Директор
   if (count === 1) {
     return ['director'];
   }
 
-  // 2 игрока: Директор + Инженер
   if (count === 2) {
     return ['director', 'engineer'];
   }
 
-  // 3 игрока: Директор + Инженер + Безопасник
   if (count === 3) {
     return ['director', 'engineer', 'security'];
   }
 
-  // 4 игрока: + HR
   if (count === 4) {
     return ['director', 'engineer', 'security', 'hr'];
   }
 
-  // 5 игроков: + Бухгалтер
   if (count === 5) {
-    return ['director', 'engineer', 'security', 'hr', 'accountant'];
+    return ['director', 'engineer', 'security', 'hr', 'marketer'];
   }
 
   // 6 игроков: все шесть
-  return ['director', 'engineer', 'security', 'hr', 'accountant', 'marketer'];
+  return ['director', 'engineer', 'security', 'hr', 'marketer', 'accountant'];
 }
 
 // Раздать роли всем в зале
@@ -67,6 +62,10 @@ function assignRoles() {
     p.hrReport = null;
     p.marketerReport = null;
     p.accountantReport = null;
+
+    // Маркетолог
+    p.position = null;
+    p.fame = 0;
   });
 
   return hall.players.map(p => ({
